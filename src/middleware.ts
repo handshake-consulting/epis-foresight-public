@@ -4,10 +4,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
     const token = request.cookies.get('auth-token');
 
-    // Return early if on auth-related paths
+    // Return early if on auth-related paths or chat path (to allow automatic login)
     if (
         request.nextUrl.pathname.startsWith('/login') ||
-        request.nextUrl.pathname.startsWith('/auth')
+        request.nextUrl.pathname.startsWith('/auth') ||
+        request.nextUrl.pathname.startsWith('/chat')
     ) {
         return NextResponse.next();
     }

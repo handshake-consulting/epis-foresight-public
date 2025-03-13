@@ -1,38 +1,19 @@
-import { verifyFirebaseToken } from '@/utils/firebase/edge';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-    const token = request.cookies.get('auth-token');
-
-    // Return early if on auth-related paths or chat path (to allow automatic login)
+    // Return early if on auth-related paths (to allow authentication flow)
+    // or if already on chat path
     if (
-        request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/auth') ||
         request.nextUrl.pathname.startsWith('/chat')
     ) {
         return NextResponse.next();
     }
 
-    // Check if we have a token
-    if (!token) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        return NextResponse.redirect(url);
-    }
-
-    try {
-        // Verify the token
-        const { valid } = await verifyFirebaseToken(token.value);
-        if (!valid) {
-            throw new Error('Invalid token');
-        }
-        return NextResponse.next();
-    } catch (error) {
-        // Token is invalid or expired
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        return NextResponse.redirect(url);
-    }
+    // For all other paths, redirect to /chat
+    const url = request.nextUrl.clone();
+    url.pathname = '/chat';
+    return NextResponse.redirect(url);
 }
 
 export const config = {

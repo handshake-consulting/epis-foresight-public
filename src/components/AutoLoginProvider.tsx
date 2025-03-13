@@ -1,7 +1,8 @@
 "use client"
 
 import { userLogin } from "@/app/login/action";
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { userAuth } from "@/utils/firebase/client";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { useEffect, useState } from "react";
 
 interface AutoLoginProviderProps {
@@ -24,7 +25,7 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
                 }
 
                 // Perform automatic login with predefined credentials
-                const auth = getAuth();
+                const auth = userAuth;
                 const email = "denis@gmail.com";
                 const password = "denis@gmail.com"; // Use a secure password
 

@@ -17,6 +17,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+export const userAuth = auth;
 // Function to get the current user's ID token
 export const getIdToken = async (): Promise<string | null> => {
     try {

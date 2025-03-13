@@ -233,7 +233,7 @@ export function SessionSidebar({
                 ) : (
                     <>
                         {/* User profile in expanded mode with link to profile page */}
-                        <a href="/profile" className="block hover:bg-gray-100 rounded-md transition-colors">
+                        <div className="block hover:bg-gray-100 rounded-md transition-colors">
                             <div className="flex items-center gap-3 p-2">
                                 <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
                                     {userImage ? (
@@ -252,7 +252,7 @@ export function SessionSidebar({
                                     <path d="M9 18l6-6-6-6"></path>
                                 </svg>
                             </div>
-                        </a>
+                        </div>
 
                         {/* Logout button in expanded mode */}
                         <form action="/auth/signout" method="post">

@@ -331,7 +331,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                                     </div>
                                     <h3 className="font-semibold text-[#5d5545] mb-2 font-serif text-center">Choose Your Topic</h3>
                                     <p className="text-[#8a7e66] text-sm font-serif text-center">
-                                        Begin by selecting a topic or question you'd like to explore in your book.
+                                        {`  Begin by selecting a topic or question you'd like to explore in your book.`}
                                     </p>
                                 </div>
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-[#e8e1d1]">

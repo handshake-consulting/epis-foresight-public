@@ -5,7 +5,8 @@ export async function middleware(request: NextRequest) {
     // or if already on chat path
     if (
         request.nextUrl.pathname.startsWith('/auth') ||
-        request.nextUrl.pathname.startsWith('/chat')
+        request.nextUrl.pathname.startsWith('/chat') ||
+        request.nextUrl.pathname.startsWith('/article')
     ) {
         return NextResponse.next();
     }

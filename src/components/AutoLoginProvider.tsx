@@ -2,7 +2,8 @@
 
 import { userLogin } from "@/app/login/action";
 import { userAuth } from "@/utils/firebase/client";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { createClient } from "@/utils/supabase/clients";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from "firebase/auth";
 import { useEffect, useState } from "react";
 
 interface AutoLoginProviderProps {
@@ -12,6 +13,29 @@ interface AutoLoginProviderProps {
 export default function AutoLoginProvider({ children }: AutoLoginProviderProps) {
     const [isAuthenticating, setIsAuthenticating] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const upsertUserInSupabase = async (user: User) => {
+        try {
+            const supabase = createClient();
+            const { error } = await supabase
+                .from('users')
+                .upsert(
+                    {
+                        firebase_uid: user.uid,
+                        email: user.email,
+                        name: user.displayName,
+                        last_login: new Date().toISOString(),
+                    },
+                    { onConflict: 'firebase_uid' }
+                );
+
+            if (error) {
+                console.error('Error upserting user in Supabase:', error);
+            }
+        } catch (error) {
+            console.error('Error in upsertUserInSupabase:', error);
+        }
+    };
 
     useEffect(() => {
         const autoLogin = async () => {
@@ -46,7 +70,8 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
                         document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
                         throw new Error(message || "Authentication failed");
                     }
-
+                    // Store/update user data in Supabase
+                    await upsertUserInSupabase(user);
                     console.log("Auto login successful");
                 } catch (signInError: any) {
                     // If sign in fails, try to create the user

@@ -323,7 +323,7 @@ export default function ArticlePage({
                             {/* Input in the center when no article */}
                             <div className="w-full max-w-2xl px-2 sm:px-4">
                                 <EditInput
-                                    inputRef={inputRef}
+                                    inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
                                     isStreaming={isStreaming}
                                     isFirstGeneration={isFirstGeneration}
                                     onSubmit={handleSubmit}
@@ -367,7 +367,7 @@ export default function ArticlePage({
                         {/* Edit input at the bottom */}
                         <CardFooter className="mt-auto p-0">
                             <EditInput
-                                inputRef={inputRef}
+                                inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
                                 isStreaming={isStreaming}
                                 isFirstGeneration={isFirstGeneration}
                                 onSubmit={handleSubmit}

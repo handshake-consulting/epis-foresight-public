@@ -4,8 +4,8 @@ export async function middleware(request: NextRequest) {
     // Return early if on auth-related paths (to allow authentication flow)
     // or if already on chat path
     if (
-        request.nextUrl.pathname.startsWith('/auth') ||
-        request.nextUrl.pathname.startsWith('/chat') ||
+        // request.nextUrl.pathname.startsWith('/auth') ||
+        // request.nextUrl.pathname.startsWith('/chat') ||
         request.nextUrl.pathname.startsWith('/article')
     ) {
         return NextResponse.next();
@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
 
     // For all other paths, redirect to /chat
     const url = request.nextUrl.clone();
-    url.pathname = '/chat';
+    url.pathname = '/article';
     return NextResponse.redirect(url);
 }
 

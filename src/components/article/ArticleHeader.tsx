@@ -1,7 +1,6 @@
 "use client"
 
-import { CardHeader, CardTitle } from "@/components/ui/card";
-import { Menu } from "lucide-react";
+import { CardHeader } from "@/components/ui/card";
 
 interface ArticleHeaderProps {
     title: string;
@@ -17,28 +16,22 @@ export function ArticleHeader({
     onToggleCollapse
 }: ArticleHeaderProps) {
     return (
-        <CardHeader className="flex flex-col py-3 px-4 border-b">
-            <div className="flex items-center justify-between">
-                {/* Collapse/Expand button */}
-                {onToggleCollapse && (
-                    <button
-                        onClick={onToggleCollapse}
-                        className="mr-3 text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 block"
-                        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                    >
-                        <Menu className="h-5 w-5" />
-                    </button>
-                )}
-                <CardTitle className="text-lg truncate max-w-[200px] sm:max-w-sm md:max-w-md">
+        <CardHeader className="flex flex-col py-6 px-8 border-b border-[#e8e1d1] bg-[#fcf9f2]">
+            {/* Display topic as a main title if available */}
+            {topic ? (
+                <>
+                    <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#5d5545] text-center mb-2">
+                        {topic}
+                    </h1>
+                    <div className="w-24 h-1 bg-[#e8e1d1] mx-auto mb-2"></div>
+                    <p className="text-sm text-center font-serif text-[#8a7e66] italic">
+                        {title}
+                    </p>
+                </>
+            ) : (
+                <h1 className="text-2xl md:text-3xl font-serif font-bold text-[#5d5545] text-center">
                     {title}
-                </CardTitle>
-            </div>
-
-            {/* Display topic as a subtitle if available */}
-            {topic && (
-                <div className="mt-2 text-xl font-semibold text-gray-800">
-                    {topic}
-                </div>
+                </h1>
             )}
         </CardHeader>
     );

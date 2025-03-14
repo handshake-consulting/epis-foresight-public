@@ -526,15 +526,23 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     false // is_edit
                 );
 
-                // Update article state with topic
+                // Update article state with topic and an initial version placeholder
                 setArticle(prev => {
+                    // Create a placeholder version
+                    const initialVersion: ArticleVersion = {
+                        versionNumber: nextVersionNumber,
+                        content: "Generating...",
+                        timestamp: new Date(),
+                        images: []
+                    };
+
                     if (!prev) {
                         return {
                             id: actualSessionId,
                             title: prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''),
                             topic: prompt,
-                            currentVersion: 0,
-                            versions: [],
+                            currentVersion: nextVersionNumber,
+                            versions: [initialVersion],
                             created_at: new Date().toISOString(),
                             updated_at: new Date().toISOString()
                         };
@@ -542,7 +550,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                     return {
                         ...prev,
-                        topic: prompt
+                        topic: prompt,
+                        versions: [initialVersion]
                     };
                 });
             } else {

@@ -12,14 +12,10 @@ interface UserProfile {
     new_user: boolean;
 }
 
-interface PageProps {
-    params: {
-        id: string;
-    };
-}
+type Params = Promise<{ id: string }>
 
-const page = async ({ params }: PageProps) => {
-    const { id } = params;
+const page = async ({ params }: { params: Params }) => {
+    const { id } = (await params);
 
     // Default profile to use if we can't get a real one
     const defaultProfile: UserProfile = {

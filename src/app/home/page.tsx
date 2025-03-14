@@ -1,8 +1,9 @@
 import AutoLoginProvider from "@/components/AutoLoginProvider";
 import { getProfile } from "@/utils/profile";
 import { cookies } from "next/headers";
-import { Suspense } from "react";
-import ArticlePage from "../articlePage";
+import HomePage from "./HomePage";
+
+
 
 // Define the UserProfile interface locally to avoid import issues
 interface UserProfile {
@@ -13,11 +14,7 @@ interface UserProfile {
     new_user: boolean;
 }
 
-type Params = Promise<{ id: string }>
-
-const page = async ({ params }: { params: Params }) => {
-    const { id } = (await params);
-
+const page = async () => {
     // Default profile to use if we can't get a real one
     const defaultProfile: UserProfile = {
         email: "ekemboy@gmail.com",
@@ -52,10 +49,7 @@ const page = async ({ params }: { params: Params }) => {
 
     return (
         <AutoLoginProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-                <ArticlePage profile={profile} initialSessionId={id} />
-            </Suspense>
-
+            <HomePage profile={profile} />
         </AutoLoginProvider>
     );
 };

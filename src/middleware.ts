@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
     // or if already on chat path
     if (
         // request.nextUrl.pathname.startsWith('/auth') ||
-        // request.nextUrl.pathname.startsWith('/chat') ||
+        request.nextUrl.pathname.startsWith('/home') ||
         request.nextUrl.pathname.startsWith('/article')
     ) {
         return NextResponse.next();
@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
 
     // For all other paths, redirect to /chat
     const url = request.nextUrl.clone();
-    url.pathname = '/article';
+    url.pathname = '/home';
     return NextResponse.redirect(url);
 }
 

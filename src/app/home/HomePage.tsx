@@ -7,7 +7,6 @@ import { getCurrentAuthState } from "@/utils/firebase/client";
 import { UserProfile } from "@/utils/profile";
 import { createClient } from "@/utils/supabase/clients";
 import { ArrowRight, BookOpen, BookPlus, Clock, Feather, Search } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -142,7 +141,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                             New Book
                         </Button>
 
-                        <div className="flex items-center space-x-2">
+                        {/* <div className="flex items-center space-x-2">
                             <div className="w-8 h-8 rounded-full bg-[#f5f1e6] border border-[#e8e1d1] overflow-hidden">
                                 {profile.photo_url ? (
                                     <Image
@@ -159,7 +158,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                                 )}
                             </div>
                             <span className="text-sm font-medium font-serif text-[#5d5545]">{profile.display_name}</span>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </header>
@@ -293,7 +292,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                                 <div className="bg-white rounded-lg p-8 text-center border border-[#e8e1d1] shadow-md">
                                     {searchQuery ? (
                                         <div>
-                                            <p className="text-[#5d5545] mb-4 font-serif">No books found matching "{searchQuery}"</p>
+                                            <p className="text-[#5d5545] mb-4 font-serif">{`No books found matching "{searchQuery}"`}</p>
                                             <Button
                                                 onClick={() => setSearchQuery("")}
                                                 variant="outline"
@@ -320,10 +319,10 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
 
                         {/* Getting Started Section */}
                         <div className="bg-[#f5f1e6] rounded-lg p-8 mb-12 border border-[#e8e1d1] shadow-md">
-                            <h2 className="text-2xl font-bold text-[#5d5545] mb-4 font-serif text-center">The Writer's Journey</h2>
+                            <h2 className="text-2xl font-bold text-[#5d5545] mb-4 font-serif text-center">{`The Writer's Journey`}</h2>
                             <p className="text-[#5d5545] mb-6 font-serif text-center max-w-2xl mx-auto">
-                                Create beautiful books with AI assistance. Start with a topic, and our system will craft
-                                a well-structured manuscript that you can refine and edit to perfection.
+                                {`    Create beautiful books with AI assistance. Start with a topic, and our system will craft
+                                a well-structured manuscript that you can refine and edit to perfection.`}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-[#e8e1d1]">
@@ -341,7 +340,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                                     </div>
                                     <h3 className="font-semibold text-[#5d5545] mb-2 font-serif text-center">Craft Your Manuscript</h3>
                                     <p className="text-[#8a7e66] text-sm font-serif text-center">
-                                        Our AI will generate a comprehensive manuscript based on your chosen topic.
+                                        {` Our AI will generate a comprehensive manuscript based on your chosen topic.`}
                                     </p>
                                 </div>
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-[#e8e1d1]">
@@ -350,7 +349,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                                     </div>
                                     <h3 className="font-semibold text-[#5d5545] mb-2 font-serif text-center">Refine & Perfect</h3>
                                     <p className="text-[#8a7e66] text-sm font-serif text-center">
-                                        Refine your book with follow-up prompts until it matches your vision perfectly.
+                                        {`   Refine your book with follow-up prompts until it matches your vision perfectly.`}
                                     </p>
                                 </div>
                             </div>
@@ -369,7 +368,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                                 <h2 className="text-xl font-bold font-serif">EpiForesight</h2>
                             </div>
                             <p className="text-[#e8e1d1] mt-2 max-w-md font-serif">
-                                Expand your foresight about the future of faith with AI-powered book creation.
+                                {` Expand your foresight about the future of faith with AI-powered book creation.`}
                             </p>
                         </div>
                         <div className="flex space-x-8">

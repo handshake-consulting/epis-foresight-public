@@ -21,34 +21,36 @@ export function VersionNavigation({
     }
 
     return (
-        <div className="flex items-center justify-center py-3 border-t border-[#e8e1d1] bg-[#fcf9f2]">
-            <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-center py-4 border-t border-[#e8e1d1] bg-[#fcf9f2]">
+            <div className="flex items-center space-x-6 font-serif">
                 <button
                     onClick={onPrevious}
                     disabled={currentVersion <= 1}
-                    className={`p-1 rounded-full ${currentVersion <= 1
-                        ? 'text-[#d3cbbe] cursor-not-allowed'
-                        : 'text-[#8a7e66] hover:bg-[#f5f1e6]'
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-md border ${currentVersion <= 1
+                        ? 'text-[#d3cbbe] border-[#e8e1d1] cursor-not-allowed'
+                        : 'text-[#8a7e66] border-[#e8e1d1] hover:bg-[#f5f1e6]'
                         }`}
                     aria-label="Previous version"
                 >
-                    <ChevronLeft className="h-5 w-5" />
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="text-sm">Previous</span>
                 </button>
 
-                <div className="text-sm font-serif text-[#5d5545]">
-                    Version {currentVersion} of {totalVersions}
+                <div className="text-sm text-[#5d5545] italic">
+                    Page {currentVersion} of {totalVersions}
                 </div>
 
                 <button
                     onClick={onNext}
                     disabled={currentVersion >= totalVersions}
-                    className={`p-1 rounded-full ${currentVersion >= totalVersions
-                        ? 'text-[#d3cbbe] cursor-not-allowed'
-                        : 'text-[#8a7e66] hover:bg-[#f5f1e6]'
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-md border ${currentVersion >= totalVersions
+                        ? 'text-[#d3cbbe] border-[#e8e1d1] cursor-not-allowed'
+                        : 'text-[#8a7e66] border-[#e8e1d1] hover:bg-[#f5f1e6]'
                         }`}
                     aria-label="Next version"
                 >
-                    <ChevronRight className="h-5 w-5" />
+                    <span className="text-sm">Next</span>
+                    <ChevronRight className="h-4 w-4" />
                 </button>
             </div>
         </div>

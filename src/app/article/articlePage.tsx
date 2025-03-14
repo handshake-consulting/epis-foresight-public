@@ -14,7 +14,8 @@ import { useAuthCheck } from "@/hook/use-auth-check";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { UserProfile } from "@/utils/profile";
 import { createClient } from "@/utils/supabase/clients";
-import { BookOpen, ChevronDown, PlusCircle, X } from "lucide-react";
+import { BookOpen, BookPlus, ChevronDown, Home, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function ArticlePage({
@@ -280,54 +281,87 @@ export default function ArticlePage({
 
                 {/* Book content area */}
                 <div className="ml-6 flex flex-col h-[calc(100vh-2rem)] sm:h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)]">
-                    {/* Article dropdown menu for session switching */}
-                    <div className="absolute top-4 right-4 z-10">
+                    {/* Top navigation bar with home button and article selector */}
+                    <div className="flex justify-between items-center px-6 py-3 bg-[#fcf9f2] border-b border-[#e8e1d1] z-10">
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2 text-[#8a7e66] hover:text-[#5d5545] font-serif"
+                        >
+                            <Home className="h-4 w-4" />
+                            <span>Library</span>
+                        </Link>
+
+                        {/* Article selector dropdown */}
                         <div className="relative">
                             <button
                                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                                 className="flex items-center gap-2 px-3 py-2 bg-[#fcf9f2] text-[#5d5545] rounded-md border border-[#e8e1d1] font-serif text-sm shadow-sm hover:bg-[#f5f1e6]"
                             >
                                 <BookOpen className="h-4 w-4" />
-                                <span>{currentSession?.title || 'Articles'}</span>
-                                <ChevronDown className="h-4 w-4" />
+                                <span className="max-w-[150px] truncate">{currentSession?.title || 'Your Books'}</span>
+                                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${!sidebarCollapsed ? 'rotate-180' : ''}`} />
                             </button>
 
                             {!sidebarCollapsed && (
-                                <div className="absolute right-0 mt-1 w-64 bg-[#fcf9f2] border border-[#e8e1d1] rounded-md shadow-lg z-20 overflow-y-auto max-h-96">
-                                    <div className="p-2">
-                                        <button
-                                            onClick={startNewArticle}
-                                            className="w-full flex items-center gap-2 p-2 text-[#8a7e66] hover:bg-[#f5f1e6] rounded-md font-serif text-sm"
-                                        >
-                                            <PlusCircle className="h-4 w-4" />
-                                            <span>New article</span>
-                                        </button>
+                                <>
+                                    {/* Overlay to capture clicks outside the dropdown */}
+                                    <div
+                                        className="fixed inset-0 z-20"
+                                        onClick={() => setSidebarCollapsed(true)}
+                                        aria-hidden="true"
+                                    ></div>
 
-                                        {sessions.length > 0 && <div className="border-t border-[#e8e1d1] my-2"></div>}
-
-                                        {sessions.map((session) => (
-                                            <div
-                                                key={session.id}
-                                                className={`flex items-center p-2 rounded-md cursor-pointer font-serif text-sm ${currentSession?.id === session.id ? 'bg-[#f5f1e6] text-[#5d5545]' : 'text-[#8a7e66] hover:bg-[#f5f1e6]'}`}
+                                    {/* Dropdown menu */}
+                                    <div className="absolute right-0 mt-1 w-72 bg-white border border-[#e8e1d1] rounded-lg shadow-lg z-30 overflow-hidden">
+                                        <div className="p-3 bg-[#fcf9f2] border-b border-[#e8e1d1]">
+                                            <h3 className="font-serif text-[#5d5545] font-medium mb-2">Your Books</h3>
+                                            <button
                                                 onClick={() => {
-                                                    switchSession(session);
+                                                    startNewArticle();
                                                     setSidebarCollapsed(true);
                                                 }}
+                                                className="w-full flex items-center gap-2 p-2 text-[#8a7e66] bg-white hover:bg-[#f5f1e6] rounded-md font-serif text-sm border border-[#e8e1d1]"
                                             >
-                                                <div className="flex-1 truncate">{session.title}</div>
-                                                <button
-                                                    className="text-[#8a7e66] hover:text-[#5d5545] p-1"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        deleteSession(session.id, e);
-                                                    }}
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
+                                                <BookPlus className="h-4 w-4" />
+                                                <span>Create New Book</span>
+                                            </button>
+                                        </div>
+
+                                        {sessions.length > 0 ? (
+                                            <div className="max-h-80 overflow-y-auto p-2">
+                                                {sessions.map((session) => (
+                                                    <div
+                                                        key={session.id}
+                                                        className={`flex items-center p-3 mb-1 rounded-md cursor-pointer font-serif text-sm ${currentSession?.id === session.id
+                                                            ? 'bg-[#f5f1e6] text-[#5d5545] border border-[#e8e1d1]'
+                                                            : 'text-[#5d5545] hover:bg-[#fcf9f2]'
+                                                            }`}
+                                                        onClick={() => {
+                                                            switchSession(session);
+                                                            setSidebarCollapsed(true);
+                                                        }}
+                                                    >
+                                                        <div className="flex-1 truncate">{session.title}</div>
+                                                        <button
+                                                            className="text-[#8a7e66] hover:text-[#5d5545] p-1 opacity-70 hover:opacity-100"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                deleteSession(session.id, e);
+                                                            }}
+                                                            title="Delete book"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
+                                        ) : (
+                                            <div className="p-4 text-center text-[#8a7e66] font-serif text-sm">
+                                                Your library is empty
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                </>
                             )}
                         </div>
                     </div>

@@ -5,9 +5,9 @@ import {
     ArticleHeader,
     EditInput,
     ImageSlider,
+    SimpleSidebar,
     VersionNavigation
 } from "@/components/article";
-import { SessionSidebar } from "@/components/chat/SessionSidebar";
 import { ChatSession } from "@/components/chat/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useArticle } from "@/hook/use-article";
@@ -272,7 +272,7 @@ export default function ArticlePage({
     }, []);
 
     return (
-        <div className="flex h-screen relative overflow-hidden">
+        <div className="flex h-screen relative overflow-hidden bg-[#f8f5ee]">
             {/* Background overlay when sidebar is open on mobile */}
             {isMobile && !sidebarCollapsed && (
                 <div className="fixed inset-0 bg-black/30 z-10" onClick={toggleSidebar}></div>
@@ -280,7 +280,7 @@ export default function ArticlePage({
 
             {/* Sessions sidebar */}
             <div className={`h-full ${sidebarCollapsed ? 'w-16' : 'w-64 md:w-72'} block transition-all duration-300 z-20`}>
-                <SessionSidebar
+                <SimpleSidebar
                     sessions={sessions}
                     currentSession={currentSession}
                     onNewChat={startNewArticle}
@@ -288,13 +288,11 @@ export default function ArticlePage({
                     onDeleteSession={deleteSession}
                     collapsed={sidebarCollapsed}
                     onToggleCollapse={toggleSidebar}
-                    userEmail={userEmail}
-                    userImage={profile.photo_url || userImage}
                 />
             </div>
 
             {/* Article area */}
-            <Card className="flex-1 flex flex-col h-full rounded-none border-l relative">
+            <Card className="flex-1 flex flex-col h-full rounded-none border-l border-[#e8e1d1] bg-[#fcf9f2] shadow-md relative">
                 <ArticleHeader
                     title={currentSession?.title || 'New Article'}
                     topic={article?.topic}
@@ -305,19 +303,16 @@ export default function ArticlePage({
                 {isFirstGeneration ? (
                     <>
                         {/* Empty state with centered welcome message and input */}
-                        <div className="flex-1 flex flex-col items-center justify-center p-4">
+                        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-[#fcf9f2]">
                             <div className="text-center space-y-4 mb-8 max-w-md">
-                                <div className="inline-block bg-blue-100 p-3 sm:p-4 rounded-full">
+                                <div className="inline-block bg-[#f5f1e6] p-3 sm:p-4 rounded-full border border-[#e8e1d1]">
                                     <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20 36.6667C29.2048 36.6667 36.6667 29.2048 36.6667 20C36.6667 10.7953 29.2048 3.33334 20 3.33334C10.7953 3.33334 3.33337 10.7953 3.33337 20C3.33337 29.2048 10.7953 36.6667 20 36.6667Z" fill="#E6F0FF" />
-                                        <path d="M20 36.6667C29.2048 36.6667 36.6667 29.2048 36.6667 20C36.6667 10.7953 29.2048 3.33334 20 3.33334C10.7953 3.33334 3.33337 10.7953 3.33337 20C3.33337 29.2048 10.7953 36.6667 20 36.6667Z" stroke="#4F46E5" strokeWidth="2" />
-                                        <path d="M13.3334 23.3333C13.3334 23.3333 15.8334 26.6667 20 26.6667C24.1667 26.6667 26.6667 23.3333 26.6667 23.3333" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
-                                        <circle cx="15" cy="15" r="1.66667" fill="#4F46E5" />
-                                        <circle cx="25" cy="15" r="1.66667" fill="#4F46E5" />
+                                        <path d="M10 8C10 6.89543 10.8954 6 12 6H28C29.1046 6 30 6.89543 30 8V32C30 33.1046 29.1046 34 28 34H12C10.8954 34 10 33.1046 10 32V8Z" fill="#fcf9f2" stroke="#8a7e66" strokeWidth="2" />
+                                        <path d="M15 14H25M15 20H25M15 26H21" stroke="#8a7e66" strokeWidth="2" strokeLinecap="round" />
                                     </svg>
                                 </div>
-                                <h2 className="text-lg sm:text-xl font-semibold">{`Create a new article`}</h2>
-                                <p className="text-sm sm:text-base text-gray-600">{`Enter a topic or question to generate an article. You can then refine and edit it with follow-up prompts.`}</p>
+                                <h2 className="text-lg sm:text-xl font-semibold font-serif text-[#5d5545]">{`Create a new article`}</h2>
+                                <p className="text-sm sm:text-base text-[#8a7e66] font-serif">{`Enter a topic or question to generate an article. You can then refine and edit it with follow-up prompts.`}</p>
                             </div>
 
                             {/* Input in the center when no article */}

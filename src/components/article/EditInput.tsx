@@ -22,22 +22,22 @@ export function EditInput({
     onNewArticle
 }: EditInputProps) {
     return (
-        <div className="border-t py-4 px-4 w-full">
+        <div className="border-t border-[#e8e1d1] py-4 px-6 w-full bg-[#fcf9f2]">
             <form onSubmit={onSubmit} className="w-full max-w-3xl mx-auto">
                 <div className="mb-2">
-                    <label htmlFor="edit-input" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-input" className="block text-sm font-medium font-serif text-[#5d5545] mb-1">
                         {isFirstGeneration
                             ? "Enter a topic to generate an article"
                             : "Refine or edit the article"}
                     </label>
-                    <div className="relative bg-white rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+                    <div className="relative bg-white rounded-lg border border-[#e8e1d1] shadow-sm focus-within:border-[#8a7e66] focus-within:ring-1 focus-within:ring-[#8a7e66]">
                         <textarea
                             id="edit-input"
                             ref={inputRef}
                             placeholder={isFirstGeneration
                                 ? "Enter a topic or question..."
                                 : "Describe how you'd like to refine the article..."}
-                            className="w-full bg-transparent border-none focus:outline-none py-3 px-4 text-sm sm:text-base resize-none min-h-[100px]"
+                            className="w-full bg-transparent border-none focus:outline-none py-3 px-4 text-sm sm:text-base resize-none min-h-[100px] font-serif text-[#2d2d2d]"
                             disabled={isStreaming}
                         />
                         <div className="absolute bottom-2 right-2">
@@ -57,7 +57,7 @@ export function EditInput({
                                     type="submit"
                                     variant="default"
                                     size="sm"
-                                    className="rounded-full"
+                                    className="rounded-full bg-[#8a7e66] hover:bg-[#5d5545] text-white border-none"
                                 >
                                     <Send className="h-4 w-4 mr-1" />
                                     {isFirstGeneration ? "Generate" : "Update"}
@@ -74,7 +74,7 @@ export function EditInput({
                             type="button"
                             variant="outline"
                             onClick={onNewArticle}
-                            className="rounded-full text-sm px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+                            className="rounded-full text-sm px-4 py-2 bg-[#f5f1e6] text-[#5d5545] hover:bg-[#e8e1d1] border-[#e8e1d1] font-serif"
                             size="sm"
                         >
                             <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

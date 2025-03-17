@@ -317,7 +317,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                             )}
                         </div>
 
-                        {/* Getting Started Section */}
+                        {/* Getting Started page */}
                         <div className="bg-[#f5f1e6] rounded-lg p-8 mb-12 border border-[#e8e1d1] shadow-md">
                             <h2 className="text-2xl font-bold text-[#5d5545] mb-4 font-serif text-center">{`The Writer's Journey`}</h2>
                             <p className="text-[#5d5545] mb-6 font-serif text-center max-w-2xl mx-auto">

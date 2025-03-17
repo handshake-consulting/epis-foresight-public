@@ -198,7 +198,7 @@ export function SessionSidebar({
                 </div>
             )}
 
-            {/* Bottom section with User Profile and Logout */}
+            {/* Bottom page with User Profile and Logout */}
             <div className="mt-auto border-t p-3 space-y-2">
                 {isCollapsed ? (
                     <>

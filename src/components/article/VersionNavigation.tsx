@@ -37,7 +37,7 @@ export function VersionNavigation({
                 </button>
 
                 <div className="text-sm text-[#5d5545] italic">
-                    Page {currentVersion} of {totalVersions}
+                    Version {currentVersion} of {totalVersions}
                 </div>
 
                 <button

@@ -349,7 +349,7 @@ export default function EbookHomePage({ profile }: { profile: UserProfile }) {
                                         <div className="text-center p-8 text-[#8a7e66] font-serif">
                                             {searchQuery ? (
                                                 <div>
-                                                    <p className="mb-4">No sections found matching "{searchQuery}"</p>
+                                                    <p className="mb-4">{`No sections found matching "{${searchQuery}}"`}</p>
                                                     <Button
                                                         onClick={() => setSearchQuery("")}
                                                         variant="outline"

@@ -108,7 +108,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
 
     // Create new article
     const createNewArticle = useCallback(() => {
-        router.push('/article');
+        router.push('/article?new=true');
     }, [router]);
 
     return (
@@ -230,7 +230,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                             <div className="flex justify-between items-center mb-8">
                                 <h2 className="text-2xl font-bold text-[#5d5545] font-serif">Your Library</h2>
                                 <Link
-                                    href="/article"
+                                    href="/article?new=true"
                                     className="text-[#8a7e66] hover:text-[#5d5545] flex items-center font-serif"
                                 >
                                     <span>Write New Book</span>
@@ -376,7 +376,7 @@ export default function HomePage({ profile }: { profile: UserProfile }) {
                                 <h3 className="font-semibold mb-3 font-serif">Navigation</h3>
                                 <ul className="space-y-2 text-[#e8e1d1] font-serif">
                                     <li><Link href="/" className="hover:text-white transition">Home</Link></li>
-                                    <li><Link href="/article" className="hover:text-white transition">New Book</Link></li>
+                                    <li><Link href="/article?new=true" className="hover:text-white transition">New Book</Link></li>
                                 </ul>
                             </div>
                             <div>

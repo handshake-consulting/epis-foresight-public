@@ -214,7 +214,7 @@ export default function EbookHomePage({ profile }: { profile: UserProfile }) {
                             className="rounded-md bg-[#8a7e66] hover:bg-[#5d5545] text-white border-none font-serif"
                         >
                             <BookPlus className="h-4 w-4 mr-2" />
-                            Add New Section
+                            Add New Page
                         </Button>
                     </div>
                 </div>
@@ -305,7 +305,7 @@ export default function EbookHomePage({ profile }: { profile: UserProfile }) {
                                                         </h3>
                                                     </div>
 
-                                                    {/* Chapter sections (articles) */}
+                                                    {/* Chapter page (articles) */}
                                                     {chapter.expanded && (
                                                         <div className="ml-7 space-y-3 border-l-2 pl-4 pb-2 border-dashed border-opacity-50 border-gray-300">
                                                             {chapter.articles.map((article, articleIndex) => (
@@ -349,7 +349,7 @@ export default function EbookHomePage({ profile }: { profile: UserProfile }) {
                                         <div className="text-center p-8 text-[#8a7e66] font-serif">
                                             {searchQuery ? (
                                                 <div>
-                                                    <p className="mb-4">{`No sections found matching "{${searchQuery}}"`}</p>
+                                                    <p className="mb-4">{`No pages found matching "{${searchQuery}}"`}</p>
                                                     <Button
                                                         onClick={() => setSearchQuery("")}
                                                         variant="outline"
@@ -360,7 +360,7 @@ export default function EbookHomePage({ profile }: { profile: UserProfile }) {
                                                 </div>
                                             ) : (
                                                 <div>
-                                                    <p className="mb-4">Your book is empty. Add your first section!</p>
+                                                    <p className="mb-4">Your book is empty. Add your first page!</p>
                                                     <Button
                                                         onClick={createNewArticle}
                                                         className="bg-[#8a7e66] hover:bg-[#5d5545] text-white font-serif"
@@ -397,7 +397,7 @@ export default function EbookHomePage({ profile }: { profile: UserProfile }) {
                                 <h3 className="font-semibold mb-3 font-serif">Navigation</h3>
                                 <ul className="space-y-2 text-[#e8e1d1] font-serif">
                                     <li><Link href="/" className="hover:text-white transition">Home</Link></li>
-                                    <li><Link href="/article?new=true" className="hover:text-white transition">New Section</Link></li>
+                                    <li><Link href="/article?new=true" className="hover:text-white transition">New Page</Link></li>
                                 </ul>
                             </div>
                         </div>

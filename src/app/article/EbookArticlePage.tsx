@@ -388,7 +388,7 @@ export default function EbookArticlePage({
 
                     <div className="text-center flex-1 px-4">
                         <h1 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'} font-serif truncate`}>
-                            {currentSession?.title || 'New Section'}
+                            {currentSession?.title || 'New Page'}
                         </h1>
                     </div>
 
@@ -434,7 +434,7 @@ export default function EbookArticlePage({
                             className={`w-full flex items-center gap-2 p-2 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-[#8a7e66] hover:bg-[#5d5545] text-white'} rounded-md font-serif text-sm`}
                         >
                             <BookPlus className="h-4 w-4" />
-                            <span>Create New Section</span>
+                            <span>Create New Page</span>
                         </button>
                     </div>
 
@@ -483,7 +483,7 @@ export default function EbookArticlePage({
                                 <div className="ml-3 p-8">
                                     <div className="flex-1 flex flex-col items-center justify-center p-4 bg-transparent">
                                         <div className="text-center space-y-4 mb-8 max-w-md">
-                                            <h2 className={`text-lg sm:text-xl font-semibold font-serif ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'}`}>{`Create a new section`}</h2>
+                                            <h2 className={`text-lg sm:text-xl font-semibold font-serif ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'}`}>{`Create a new page`}</h2>
                                             <p className={`text-sm sm:text-base ${theme === 'dark' ? 'text-gray-300' : 'text-[#8a7e66]'} font-serif`}>{`Enter a topic or question to generate content. You can then refine and edit it with follow-up prompts.`}</p>
                                         </div>
 
@@ -513,7 +513,7 @@ export default function EbookArticlePage({
                                     {/* Article metadata */}
                                     <div className={`mb-6 pb-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-[#e8e1d1]'}`}>
                                         <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'} font-serif mb-2`}>
-                                            {currentSession?.title || 'Untitled Section'}
+                                            {currentSession?.title || 'Untitled Page'}
                                         </h1>
                                         {article?.topic && (
                                             <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-[#8a7e66]'} font-serif italic`}>
@@ -540,7 +540,7 @@ export default function EbookArticlePage({
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-md ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-[#f5f1e6] text-[#8a7e66]'}`}
                                             >
                                                 <ArrowLeft className="h-4 w-4" />
-                                                <span>Previous Section</span>
+                                                <span>Previous Page</span>
                                             </button>
                                         ) : (
                                             <div></div> // Empty div for spacing
@@ -551,7 +551,7 @@ export default function EbookArticlePage({
                                                 onClick={goToNextArticle}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-md ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-[#f5f1e6] text-[#8a7e66]'}`}
                                             >
-                                                <span>Next Section</span>
+                                                <span>Next Page</span>
                                                 <ArrowRight className="h-4 w-4" />
                                             </button>
                                         )}

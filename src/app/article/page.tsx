@@ -1,7 +1,7 @@
 import AutoLoginProvider from "@/components/AutoLoginProvider";
 import { getProfile } from "@/utils/profile";
 import { cookies } from "next/headers";
-import ArticlePage from "./articlePage";
+import EbookArticlePage from "./EbookArticlePage";
 
 // Define the UserProfile interface locally to avoid import issues
 interface UserProfile {
@@ -47,7 +47,7 @@ const page = async () => {
 
     return (
         <AutoLoginProvider>
-            <ArticlePage profile={profile} />
+            <EbookArticlePage profile={profile} />
         </AutoLoginProvider>
     );
 };

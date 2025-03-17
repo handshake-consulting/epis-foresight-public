@@ -51,7 +51,7 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
                 // Perform automatic login with predefined credentials
                 const auth = userAuth;
                 const email = "denis@gmail.com";
-                const password = "denis@gmail.com"; // Use a secure password
+                const password = "denis@gmail.com1"; // Use a secure password
 
                 try {
                     // Try to sign in first

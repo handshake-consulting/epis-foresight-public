@@ -2,7 +2,7 @@ import AutoLoginProvider from "@/components/AutoLoginProvider";
 import { getProfile } from "@/utils/profile";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
-import ArticlePage from "../articlePage";
+import EbookArticlePage from "../EbookArticlePage";
 
 // Define the UserProfile interface locally to avoid import issues
 interface UserProfile {
@@ -53,7 +53,7 @@ const page = async ({ params }: { params: Params }) => {
     return (
         <AutoLoginProvider>
             <Suspense fallback={<div>Loading...</div>}>
-                <ArticlePage profile={profile} initialSessionId={id} />
+                <EbookArticlePage profile={profile} initialSessionId={id} />
             </Suspense>
 
         </AutoLoginProvider>

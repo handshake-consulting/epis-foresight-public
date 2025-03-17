@@ -1,7 +1,7 @@
 import AutoLoginProvider from "@/components/AutoLoginProvider";
 import { getProfile } from "@/utils/profile";
 import { cookies } from "next/headers";
-import HomePage from "./HomePage";
+import EbookHomePage from "./EbookHomePage";
 
 
 
@@ -49,7 +49,7 @@ const page = async () => {
 
     return (
         <AutoLoginProvider>
-            <HomePage profile={profile} />
+            <EbookHomePage profile={profile} />
         </AutoLoginProvider>
     );
 };

@@ -79,7 +79,7 @@ export function EditInput({
                             size="sm"
                         >
                             <BookPlus className="h-4 w-4 mr-2" />
-                            Start New Book
+                            Start New Section
                         </Button>
                     </div>
                 )}

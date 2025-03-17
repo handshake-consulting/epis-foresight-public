@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/clients';
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signOut, User } from 'firebase/auth';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBtZ-R5Kdy_v7GrwioCXFh9atoksa_leik",
@@ -68,25 +68,25 @@ const upsertUserInSupabase = async (user: User) => {
     }
 };
 
-export const signInWithGoogle = async () => {
-    try {
-        const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
-        // Get the ID token
-        const idToken = await user.getIdToken();
+// export const signInWithGoogle = async () => {
+//     try {
+//         const result = await signInWithPopup(auth, googleProvider);
+//         const user = result.user;
+//         // Get the ID token
+//         const idToken = await user.getIdToken();
 
-        // Store the token in a cookie
-        document.cookie = `auth-token=${idToken}; path=/; max-age=3600; secure; samesite=strict`;
+//         // Store the token in a cookie
+//         document.cookie = `auth-token=${idToken}; path=/; max-age=3600; secure; samesite=strict`;
 
-        // Store/update user data in Supabase
-        await upsertUserInSupabase(user);
+//         // Store/update user data in Supabase
+//         await upsertUserInSupabase(user);
 
-        return { user, error: null, idToken };
-    } catch (error) {
-        console.error('Error signing in with Google:', error);
-        return { user: null, error };
-    }
-};
+//         return { user, error: null, idToken };
+//     } catch (error) {
+//         console.error('Error signing in with Google:', error);
+//         return { user: null, error };
+//     }
+// };
 
 export const signOutUser = async () => {
     try {

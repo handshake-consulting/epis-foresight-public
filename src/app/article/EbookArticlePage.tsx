@@ -2,7 +2,7 @@
 
 import { ImageSlider } from "@/components/article";
 import { ChatSession } from "@/components/chat/types";
-import { EbookContent, EbookFooter, EbookHeader, EbookSidebar } from "@/components/ebook";
+import { EbookContent, EbookFooter, EbookHeader, EbookSidebar, EmptyStateContent } from "@/components/ebook";
 import SettingsDialog from "@/components/settings/SettingsDialog";
 import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
@@ -375,10 +375,10 @@ export default function EbookArticlePage({
 
     return (
         <div className={`min-h-screen ${theme === "dark"
-                ? "bg-gray-900 text-gray-100"
-                : theme === "sepia"
-                    ? "bg-amber-50 text-amber-900"
-                    : "bg-gray-50 text-gray-800"
+            ? "bg-gray-900 text-gray-100"
+            : theme === "sepia"
+                ? "bg-amber-50 text-amber-900"
+                : "bg-gray-50 text-gray-800"
             }`}>
             {/* Header */}
             <EbookHeader
@@ -402,7 +402,9 @@ export default function EbookArticlePage({
             />
 
             {/* Main content */}
-            {currentVersion && (
+            {isFirstGeneration ? (
+                <EmptyStateContent theme={theme} />
+            ) : currentVersion && (
                 <EbookContent
                     version={currentVersion}
                     isLatestVersion={isLatestVersion}

@@ -346,20 +346,12 @@ export default function ChatPage({ profile }: { profile: UserProfile }) {
                     title={hookCurrentSession?.title || currentSession?.title || 'New Chat'}
                     collapsed={sidebarCollapsed}
                     onToggleCollapse={toggleSidebar}
-                >
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={toggleSidebar}
-                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                        >
-                            {/* Sidebar toggle icon */}
-                        </button>
+                />
 
-                        {/* Add SettingsToggler */}
-                        <SettingsToggler />
-                    </div>
-                </ChatHeader>
+                {/* Add Settings toggler next to the header */}
+                <div className="absolute top-3 right-4 z-10">
+                    <SettingsToggler />
+                </div>
 
                 {messages.length === 0 ? (
                     <>

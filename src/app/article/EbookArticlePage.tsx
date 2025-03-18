@@ -1,22 +1,17 @@
 "use client"
 
-import {
-    ArticleContent,
-    EditInput,
-    ImageSlider,
-    VersionNavigation
-} from "@/components/article";
+import { ImageSlider } from "@/components/article";
 import { ChatSession } from "@/components/chat/types";
+import { EbookContent, EbookFooter, EbookHeader, EbookSidebar } from "@/components/ebook";
+import SettingsDialog from "@/components/settings/SettingsDialog";
 import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
+import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { UserProfile } from "@/utils/profile";
 import { createClient } from "@/utils/supabase/clients";
-import { ArrowLeft, ArrowRight, BookPlus, ChevronLeft, Home, Menu, Moon, Sun } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-
 export default function EbookArticlePage({
     profile,
     initialSessionId
@@ -36,13 +31,14 @@ export default function EbookArticlePage({
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
 
-    // Initialize theme preference from localStorage
+    // Get settings from the store
+    const { settings, setSettings } = useSettingsStore();
+
+    // Initialize theme from settings
     useEffect(() => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme) {
-            setTheme(storedTheme);
-        }
-    }, []);
+        // Set theme based on settings
+        setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
+    }, [settings.theme]);
 
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
@@ -50,9 +46,21 @@ export default function EbookArticlePage({
 
     // Toggle theme
     const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
+        const currentTheme = theme;
+        let newTheme: 'light' | 'dark' | 'sepia';
+
+        // Cycle through themes: light -> sepia -> dark -> light
+        if (currentTheme === 'light') {
+            newTheme = 'sepia';
+        } else if (currentTheme === 'sepia') {
+            newTheme = 'dark';
+        } else {
+            newTheme = 'light';
+        }
+
+        // Update the settings store
+        setSettings({ theme: newTheme });
         setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
     };
 
     // Use the article hook
@@ -88,7 +96,7 @@ export default function EbookArticlePage({
 
     // Get URL search params to check for new article flag
     const searchParams = useSearchParams();
-    const isNewArticle = searchParams.get('new') === 'true';
+    const isNewArticle = searchParams.get("new") === "true";
     const router = useRouter();
 
     // Start new article
@@ -102,7 +110,7 @@ export default function EbookArticlePage({
         setCurrentSession(null);
 
         // Navigate to /article?new=true to ensure we get a fresh article
-        router.push('/article?new=true');
+        router.push("/article?new=true");
     };
 
     // Load user sessions and user info
@@ -122,11 +130,11 @@ export default function EbookArticlePage({
 
                 // Load all sessions for navigation
                 const { data: allSessions } = await supabase
-                    .from('chat_sessions')
-                    .select('*')
-                    .eq('user_id', user.uid)
-                    .eq('type', 'article')
-                    .order('updated_at', { ascending: false });
+                    .from("chat_sessions")
+                    .select("*")
+                    .eq("user_id", user.uid)
+                    .eq("type", "article")
+                    .order("updated_at", { ascending: false });
 
                 if (allSessions) {
                     setSessions(allSessions);
@@ -155,7 +163,7 @@ export default function EbookArticlePage({
                             await loadArticleSession(sessionData.id, user.uid);
 
                             // Mark this article as last read
-                            localStorage.setItem('lastReadArticle', sessionData.id);
+                            localStorage.setItem("lastReadArticle", sessionData.id);
 
                             return;
                         }
@@ -176,7 +184,7 @@ export default function EbookArticlePage({
                         await loadArticleSession(allSessions[0].id, user.uid);
 
                         // Mark this article as last read
-                        localStorage.setItem('lastReadArticle', allSessions[0].id);
+                        localStorage.setItem("lastReadArticle", allSessions[0].id);
                     } else {
                         // No article sessions yet
                         resetArticle();
@@ -193,11 +201,11 @@ export default function EbookArticlePage({
 
         const supabase = createClient();
         const { data } = await supabase
-            .from('chat_sessions')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('type', 'article')
-            .order('updated_at', { ascending: false });
+            .from("chat_sessions")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("type", "article")
+            .order("updated_at", { ascending: false });
 
         if (data) {
             setSessions(data);
@@ -269,7 +277,7 @@ export default function EbookArticlePage({
         await loadArticleSession(session.id, userId);
 
         // Mark this article as last read
-        localStorage.setItem('lastReadArticle', session.id);
+        localStorage.setItem("lastReadArticle", session.id);
 
         // Close sidebar after selection on mobile
         if (window.innerWidth < 768) {
@@ -287,23 +295,23 @@ export default function EbookArticlePage({
 
             // Delete the session
             const { error } = await supabase
-                .from('chat_sessions')
+                .from("chat_sessions")
                 .delete()
-                .eq('id', sessionId)
-                .eq('user_id', userId);
+                .eq("id", sessionId)
+                .eq("user_id", userId);
 
             if (error) {
-                console.error('Error deleting session:', error);
+                console.error("Error deleting session:", error);
                 return;
             }
 
             // Get updated list of sessions
             const { data: updatedSessions } = await supabase
-                .from('chat_sessions')
-                .select('*')
-                .eq('user_id', userId)
-                .eq('type', 'article')
-                .order('updated_at', { ascending: false });
+                .from("chat_sessions")
+                .select("*")
+                .eq("user_id", userId)
+                .eq("type", "article")
+                .order("updated_at", { ascending: false });
 
             if (updatedSessions && updatedSessions.length > 0) {
                 setSessions(updatedSessions);
@@ -322,7 +330,7 @@ export default function EbookArticlePage({
                     }
 
                     // Mark this article as last read
-                    localStorage.setItem('lastReadArticle', updatedSessions[0].id);
+                    localStorage.setItem("lastReadArticle", updatedSessions[0].id);
                 } else {
                     // Update next and previous articles if needed
                     const currentIndex = updatedSessions.findIndex(s => s.id === currentSession?.id);
@@ -347,7 +355,7 @@ export default function EbookArticlePage({
                 setPrevArticle(null);
             }
         } catch (error) {
-            console.error('Error in deleteSession:', error);
+            console.error("Error in deleteSession:", error);
         }
     };
 
@@ -366,226 +374,61 @@ export default function EbookArticlePage({
     };
 
     return (
-        <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-[#f0e6d2]'}`}>
+        <div className={`min-h-screen ${theme === "dark"
+                ? "bg-gray-900 text-gray-100"
+                : theme === "sepia"
+                    ? "bg-amber-50 text-amber-900"
+                    : "bg-gray-50 text-gray-800"
+            }`}>
             {/* Header */}
-            <header className={`fixed top-0 left-0 right-0 z-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-[#fcf9f2] border-[#e8e1d1]'} border-b shadow-sm`}>
-                <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                        <button
-                            onClick={toggleSidebar}
-                            className={`p-2 rounded-md ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-[#f5f1e6]'}`}
-                        >
-                            <Menu className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-300' : 'text-[#8a7e66]'}`} />
-                        </button>
-                        <Link
-                            href="/"
-                            className={`flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-[#8a7e66] hover:text-[#5d5545]'} font-serif`}
-                        >
-                            <Home className="h-4 w-4" />
-                            <span className="hidden sm:inline">Library</span>
-                        </Link>
-                    </div>
+            <EbookHeader
+                title={currentSession?.title || "New Document"}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                toggleSidebar={toggleSidebar}
+                currentSession={currentSession}
+            />
 
-                    <div className="text-center flex-1 px-4">
-                        <h1 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'} font-serif truncate`}>
-                            {currentSession?.title || 'New Page'}
-                        </h1>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                        {/* Theme toggle */}
-                        <button
-                            onClick={toggleTheme}
-                            className={`p-2 rounded-md ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-[#f5f1e6]'}`}
-                        >
-                            {theme === 'dark' ? (
-                                <Sun className="h-5 w-5 text-gray-300" />
-                            ) : (
-                                <Moon className="h-5 w-5 text-[#8a7e66]" />
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            {/* Table of Contents Sidebar */}
-            <div className={`fixed inset-0 z-20 ${sidebarOpen ? 'block' : 'hidden'}`}>
-                {/* Overlay */}
-                <div
-                    className="absolute inset-0 bg-black/30"
-                    onClick={toggleSidebar}
-                ></div>
-
-                {/* Sidebar */}
-                <div className={`absolute top-0 left-0 bottom-0 w-72 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-[#e8e1d1]'} border-r shadow-xl overflow-y-auto`}>
-                    <div className={`p-4 ${theme === 'dark' ? 'bg-gray-900' : 'bg-[#fcf9f2]'} border-b ${theme === 'dark' ? 'border-gray-700' : 'border-[#e8e1d1]'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'} font-serif`}>Table of Contents</h2>
-                            <button
-                                onClick={toggleSidebar}
-                                className={`p-1 rounded-md ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-[#f5f1e6]'}`}
-                            >
-                                <ChevronLeft className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-300' : 'text-[#8a7e66]'}`} />
-                            </button>
-                        </div>
-
-                        <button
-                            onClick={startNewArticle}
-                            className={`w-full flex items-center gap-2 p-2 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-[#8a7e66] hover:bg-[#5d5545] text-white'} rounded-md font-serif text-sm`}
-                        >
-                            <BookPlus className="h-4 w-4" />
-                            <span>Create New Page</span>
-                        </button>
-                    </div>
-
-                    <div className="p-4">
-                        {sessions.length > 0 ? (
-                            <div className="space-y-3">
-                                {sessions.map((session, index) => (
-                                    <div
-                                        key={session.id}
-                                        className={`p-3 rounded-md cursor-pointer font-serif text-sm ${currentSession?.id === session.id
-                                            ? (theme === 'dark' ? 'bg-blue-900 bg-opacity-20 border border-blue-800' : 'bg-[#f5f1e6] border border-[#e8e1d1]')
-                                            : (theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-[#fcf9f2]')
-                                            }`}
-                                        onClick={() => switchSession(session)}
-                                    >
-                                        <div className="flex items-center">
-                                            <span className={`inline-block w-6 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-[#8a7e66]'} font-serif mr-2`}>
-                                                {index + 1}.
-                                            </span>
-                                            <span className={`font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-[#5d5545]'}`}>
-                                                {session.title}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className={`text-center p-4 ${theme === 'dark' ? 'text-gray-400' : 'text-[#8a7e66]'} font-serif`}>
-                                Your book is empty
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+            {/* Sidebar */}
+            <EbookSidebar
+                isOpen={sidebarOpen}
+                onClose={toggleSidebar}
+                sessions={sessions}
+                currentSession={currentSession}
+                onSessionSelect={switchSession}
+                onNewArticle={startNewArticle}
+                onDeleteSession={deleteSession}
+                theme={theme}
+            />
 
             {/* Main content */}
-            <main className="pt-16 pb-20">
-                <div className="container mx-auto px-4 py-8">
-                    {isFirstGeneration ? (
-                        <>
-                            {/* Empty state with centered welcome message and input */}
-                            <div className={`max-w-3xl mx-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-xl overflow-hidden border ${theme === 'dark' ? 'border-gray-700' : 'border-[#d3c7a7]'} relative`}>
-                                {/* Book spine effect */}
-                                <div className={`absolute left-0 top-0 bottom-0 w-3 ${theme === 'dark' ? 'bg-gradient-to-r from-gray-900 to-gray-800' : 'bg-gradient-to-r from-[#8a7e66] to-[#d3c7a7]'}`}></div>
+            {currentVersion && (
+                <EbookContent
+                    version={currentVersion}
+                    isLatestVersion={isLatestVersion}
+                    isStreaming={isStreaming}
+                    theme={theme}
+                    onPreviousVersion={goToPreviousVersion}
+                    onNextVersion={goToNextVersion}
+                    currentVersionNumber={currentVersionNumber}
+                    totalVersions={article?.versions.length || 1}
+                />
+            )}
 
-                                <div className="ml-3 p-8">
-                                    <div className="flex-1 flex flex-col items-center justify-center p-4 bg-transparent">
-                                        <div className="text-center space-y-4 mb-8 max-w-md">
-                                            <h2 className={`text-lg sm:text-xl font-semibold font-serif ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'}`}>{`Create a new page`}</h2>
-                                            <p className={`text-sm sm:text-base ${theme === 'dark' ? 'text-gray-300' : 'text-[#8a7e66]'} font-serif`}>{`Enter a topic or question to generate content. You can then refine and edit it with follow-up prompts.`}</p>
-                                        </div>
-
-                                        {/* Input in the center when no article */}
-                                        <div className="w-full max-w-2xl px-2 sm:px-4">
-                                            <EditInput
-                                                inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
-                                                isStreaming={isStreaming}
-                                                isFirstGeneration={isFirstGeneration}
-                                                onSubmit={handleSubmit}
-                                                onStop={stopGeneration}
-                                                onNewArticle={startNewArticle}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* Article content when there is an article */}
-                            <div className={`max-w-3xl mx-auto ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-xl overflow-hidden border ${theme === 'dark' ? 'border-gray-700' : 'border-[#d3c7a7]'} relative`}>
-                                {/* Book spine effect */}
-                                <div className={`absolute left-0 top-0 bottom-0 w-3 ${theme === 'dark' ? 'bg-gradient-to-r from-gray-900 to-gray-800' : 'bg-gradient-to-r from-[#8a7e66] to-[#d3c7a7]'}`}></div>
-
-                                <div className="ml-3 p-8">
-                                    {/* Article metadata */}
-                                    <div className={`mb-6 pb-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-[#e8e1d1]'}`}>
-                                        <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-[#5d5545]'} font-serif mb-2`}>
-                                            {currentSession?.title || 'Untitled Page'}
-                                        </h1>
-                                        {article?.topic && (
-                                            <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-[#8a7e66]'} font-serif italic`}>
-                                                {article.topic}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Article content */}
-                                    {currentVersion && (
-                                        <div className={`prose max-w-none ${theme === 'dark' ? 'prose-invert' : ''} font-serif`}>
-                                            <ArticleContent
-                                                version={currentVersion}
-                                                isLatestVersion={isLatestVersion}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Navigation between articles */}
-                                    <div className={`mt-8 pt-4 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-[#e8e1d1]'} flex justify-between`}>
-                                        {prevArticle ? (
-                                            <button
-                                                onClick={goToPreviousArticle}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-md ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-[#f5f1e6] text-[#8a7e66]'}`}
-                                            >
-                                                <ArrowLeft className="h-4 w-4" />
-                                                <span>Previous Page</span>
-                                            </button>
-                                        ) : (
-                                            <div></div> // Empty div for spacing
-                                        )}
-
-                                        {nextArticle && (
-                                            <button
-                                                onClick={goToNextArticle}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-md ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-[#f5f1e6] text-[#8a7e66]'}`}
-                                            >
-                                                <span>Next Page</span>
-                                                <ArrowRight className="h-4 w-4" />
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Version navigation */}
-                                    {article && article.versions.length > 1 && (
-                                        <div className="mt-4">
-                                            <VersionNavigation
-                                                currentVersion={currentVersionNumber}
-                                                totalVersions={article.versions.length}
-                                                onPrevious={goToPreviousVersion}
-                                                onNext={goToNextVersion}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Edit input at the bottom */}
-                                    <div className="mt-8">
-                                        <EditInput
-                                            inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
-                                            isStreaming={isStreaming}
-                                            isFirstGeneration={isFirstGeneration}
-                                            onSubmit={handleSubmit}
-                                            onStop={stopGeneration}
-                                            onNewArticle={startNewArticle}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </main>
+            {/* Footer with input */}
+            <EbookFooter
+                inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
+                isStreaming={isStreaming}
+                isFirstGeneration={isFirstGeneration}
+                onSubmit={handleSubmit}
+                onStop={stopGeneration}
+                onNewArticle={startNewArticle}
+                prevArticle={prevArticle}
+                nextArticle={nextArticle}
+                onPrevArticle={goToPreviousArticle}
+                onNextArticle={goToNextArticle}
+                theme={theme}
+            />
 
             {/* Image slider */}
             {currentVersion && currentVersion.images && currentVersion.images.length > 0 && (
@@ -598,10 +441,13 @@ export default function EbookArticlePage({
 
             {/* Error message */}
             {error && (
-                <div className={`fixed bottom-20 left-0 right-0 mx-auto w-max p-2 text-xs sm:text-sm ${theme === 'dark' ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-800'} rounded`}>
+                <div className={`fixed bottom-20 left-0 right-0 mx-auto w-max p-2 text-xs sm:text-sm ${theme === "dark" ? "bg-red-900 text-red-100" : "bg-red-100 text-red-800"} rounded`}>
                     {error}
                 </div>
             )}
+
+            {/* Settings Dialog */}
+            <SettingsDialog />
         </div>
     );
 }

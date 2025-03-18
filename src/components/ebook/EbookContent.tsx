@@ -161,12 +161,12 @@ export function EbookContent({
                 </div>
             </div>
 
-            {/* Version navigation */}
+            {/* Version navigation - fixed position at bottom */}
             {totalVersions > 1 && (
-                <div className={`mb-16 ${theme === "dark"
-                    ? "bg-gray-800 border-t border-b border-gray-700"
-                    : "bg-white border-t border-b border-gray-200"
-                    } py-2 px-4 flex justify-between items-center`}>
+                <div className={`fixed bottom-[52px] left-0 right-0 z-40 ${theme === "dark"
+                    ? "bg-gray-800 border-t border-gray-700"
+                    : "bg-white border-t border-gray-200"
+                    } py-2 px-4 flex justify-between items-center shadow-md`}>
                     <button
                         onClick={onPreviousVersion}
                         disabled={currentVersionNumber <= 1}
@@ -181,11 +181,11 @@ export function EbookContent({
                         aria-label="Previous version"
                     >
                         <ChevronLeft className="h-4 w-4" />
-                        <span className="text-sm">Previous</span>
+                        <span className="text-sm">Previous Version</span>
                     </button>
 
                     <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        } italic`}>
+                        } italic font-medium`}>
                         Version {currentVersionNumber} of {totalVersions}
                     </div>
 
@@ -202,7 +202,7 @@ export function EbookContent({
                             } transition-colors`}
                         aria-label="Next version"
                     >
-                        <span className="text-sm">Next</span>
+                        <span className="text-sm">Next Version</span>
                         <ChevronRight className="h-4 w-4" />
                     </button>
                 </div>

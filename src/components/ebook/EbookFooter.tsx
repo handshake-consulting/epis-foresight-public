@@ -3,7 +3,7 @@
 import { ChatSession } from "@/components/chat/types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, BookPlus, ChevronDown, ChevronUp, Feather, StopCircle } from "lucide-react";
-import { FormEvent, RefObject, useState } from "react";
+import { FormEvent, RefObject, useEffect, useState } from "react";
 
 interface EbookFooterProps {
     inputRef: RefObject<HTMLTextAreaElement>;
@@ -32,7 +32,15 @@ export function EbookFooter({
     onNextArticle,
     theme
 }: EbookFooterProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
+    // Auto-expand the input area when it's a new document
+    const [isExpanded, setIsExpanded] = useState(isFirstGeneration);
+
+    // Update expanded state when isFirstGeneration changes
+    useEffect(() => {
+        if (isFirstGeneration) {
+            setIsExpanded(true);
+        }
+    }, [isFirstGeneration]);
 
     const toggleExpanded = () => {
         setIsExpanded(!isExpanded);
@@ -40,20 +48,20 @@ export function EbookFooter({
 
     return (
         <div className={`fixed bottom-0 left-0 right-0 z-50 ${theme === "dark"
-                ? "bg-gray-800 border-t border-gray-700"
-                : theme === "sepia"
-                    ? "bg-amber-100 border-t border-amber-200"
-                    : "bg-white border-t border-gray-200"
+            ? "bg-gray-800 border-t border-gray-700"
+            : theme === "sepia"
+                ? "bg-amber-100 border-t border-amber-200"
+                : "bg-white border-t border-gray-200"
             } shadow-md transition-all duration-300`}>
             {/* Toggle button */}
             <div className="absolute -top-10 right-4">
                 <button
                     onClick={toggleExpanded}
                     className={`p-2 rounded-t-lg ${theme === "dark"
-                            ? "bg-gray-800 text-gray-300 border-t border-l border-r border-gray-700"
-                            : theme === "sepia"
-                                ? "bg-amber-100 text-amber-900 border-t border-l border-r border-amber-200"
-                                : "bg-white text-gray-700 border-t border-l border-r border-gray-200"
+                        ? "bg-gray-800 text-gray-300 border-t border-l border-r border-gray-700"
+                        : theme === "sepia"
+                            ? "bg-amber-100 text-amber-900 border-t border-l border-r border-amber-200"
+                            : "bg-white text-gray-700 border-t border-l border-r border-gray-200"
                         } shadow-md transition-colors duration-200`}
                     aria-label={isExpanded ? "Hide editor" : "Show editor"}
                 >

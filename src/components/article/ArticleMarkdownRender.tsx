@@ -17,6 +17,13 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
         fontFamily: settings.fontFamily,
         fontSize: `${settings.fontSize}px`,
         lineHeight: settings.lineHeight,
+        textAlign: settings.textAlign,
+    };
+
+    // Create paragraph styles with spacing
+    const paragraphStyles = {
+        ...baseStyles,
+        marginBottom: `${settings.paragraphSpacing}em`,
     };
 
     return (
@@ -57,8 +64,8 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     p: ({ children }) => (
                         <p
-                            className="text-[#2d2d2d] mb-4 font-serif leading-relaxed"
-                            style={baseStyles}
+                            className="text-[#2d2d2d] font-serif leading-relaxed"
+                            style={paragraphStyles}
                         >
                             {children}
                         </p>

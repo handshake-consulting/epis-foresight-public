@@ -54,6 +54,12 @@ export function EbookContent({
         fontFamily: settings.fontFamily,
         fontSize: `${settings.fontSize}px`,
         lineHeight: settings.lineHeight,
+        textAlign: settings.textAlign,
+    };
+
+    // Apply page margin styles
+    const pageStyle = {
+        padding: `${settings.pageMargin}px`,
     };
 
     return (
@@ -67,7 +73,7 @@ export function EbookContent({
                     }`}
                 onScroll={handleScroll}
             >
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-3xl mx-auto" style={pageStyle}>
                     {/* Version indicator */}
                     <div className="mb-4 text-sm flex items-center justify-between">
                         <div className={`flex items-center gap-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"

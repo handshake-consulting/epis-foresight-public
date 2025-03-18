@@ -38,13 +38,23 @@ export function EbookSidebar({
             {/* Sidebar */}
             <div
                 className={`absolute top-0 left-0 bottom-0 w-80 ${theme === "dark"
-                    ? "bg-gray-800 border-gray-700 text-gray-100"
-                    : "bg-white border-gray-200 text-gray-800"
+                        ? "bg-gray-800 border-gray-700 text-gray-100"
+                        : theme === "sepia"
+                            ? "bg-amber-50 border-amber-200 text-amber-900"
+                            : "bg-white border-gray-200 text-gray-800"
                     } border-r shadow-xl overflow-hidden transition-transform duration-300 flex flex-col`}
             >
                 {/* Header */}
-                <div className={`p-4 ${theme === "dark" ? "bg-gray-900" : "bg-gray-50"
-                    } border-b ${theme === "dark" ? "border-gray-700" : "border-gray-200"
+                <div className={`p-4 ${theme === "dark"
+                        ? "bg-gray-900"
+                        : theme === "sepia"
+                            ? "bg-amber-100"
+                            : "bg-gray-50"
+                    } border-b ${theme === "dark"
+                        ? "border-gray-700"
+                        : theme === "sepia"
+                            ? "border-amber-200"
+                            : "border-gray-200"
                     }`}>
                     <div className="flex items-center justify-between mb-4">
                         <h2 className={`text-lg font-bold ${theme === "dark" ? "text-white" : "text-gray-800"

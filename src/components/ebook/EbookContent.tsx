@@ -68,8 +68,10 @@ export function EbookContent({
             <div
                 ref={contentRef}
                 className={`flex-1 overflow-y-auto px-4 py-6 ${theme === "dark"
-                    ? "bg-gray-900"
-                    : "bg-gray-50"
+                        ? "bg-gray-900"
+                        : theme === "sepia"
+                            ? "bg-amber-50"
+                            : "bg-gray-50"
                     }`}
                 onScroll={handleScroll}
             >
@@ -135,8 +137,10 @@ export function EbookContent({
 
                     {/* Book-like container */}
                     <div className={`${theme === "dark"
-                        ? "bg-gray-800 border-gray-700 text-gray-100"
-                        : "bg-white border-gray-200 text-gray-800"
+                            ? "bg-gray-800 border-gray-700 text-gray-100"
+                            : theme === "sepia"
+                                ? "bg-amber-100 border-amber-200 text-amber-900"
+                                : "bg-white border-gray-200 text-gray-800"
                         } border rounded-lg shadow-lg p-8 mb-8 relative`}>
                         {/* Decorative book elements */}
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-b from-gray-200 to-transparent opacity-10"></div>
@@ -170,8 +174,10 @@ export function EbookContent({
             {/* Version navigation - fixed position at bottom */}
             {totalVersions > 1 && (
                 <div className={`fixed bottom-[52px] left-0 right-0 z-40 ${theme === "dark"
-                    ? "bg-gray-800 border-t border-gray-700"
-                    : "bg-white border-t border-gray-200"
+                        ? "bg-gray-800 border-t border-gray-700"
+                        : theme === "sepia"
+                            ? "bg-amber-100 border-t border-amber-200"
+                            : "bg-white border-t border-gray-200"
                     } py-2 px-4 flex justify-between items-center shadow-md`}>
                     <button
                         onClick={onPreviousVersion}

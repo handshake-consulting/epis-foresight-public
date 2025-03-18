@@ -32,7 +32,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                 components={{
                     h1: ({ children }) => (
                         <h1
-                            className="text-2xl sm:text-3xl md:text-4xl mb-6 pb-2 border-b border-[#e8e1d1] font-serif font-bold text-[#2d2d2d]"
+                            className="text-2xl sm:text-3xl md:text-4xl mb-6 pb-2 border-b border-[#e8e1d1] font-serif font-bold "
                             style={baseStyles}
                         >
                             {children}
@@ -40,7 +40,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     h2: ({ children }) => (
                         <h2
-                            className="text-xl sm:text-2xl md:text-3xl mb-4 pb-2 border-b border-[#e8e1d1] font-serif font-semibold text-[#2d2d2d]"
+                            className="text-xl sm:text-2xl md:text-3xl mb-4 pb-2 border-b border-[#e8e1d1] font-serif font-semibold "
                             style={baseStyles}
                         >
                             {children}
@@ -48,7 +48,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     h3: ({ children }) => (
                         <h3
-                            className="text-lg sm:text-xl font-serif font-semibold mb-3 text-[#2d2d2d]"
+                            className="text-lg sm:text-xl font-serif font-semibold mb-3 "
                             style={baseStyles}
                         >
                             {children}
@@ -56,7 +56,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     h4: ({ children }) => (
                         <h4
-                            className="text-base sm:text-lg font-serif font-semibold mb-2 text-[#2d2d2d]"
+                            className="text-base sm:text-lg font-serif font-semibold mb-2 "
                             style={baseStyles}
                         >
                             {children}
@@ -64,7 +64,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     p: ({ children }) => (
                         <p
-                            className="text-[#2d2d2d] font-serif leading-relaxed"
+                            className=" font-serif leading-relaxed"
                             style={paragraphStyles}
                         >
                             {children}
@@ -194,7 +194,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     strong: ({ children }) => (
                         <strong
-                            className="font-semibold text-[#2d2d2d]"
+                            className="font-semibold "
                             style={baseStyles}
                         >
                             {children}
@@ -202,7 +202,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     em: ({ children }) => (
                         <em
-                            className="italic text-[#2d2d2d]"
+                            className="italic "
                             style={baseStyles}
                         >
                             {children}

@@ -22,8 +22,11 @@ export function EbookHeader({
 }: EbookHeaderProps) {
     return (
         <header className={`fixed top-0 left-0 right-0 z-10 ${theme === 'dark'
-            ? 'bg-gray-800 border-gray-700 text-gray-100'
-            : 'bg-white border-gray-200 text-gray-800'} 
+                ? 'bg-gray-800 border-gray-700 text-gray-100'
+                : theme === 'sepia'
+                    ? 'bg-amber-100 border-amber-200 text-amber-900'
+                    : 'bg-white border-gray-200 text-gray-800'
+            } 
       border-b shadow-sm transition-colors duration-200`}>
             <div className="container mx-auto px-4 py-3 flex justify-between items-center">
                 {/* Left section */}
@@ -71,12 +74,17 @@ export function EbookHeader({
                     <button
                         onClick={toggleTheme}
                         className={`p-2 rounded-md ${theme === 'dark'
-                            ? 'hover:bg-gray-700'
-                            : 'hover:bg-gray-100'} transition-colors`}
-                        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                                ? 'hover:bg-gray-700'
+                                : theme === 'sepia'
+                                    ? 'hover:bg-amber-200'
+                                    : 'hover:bg-gray-100'
+                            } transition-colors`}
+                        aria-label="Toggle theme"
                     >
                         {theme === 'dark' ? (
                             <Sun className="h-5 w-5 text-gray-300" />
+                        ) : theme === 'sepia' ? (
+                            <Moon className="h-5 w-5 text-amber-800" />
                         ) : (
                             <Moon className="h-5 w-5 text-gray-600" />
                         )}

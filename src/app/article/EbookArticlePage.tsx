@@ -6,6 +6,7 @@ import { EbookContent, EbookFooter, EbookHeader, EbookSidebar } from "@/componen
 import SettingsDialog from "@/components/settings/SettingsDialog";
 import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
+import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { UserProfile } from "@/utils/profile";
 import { createClient } from "@/utils/supabase/clients";
@@ -30,13 +31,14 @@ export default function EbookArticlePage({
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
 
-    // Initialize theme preference from localStorage
+    // Get settings from the store
+    const { settings, setSettings } = useSettingsStore();
+
+    // Initialize theme from settings
     useEffect(() => {
-        const storedTheme = localStorage.getItem("theme");
-        if (storedTheme) {
-            setTheme(storedTheme);
-        }
-    }, []);
+        // Set theme based on settings
+        setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
+    }, [settings.theme]);
 
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
@@ -44,9 +46,21 @@ export default function EbookArticlePage({
 
     // Toggle theme
     const toggleTheme = () => {
-        const newTheme = theme === "light" ? "dark" : "light";
+        const currentTheme = theme;
+        let newTheme: 'light' | 'dark' | 'sepia';
+
+        // Cycle through themes: light -> sepia -> dark -> light
+        if (currentTheme === 'light') {
+            newTheme = 'sepia';
+        } else if (currentTheme === 'sepia') {
+            newTheme = 'dark';
+        } else {
+            newTheme = 'light';
+        }
+
+        // Update the settings store
+        setSettings({ theme: newTheme });
         setTheme(newTheme);
-        localStorage.setItem("theme", newTheme);
     };
 
     // Use the article hook
@@ -360,7 +374,12 @@ export default function EbookArticlePage({
     };
 
     return (
-        <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800"}`}>
+        <div className={`min-h-screen ${theme === "dark"
+                ? "bg-gray-900 text-gray-100"
+                : theme === "sepia"
+                    ? "bg-amber-50 text-amber-900"
+                    : "bg-gray-50 text-gray-800"
+            }`}>
             {/* Header */}
             <EbookHeader
                 title={currentSession?.title || "New Document"}

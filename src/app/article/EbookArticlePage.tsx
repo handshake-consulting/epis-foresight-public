@@ -7,6 +7,8 @@ import {
     VersionNavigation
 } from "@/components/article";
 import { ChatSession } from "@/components/chat/types";
+import SettingsDialog from "@/components/settings/SettingsDialog";
+import SettingsToggler from "@/components/settings/SettingsToggler";
 import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
 import { getCurrentAuthState } from "@/utils/firebase/client";
@@ -404,6 +406,9 @@ export default function EbookArticlePage({
                                 <Moon className="h-5 w-5 text-[#8a7e66]" />
                             )}
                         </button>
+
+                        {/* Add SettingsToggler here */}
+                        <SettingsToggler />
                     </div>
                 </div>
             </header>
@@ -528,6 +533,7 @@ export default function EbookArticlePage({
                                             <ArticleContent
                                                 version={currentVersion}
                                                 isLatestVersion={isLatestVersion}
+                                                isStreaming={isStreaming}
                                             />
                                         </div>
                                     )}
@@ -602,6 +608,9 @@ export default function EbookArticlePage({
                     {error}
                 </div>
             )}
+
+            {/* Settings Dialog */}
+            <SettingsDialog />
         </div>
     );
 }

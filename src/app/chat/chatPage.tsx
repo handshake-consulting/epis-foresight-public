@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { ChatHeader, ChatInput, ChatMessage, ChatMessages, ChatSession, SessionSidebar } from "@/components/chat"
+import SettingsDialog from "@/components/settings/SettingsDialog"
+import SettingsToggler from "@/components/settings/SettingsToggler"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { useAuthCheck } from "@/hook/use-auth-check"
 import { useChatStream } from "@/hook/use-chat"
@@ -344,7 +346,20 @@ export default function ChatPage({ profile }: { profile: UserProfile }) {
                     title={hookCurrentSession?.title || currentSession?.title || 'New Chat'}
                     collapsed={sidebarCollapsed}
                     onToggleCollapse={toggleSidebar}
-                />
+                >
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={toggleSidebar}
+                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                        >
+                            {/* Sidebar toggle icon */}
+                        </button>
+
+                        {/* Add SettingsToggler */}
+                        <SettingsToggler />
+                    </div>
+                </ChatHeader>
 
                 {messages.length === 0 ? (
                     <>
@@ -404,6 +419,9 @@ export default function ChatPage({ profile }: { profile: UserProfile }) {
                     </>
                 )}
             </Card>
+
+            {/* Settings dialog */}
+            <SettingsDialog />
         </div>
     )
 }

@@ -408,6 +408,7 @@ export default function ArticlePage({
                                     <ArticleContent
                                         version={currentVersion}
                                         isLatestVersion={isLatestVersion}
+                                        isStreaming={isStreaming}
                                     />
                                 )}
 

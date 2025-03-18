@@ -1,3 +1,5 @@
+NEVER edit the database. NEVER edit Supabase.
+
 # EPI-Foresight Public
 
 A Next.js application for collaborative knowledge sharing and content generation, featuring an AI-powered chat interface and an article creation system.
@@ -199,7 +201,3 @@ The project is configured for deployment on Vercel. Simply connect your GitHub r
 ```
 npm run build
 ```
-
-## License
-
-This project is proprietary software. All rights reserved.

@@ -6,7 +6,8 @@ export async function middleware(request: NextRequest) {
     if (
         // request.nextUrl.pathname.startsWith('/auth') ||
         request.nextUrl.pathname.startsWith('/home') ||
-        request.nextUrl.pathname.startsWith('/article')
+        request.nextUrl.pathname.startsWith('/article') ||
+        request.nextUrl.pathname.startsWith('/settings-demo')
     ) {
         return NextResponse.next();
     }

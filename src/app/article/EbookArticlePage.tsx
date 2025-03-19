@@ -28,6 +28,9 @@ export default function EbookArticlePage({
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [hasMoreSessions, setHasMoreSessions] = useState(true);
+    const PAGE_SIZE = 10; // Number of sessions to load per page
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const router = useRouter()
     // Use the auth check hook to verify authentication on the client side
@@ -141,13 +144,30 @@ export default function EbookArticlePage({
 
                 const supabase = createClient();
 
-                // Load all sessions for navigation
-                const { data: allSessions } = await supabase
+                // Load first page of sessions for navigation
+                const { data: allSessions, error } = await supabase
                     .from("chat_sessions")
                     .select("*")
                     .eq("user_id", user.uid)
                     .eq("type", "article")
-                    .order("updated_at", { ascending: false });
+                    .order("updated_at", { ascending: false })
+                    .range(0, PAGE_SIZE - 1);
+
+                if (error) {
+                    console.error("Error loading sessions:", error);
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Check if there are more sessions
+                const { count } = await supabase
+                    .from("chat_sessions")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.uid)
+                    .eq("type", "article");
+
+                setHasMoreSessions(count !== null && count > PAGE_SIZE);
+                setCurrentPage(1); // We've loaded the first page
 
                 if (allSessions) {
                     setSessions(allSessions);
@@ -214,15 +234,29 @@ export default function EbookArticlePage({
         if (!userId) return;
 
         const supabase = createClient();
+
+        // Reset pagination and load first page
+        setCurrentPage(1);
+
         const { data } = await supabase
             .from("chat_sessions")
             .select("*")
             .eq("user_id", userId)
             .eq("type", "article")
-            .order("updated_at", { ascending: false });
+            .order("updated_at", { ascending: false })
+            .range(0, PAGE_SIZE - 1);
 
         if (data) {
             setSessions(data);
+
+            // Check if there are more sessions
+            const { count } = await supabase
+                .from("chat_sessions")
+                .select("*", { count: "exact", head: true })
+                .eq("user_id", userId)
+                .eq("type", "article");
+
+            setHasMoreSessions(count !== null && count > PAGE_SIZE);
 
             // Update next and previous articles
             if (currentSession) {
@@ -241,6 +275,48 @@ export default function EbookArticlePage({
             }
         }
     }, [userId, currentSession]);
+
+    // Load more sessions for infinite scroll
+    const loadMoreSessions = useCallback(async () => {
+        if (!userId || !hasMoreSessions) return false;
+
+        const supabase = createClient();
+        const start = currentPage * PAGE_SIZE;
+        const end = start + PAGE_SIZE - 1;
+
+        const { data, error } = await supabase
+            .from("chat_sessions")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("type", "article")
+            .order("updated_at", { ascending: false })
+            .range(start, end);
+
+        if (error) {
+            console.error("Error loading more sessions:", error);
+            return false;
+        }
+
+        if (data && data.length > 0) {
+            // Append new sessions to existing ones
+            setSessions(prevSessions => [...prevSessions, ...data]);
+            setCurrentPage(prevPage => prevPage + 1);
+
+            // Check if there are more sessions
+            const { count } = await supabase
+                .from("chat_sessions")
+                .select("*", { count: "exact", head: true })
+                .eq("user_id", userId)
+                .eq("type", "article");
+
+            const hasMore = count !== null && count > (currentPage + 1) * PAGE_SIZE;
+            setHasMoreSessions(hasMore);
+            return hasMore;
+        }
+
+        setHasMoreSessions(false);
+        return false;
+    }, [userId, currentPage, hasMoreSessions]);
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -412,6 +488,9 @@ export default function EbookArticlePage({
             }, 500);
         }
     };
+
+    // console.log(sessions);
+
     return (
         <div className={`min-h-screen ${theme === "dark"
             ? "bg-gray-900 text-gray-100"
@@ -439,6 +518,7 @@ export default function EbookArticlePage({
                 onDeleteSession={deleteSession}
                 theme={theme}
                 onBookmarkSelect={navigateToBookmark}
+                onLoadMoreSessions={loadMoreSessions}
             />
 
             {/* Loading indicator */}

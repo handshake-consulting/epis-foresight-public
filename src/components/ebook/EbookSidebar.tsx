@@ -2,8 +2,8 @@
 
 import { ChatSession } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
-import { BookMarked, BookPlus, ChevronLeft, FileText, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { BookMarked, BookPlus, ChevronLeft, FileText, Loader2, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface EbookSidebarProps {
     isOpen: boolean;
@@ -15,6 +15,7 @@ interface EbookSidebarProps {
     onDeleteSession: (sessionId: string, e: React.MouseEvent) => void;
     theme: string;
     onBookmarkSelect?: (articleId: string, versionNumber: number) => void;
+    onLoadMoreSessions?: () => Promise<boolean>; // Returns whether there are more sessions to load
 }
 
 export function EbookSidebar({
@@ -26,10 +27,39 @@ export function EbookSidebar({
     onNewArticle,
     onDeleteSession,
     theme,
-    onBookmarkSelect
+    onBookmarkSelect,
+    onLoadMoreSessions
 }: EbookSidebarProps) {
     const [activeTab, setActiveTab] = useState<"toc" | "bookmarks">("toc");
     const { bookmarks, removeBookmark } = useSettingsStore();
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMoreSessions, setHasMoreSessions] = useState(true);
+    const observerTarget = useRef<HTMLDivElement>(null);
+
+    // Set up intersection observer for infinite scroll
+    useEffect(() => {
+        if (!observerTarget.current || !hasMoreSessions || activeTab !== "toc" || !onLoadMoreSessions) return;
+
+        const observer = new IntersectionObserver(
+            async (entries) => {
+                if (entries[0].isIntersecting && !isLoadingMore && hasMoreSessions) {
+                    setIsLoadingMore(true);
+                    const hasMore = await onLoadMoreSessions();
+                    setHasMoreSessions(hasMore);
+                    setIsLoadingMore(false);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(observerTarget.current);
+
+        return () => {
+            if (observerTarget.current) {
+                observer.unobserve(observerTarget.current);
+            }
+        };
+    }, [hasMoreSessions, isLoadingMore, onLoadMoreSessions, activeTab]);
 
     return (
         <div className={`fixed inset-0 z-20 ${isOpen ? "block" : "hidden"}`}>
@@ -191,6 +221,28 @@ export function EbookSidebar({
                                         </div>
                                     </div>
                                 ))}
+
+                                {/* Loading indicator and observer target */}
+                                {activeTab === "toc" && (
+                                    <div
+                                        ref={observerTarget}
+                                        className="py-4 flex justify-center"
+                                    >
+                                        {isLoadingMore && (
+                                            <div className="flex items-center justify-center">
+                                                <Loader2 className={`h-5 w-5 animate-spin ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`} />
+                                                <span className={`ml-2 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                                                    Loading more...
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!isLoadingMore && !hasMoreSessions && sessions.length > 0 && (
+                                            <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                                                No more documents
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className={`text-center p-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"

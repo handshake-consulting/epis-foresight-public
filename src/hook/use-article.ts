@@ -65,6 +65,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
     // Process QueryNode data to extract image information and generate title
     const processQueryNodeData = useCallback(async (data: any, versionNumber: number) => {
+        let capturedImageUrl = '';
 
         if (data.node_type === LoreNodeOutputTypes.PROMPT && data.node_id === "first-draft") {
 
@@ -185,7 +186,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Transform into image prompt using Haiku and send to Supabase
                 try {
                     // Create image prompt from content
-                    const imagePrompt = `Create an illustrative image for an article about: ${content.substring(0, 100)}`;
+                    const imagePrompt = `Create an illustrative image for an article about: ${content.substring(0, 2000)}`;
 
                     console.log("Generated image prompt:", imagePrompt);
 
@@ -208,14 +209,19 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     }
 
                     const imageData = await response.json();
+                    console.log("Generated image data:", imageData);
+
+                    // Store the image URL for later use
+                    capturedImageUrl = imageData.imageUrl || '';
 
                     // Create image message
-                    const newImage: ImageMessage = {
+                    const newImage: any = {
                         id: uuidv4(),
                         imageId: imageData.uuid,
                         storageType: imageData.storage_type,
                         sender: "assistant",
                         timestamp: new Date(),
+                        imageUrl: capturedImageUrl,
                         version: versionNumber
                     };
 
@@ -239,16 +245,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         };
                     });
 
-                    // Store image message in database
-                    if (currentUserIdRef.current && currentSessionIdRef.current) {
-                        storeImageMessageInSupabase(
-                            currentUserIdRef.current,
-                            currentSessionIdRef.current,
-                            newImage.imageId,
-                            newImage.storageType,
-                            versionNumber
-                        );
-                    }
+
                 } catch (error) {
                     console.error("Error generating image:", error);
                 }
@@ -257,75 +254,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             }
         }
 
-        if (data.node_type === LoreNodeOutputTypes.QUERY) {
-            console.log("Processing QueryNode data for article:", data);
 
-            // Handle image data
-            const imageData = Object.entries(
-                Object.keys(data.query_result || {})
-                    .filter((key) => key.startsWith("image."))
-                    .reduce((acc, key) => {
-                        const [, index, field] = key.split(".");
-                        if (!acc[index]) {
-                            acc[index] = {
-                                image_name: "",
-                                storage_type: "",
-                                url: "",
-                                uuid: "",
-                            };
-                        }
-                        acc[index][field] = data.query_result[key][0];
-                        return acc;
-                    }, {} as Record<string, any>)
-            ).map(([, value]) => value);
 
-            // Create image messages
-            const newImages: ImageMessage[] = imageData
-                .filter(image => image.storage_type === "bucket" && image.uuid)
-                .map(image => ({
-                    id: uuidv4(),
-                    imageId: image.uuid,
-                    storageType: image.storage_type,
-                    sender: "assistant",
-                    timestamp: new Date(),
-                    version: versionNumber
-                }));
-
-            if (newImages.length > 0) {
-                // Update article with new images
-                setArticle(prev => {
-                    if (!prev) return prev;
-
-                    const updatedVersions = prev.versions.map(v => {
-                        if (v.versionNumber === versionNumber) {
-                            return {
-                                ...v,
-                                images: [...(v.images || []), ...newImages]
-                            };
-                        }
-                        return v;
-                    });
-
-                    return {
-                        ...prev,
-                        versions: updatedVersions
-                    };
-                });
-
-                // Store image messages in database
-                if (currentUserIdRef.current && currentSessionIdRef.current) {
-                    newImages.forEach(image => {
-                        storeImageMessageInSupabase(
-                            currentUserIdRef.current!,
-                            currentSessionIdRef.current!,
-                            image.imageId,
-                            image.storageType,
-                            versionNumber
-                        );
-                    });
-                }
-            }
-        }
+        return capturedImageUrl;
     }, []);  // Note: You might need to add dependencies here based on your linting rules
 
     // Process the article stream
@@ -335,6 +266,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         const decoder = new TextDecoder();
         let buffer = '';
         let accumulatedContent = '';
+        let imageUrl = ''; // Track the image URL
 
         try {
             while (true) {
@@ -374,7 +306,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                             // Process batch data for images - ensure we fully await this operation
                             if (event.event_type === EventType.TextBatchOutput && event.event_data) {
-                                await processQueryNodeData(event.event_data, versionNumber);
+                                const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
+                                if (capturedUrl) {
+                                    imageUrl = capturedUrl;
+                                }
                             }
                         } catch (e) {
                             console.warn('Failed to parse final buffer:', buffer, e);
@@ -388,7 +323,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                             currentSessionIdRef.current,
                             "assistant",
                             accumulatedContent,
-                            versionNumber
+                            versionNumber,
+                            false,
+                            false,
+                            imageUrl
                         );
                     }
 
@@ -436,7 +374,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                             console.log("event", event);
                             // Process batch data for images - ensure we fully await this operation
                             if (event.event_type === EventType.TextBatchOutput && event.event_data) {
-                                await processQueryNodeData(event.event_data, versionNumber);
+                                const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
+                                if (capturedUrl) {
+                                    imageUrl = capturedUrl;
+                                }
                             }
                         } catch (e) {
                             console.warn('Failed to parse event:', eventJson, e);
@@ -464,7 +405,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         content: string,
         version: number = 1,
         isTopic: boolean = false,
-        isEdit: boolean = false
+        isEdit: boolean = false,
+        imageUrl?: string
     ) => {
         try {
             const supabase = createClient();
@@ -479,7 +421,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     content: content,
                     version: version,
                     is_topic: isTopic,
-                    is_edit: isEdit
+                    is_edit: isEdit,
+                    image: imageUrl
                 });
 
             if (error) {
@@ -499,36 +442,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             }
         } catch (error) {
             console.error('Error in storeMessageInSupabase:', error);
-        }
-    };
-
-    // Store image message in Supabase
-    const storeImageMessageInSupabase = async (
-        userId: string,
-        sessionId: string,
-        imageId: string,
-        storageType: string,
-        version: number = 1
-    ) => {
-        try {
-            const supabase = createClient();
-
-            // Store the image message with a special format to distinguish it from text messages
-            const { error } = await supabase
-                .from('chat_messages')
-                .insert({
-                    user_id: userId,
-                    session_id: sessionId,
-                    role: "assistant",
-                    content: JSON.stringify({ message_type: "image", imageId, storageType }),
-                    version: version
-                });
-
-            if (error) {
-                console.error('Error storing image message in Supabase:', error);
-            }
-        } catch (error) {
-            console.error('Error in storeImageMessageInSupabase:', error);
         }
     };
 
@@ -564,6 +477,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 topic: '',
                 currentVersion: 0,
                 versions: [],
+                image: newSession.imageUrl,
                 created_at: newSession.created_at,
                 updated_at: newSession.updated_at
             });
@@ -636,24 +550,37 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                     versionMessages.forEach(msg => {
                         if (msg.role === 'assistant') {
-                            // Check if it's an image message (JSON format)
-                            try {
-                                if (msg.content.trim().startsWith('{') && msg.content.trim().endsWith('}')) {
-                                    const contentData = JSON.parse(msg.content);
+                            // Check if message has an image field
+                            if (msg.image) {
+                                imageMessages.push({
+                                    id: msg.id || uuidv4(),
+                                    sender: 'assistant',
+                                    imageId: msg.id || uuidv4(),
+                                    storageType: 'supabase',
+                                    imageUrl: msg.image,
+                                    timestamp: new Date(msg.created_at),
+                                    version: v
+                                });
+                            } else {
+                                // Check if it's an image message (JSON format) - for backward compatibility
+                                try {
+                                    if (msg.content.trim().startsWith('{') && msg.content.trim().endsWith('}')) {
+                                        const contentData = JSON.parse(msg.content);
 
-                                    if (contentData.message_type === 'image' && contentData.imageId) {
-                                        imageMessages.push({
-                                            id: msg.id || uuidv4(),
-                                            sender: 'assistant',
-                                            imageId: contentData.imageId,
-                                            storageType: contentData.storageType || 'bucket',
-                                            timestamp: new Date(msg.created_at),
-                                            version: v
-                                        });
+                                        if (contentData.message_type === 'image' && contentData.imageId) {
+                                            imageMessages.push({
+                                                id: msg.id || uuidv4(),
+                                                sender: 'assistant',
+                                                imageId: contentData.imageId,
+                                                storageType: contentData.storageType || 'bucket',
+                                                timestamp: new Date(msg.created_at),
+                                                version: v
+                                            });
+                                        }
                                     }
+                                } catch (e) {
+                                    // Not a valid JSON, ignore
                                 }
-                            } catch (e) {
-                                // Not a valid JSON, ignore
                             }
                         }
                     });

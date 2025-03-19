@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
     user_id TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
     content TEXT NOT NULL,
+    image TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
     -- Foreign keys with cascade delete

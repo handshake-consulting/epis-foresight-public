@@ -29,7 +29,7 @@ export default function EbookArticlePage({
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLTextAreaElement>(null);
-
+    const router = useRouter()
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
 
@@ -65,6 +65,16 @@ export default function EbookArticlePage({
         setTheme(newTheme);
     };
 
+    // Callback to handle stream finish and redirect to article page
+    const handleStreamFinish = useCallback(() => {
+        console.log("Stream finished, redirecting to article page");
+        router.push('/article');
+        // if (currentSession?.id) {
+        //     console.log("Stream finished, redirecting to article page");
+        //     router.push(`/article/${currentSession.id}`);
+        // }
+    }, [currentSession?.id, router]);
+
     // Use the article hook
     const {
         article,
@@ -91,16 +101,14 @@ export default function EbookArticlePage({
                 }
             },
             onError: (error) => console.error("Hook error:", error),
-            onFinish: () => {
-                console.log("Stream finished");
-            },
+            onFinish: handleStreamFinish,
         }
     });
 
     // Get URL search params to check for new article flag
     const searchParams = useSearchParams();
     const isNewArticle = searchParams.get("new") === "true";
-    const router = useRouter();
+
 
     // Start new article
     const startNewArticle = async () => {
@@ -404,7 +412,6 @@ export default function EbookArticlePage({
             }, 500);
         }
     };
-
     return (
         <div className={`min-h-screen ${theme === "dark"
             ? "bg-gray-900 text-gray-100"
@@ -478,10 +485,10 @@ export default function EbookArticlePage({
                 theme={theme}
             />
 
-            {/* Image slider */}
-            {currentVersion && currentVersion.images && currentVersion.images.length > 0 && (
+            {/* Image slider - collect images from all versions */}
+            {article && article.versions && article.versions.length > 0 && (
                 <ImageSlider
-                    images={currentVersion.images}
+                    images={article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl)}
                     isOpen={sliderOpen}
                     onToggle={toggleSlider}
                 />

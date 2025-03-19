@@ -65,53 +65,66 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
     // Process QueryNode data to extract image information and generate title
     const processQueryNodeData = useCallback(async (data: any, versionNumber: number) => {
-        console.log("Processing PromptNode data for article:", data);
+
         if (data.node_type === LoreNodeOutputTypes.PROMPT && data.node_id === "first-draft") {
 
-
+            console.log("Processing PromptNode data for article:", data);
             try {
                 // Extract content from the data
-                const content = data.prompt || data.content || "";
+                const content = data?.node_result?.llm_output || "";
+
+                console.log("Content ", content);
 
                 // Get Firebase ID token for authentication
                 const token = await getIdToken();
 
-                // Send to Haiku for title generation
-                const response = await fetch('/api/generate-title', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ message: content })
-                });
+                try {
 
-                if (response.ok) {
-                    const titleData = await response.json();
-                    const generatedTitle = titleData.title;
-
-                    // Update article title
-                    setArticle(prev => {
-                        if (!prev) return prev;
-
-                        return {
-                            ...prev,
-                            title: generatedTitle
-                        };
+                    // Send to Haiku for title generation with proper error handling for 307 redirects
+                    const response = await fetch('/api/generate-title', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ message: content }),
+                        // Add redirect handling to prevent 307 errors
+                        redirect: 'follow'
                     });
 
-                    // Update title in database if we have session ID
-                    if (currentUserIdRef.current && currentSessionIdRef.current) {
-                        const supabase = createClient();
-                        await supabase
-                            .from('chat_sessions')
-                            .update({ title: generatedTitle })
-                            .eq('id', currentSessionIdRef.current);
-                    }
+                    if (response.ok) {
+                        const titleData = await response.json();
+                        const generatedTitle = titleData.title;
 
-                    console.log("Generated title:", generatedTitle);
-                } else {
-                    console.error("Failed to generate title:", await response.text());
+                        // Update article title
+                        setArticle(prev => {
+                            if (!prev) return prev;
+
+                            return {
+                                ...prev,
+                                title: generatedTitle
+                            };
+                        });
+
+                        // Update title in database if we have session ID
+                        if (currentUserIdRef.current && currentSessionIdRef.current) {
+                            const supabase = createClient();
+                            await supabase
+                                .from('chat_sessions')
+                                .update({ title: generatedTitle })
+                                .eq('id', currentSessionIdRef.current);
+                        }
+
+                        console.log("Generated title:", generatedTitle);
+                    } else {
+                        console.error(`Failed to generate title: ${response.status} ${response.statusText}`);
+                        if (response.status === 307) {
+                            console.error("Received 307 redirect. This may indicate an authentication or session issue.");
+                        }
+                        console.error("Response text:", await response.text());
+                    }
+                } catch (titleError) {
+                    console.error("Error generating title:", titleError);
                 }
 
                 // Send to Haiku for UI elements to display iteratively
@@ -169,30 +182,38 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
 
-                // Transform into image prompt using Haiku and send to Fireworks
+                // Transform into image prompt using Haiku and send to Supabase
                 try {
                     // Create image prompt from content
                     const imagePrompt = `Create an illustrative image for an article about: ${content.substring(0, 100)}`;
 
-                    // In a real implementation, you would:
-                    // 1. Send to Haiku to transform the content into a better image prompt
-                    // 2. Send that prompt to Fireworks API
-                    // 3. Process the response and add the image to the article
-
                     console.log("Generated image prompt:", imagePrompt);
 
-                    // Simulate image generation response
-                    // In a real implementation, this would be the response from Fireworks API
-                    const mockImageResponse = {
-                        uuid: `mock-image-${Date.now()}`,
-                        storage_type: "bucket"
-                    };
+                    // Get Firebase ID token for authentication
+                    const token = await getIdToken();
+
+                    // Call our API to generate and upload the image
+                    const response = await fetch('/api/generate-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ prompt: imagePrompt }),
+                        redirect: 'follow'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to generate image: ${response.status} ${response.statusText}`);
+                    }
+
+                    const imageData = await response.json();
 
                     // Create image message
                     const newImage: ImageMessage = {
                         id: uuidv4(),
-                        imageId: mockImageResponse.uuid,
-                        storageType: mockImageResponse.storage_type,
+                        imageId: imageData.uuid,
+                        storageType: imageData.storage_type,
                         sender: "assistant",
                         timestamp: new Date(),
                         version: versionNumber
@@ -349,9 +370,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                                 callbacks?.onData?.({ text: event.event_data.text });
                             }
+                            console.log("event", event);
 
-                            // Process batch data for images
-                            if (event.event_type === EventType.BatchDataOutput && event.event_data) {
+                            // Process batch data for images - ensure we fully await this operation
+                            if (event.event_type === EventType.TextBatchOutput && event.event_data) {
                                 await processQueryNodeData(event.event_data, versionNumber);
                             }
                         } catch (e) {
@@ -411,9 +433,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                                 callbacks?.onData?.({ text: event.event_data.text });
                             }
-
-                            // Process batch data for images
-                            if (event.event_type === EventType.BatchDataOutput && event.event_data) {
+                            console.log("event", event);
+                            // Process batch data for images - ensure we fully await this operation
+                            if (event.event_type === EventType.TextBatchOutput && event.event_data) {
                                 await processQueryNodeData(event.event_data, versionNumber);
                             }
                         } catch (e) {

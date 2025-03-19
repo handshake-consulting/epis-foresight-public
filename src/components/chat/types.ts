@@ -23,6 +23,7 @@ export interface TextMessage extends BaseMessage {
 export interface ImageMessage extends BaseMessage {
     imageId: string;
     storageType: string;
+    imageUrl?: string;
 }
 
 export type ChatMessage = TextMessage | ImageMessage;
@@ -44,6 +45,7 @@ export interface Article {
     versions: ArticleVersion[];
     created_at: string;
     updated_at: string;
+    image?: string;
 }
 
 // For backward compatibility with existing code

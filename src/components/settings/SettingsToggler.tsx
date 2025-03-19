@@ -1,20 +1,31 @@
+import { useSettingsStore } from '@/store/settingsStore';
+import { Settings } from 'lucide-react';
 import React from 'react';
-import { useSettingsStore } from '../../store/settingsStore';
 
 const SettingsToggler: React.FC = () => {
-    const { isSettingsOpen, setSettingsOpen } = useSettingsStore();
+    const { isSettingsOpen, setSettingsOpen, settings } = useSettingsStore();
+
+    // Determine hover background based on theme
+    const getHoverClass = () => {
+        switch (settings.theme) {
+            case 'dark':
+                return 'hover:bg-gray-700';
+            case 'sepia':
+                return 'hover:bg-amber-200';
+            default: // light
+                return 'hover:bg-gray-100';
+        }
+    };
 
     return (
         <button
-            className="p-2 rounded hover:bg-gray-100"
+            className={`p-2 rounded-md ${getHoverClass()} transition-colors`}
             onClick={() => setSettingsOpen(!isSettingsOpen)}
             title="Settings"
         >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 15V3m0 12l-4 4m4-4l4 4M4 21h16" />
-            </svg>
+            <Settings className="h-5 w-5" />
         </button>
     );
 };
 
-export default SettingsToggler; 
+export default SettingsToggler;

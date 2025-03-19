@@ -63,78 +63,201 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, [article]);
 
-    // Process QueryNode data to extract image information
-    const processQueryNodeData = useCallback((data: any, versionNumber: number) => {
-        if (data.node_type === LoreNodeOutputTypes.QUERY) {
-            console.log("Processing QueryNode data for article:", data);
+    // Process QueryNode data to extract image information and generate title
+    const processQueryNodeData = useCallback(async (data: any, versionNumber: number) => {
+        let capturedImageUrl = '';
 
-            // Handle image data
-            const imageData = Object.entries(
-                Object.keys(data.query_result || {})
-                    .filter((key) => key.startsWith("image."))
-                    .reduce((acc, key) => {
-                        const [, index, field] = key.split(".");
-                        if (!acc[index]) {
-                            acc[index] = {
-                                image_name: "",
-                                storage_type: "",
-                                url: "",
-                                uuid: "",
-                            };
-                        }
-                        acc[index][field] = data.query_result[key][0];
-                        return acc;
-                    }, {} as Record<string, any>)
-            ).map(([, value]) => value);
+        if (data.node_type === LoreNodeOutputTypes.PROMPT && data.node_id === "first-draft") {
 
-            // Create image messages
-            const newImages: ImageMessage[] = imageData
-                .filter(image => image.storage_type === "bucket" && image.uuid)
-                .map(image => ({
-                    id: uuidv4(),
-                    imageId: image.uuid,
-                    storageType: image.storage_type,
-                    sender: "assistant",
-                    timestamp: new Date(),
-                    version: versionNumber
-                }));
+            console.log("Processing PromptNode data for article:", data);
+            try {
+                // Extract content from the data
+                const content = data?.node_result?.llm_output || "";
 
-            if (newImages.length > 0) {
-                // Update article with new images
-                setArticle(prev => {
-                    if (!prev) return prev;
+                console.log("Content ", content);
 
-                    const updatedVersions = prev.versions.map(v => {
-                        if (v.versionNumber === versionNumber) {
+                // Get Firebase ID token for authentication
+                const token = await getIdToken();
+
+                try {
+
+                    // Send to Haiku for title generation with proper error handling for 307 redirects
+                    const response = await fetch('/api/generate-title', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ message: content }),
+                        // Add redirect handling to prevent 307 errors
+                        redirect: 'follow'
+                    });
+
+                    if (response.ok) {
+                        const titleData = await response.json();
+                        const generatedTitle = titleData.title;
+
+                        // Update article title
+                        setArticle(prev => {
+                            if (!prev) return prev;
+
                             return {
-                                ...v,
-                                images: [...(v.images || []), ...newImages]
+                                ...prev,
+                                title: generatedTitle
                             };
+                        });
+
+                        // Update title in database if we have session ID
+                        if (currentUserIdRef.current && currentSessionIdRef.current) {
+                            const supabase = createClient();
+                            await supabase
+                                .from('chat_sessions')
+                                .update({ title: generatedTitle })
+                                .eq('id', currentSessionIdRef.current);
                         }
-                        return v;
-                    });
 
-                    return {
-                        ...prev,
-                        versions: updatedVersions
-                    };
-                });
-
-                // Store image messages in database
-                if (currentUserIdRef.current && currentSessionIdRef.current) {
-                    newImages.forEach(image => {
-                        storeImageMessageInSupabase(
-                            currentUserIdRef.current!,
-                            currentSessionIdRef.current!,
-                            image.imageId,
-                            image.storageType,
-                            versionNumber
-                        );
-                    });
+                        console.log("Generated title:", generatedTitle);
+                    } else {
+                        console.error(`Failed to generate title: ${response.status} ${response.statusText}`);
+                        if (response.status === 307) {
+                            console.error("Received 307 redirect. This may indicate an authentication or session issue.");
+                        }
+                        console.error("Response text:", await response.text());
+                    }
+                } catch (titleError) {
+                    console.error("Error generating title:", titleError);
                 }
+
+                // Send to Haiku for UI elements to display iteratively
+                // This simulates the OpenAI Deep Research style display
+                const uiElements = [
+                    { type: 'header', content: 'Article Summary' },
+                    { type: 'text', content: 'Processing your article...' },
+                    { type: 'progress', value: 25 },
+                    { type: 'text', content: 'Analyzing key points...' },
+                    { type: 'progress', value: 50 },
+                    { type: 'text', content: 'Generating insights...' },
+                    { type: 'progress', value: 75 },
+                    { type: 'text', content: 'Finalizing content...' },
+                    { type: 'progress', value: 100 }
+                ];
+
+                // Display UI elements iteratively
+                for (let i = 0; i < uiElements.length; i++) {
+                    const element = uiElements[i];
+
+                    // Update article with UI element
+                    setArticle(prev => {
+                        if (!prev) return prev;
+
+                        // Add UI element to content
+                        const updatedVersions = prev.versions.map(v => {
+                            if (v.versionNumber === versionNumber) {
+                                // For simplicity, we're just appending text representation
+                                // In a real implementation, you might use a more structured approach
+                                let updatedContent = v.content;
+
+                                if (element.type === 'header') {
+                                    updatedContent += `\n\n## ${element.content}\n\n`;
+                                } else if (element.type === 'text') {
+                                    updatedContent += `${element.content}\n\n`;
+                                } else if (element.type === 'progress') {
+                                    updatedContent += `Progress: ${element.value}%\n\n`;
+                                }
+
+                                return {
+                                    ...v,
+                                    content: updatedContent
+                                };
+                            }
+                            return v;
+                        });
+
+                        return {
+                            ...prev,
+                            versions: updatedVersions
+                        };
+                    });
+
+                    // Simulate delay between UI elements
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                // Transform into image prompt using Haiku and send to Supabase
+                try {
+                    // Create image prompt from content
+                    const imagePrompt = `Create an illustrative image for an article about: ${content.slice(0, 1000)}`;
+
+                    console.log("Generated image prompt:", imagePrompt);
+
+                    // Get Firebase ID token for authentication
+                    const token = await getIdToken();
+
+                    // Call our API to generate and upload the image
+                    const response = await fetch('/api/generate-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ prompt: imagePrompt }),
+                        redirect: 'follow'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to generate image: ${response.status} ${response.statusText}`);
+                    }
+
+                    const imageData = await response.json();
+                    console.log("Generated image data:", imageData);
+
+                    // Store the image URL for later use
+                    capturedImageUrl = imageData.imageUrl || '';
+
+                    // Create image message
+                    const newImage: any = {
+                        id: uuidv4(),
+                        imageId: imageData.uuid,
+                        storageType: imageData.storage_type,
+                        sender: "assistant",
+                        timestamp: new Date(),
+                        imageUrl: capturedImageUrl,
+                        version: versionNumber
+                    };
+
+                    // Update article with new image
+                    setArticle(prev => {
+                        if (!prev) return prev;
+
+                        const updatedVersions = prev.versions.map(v => {
+                            if (v.versionNumber === versionNumber) {
+                                return {
+                                    ...v,
+                                    images: [...(v.images || []), newImage]
+                                };
+                            }
+                            return v;
+                        });
+
+                        return {
+                            ...prev,
+                            versions: updatedVersions
+                        };
+                    });
+
+
+                } catch (error) {
+                    console.error("Error generating image:", error);
+                }
+            } catch (error) {
+                console.error("Error processing PromptNode data:", error);
             }
         }
-    }, []);
+
+
+
+        return capturedImageUrl;
+    }, []);  // Note: You might need to add dependencies here based on your linting rules
 
     // Process the article stream
     const processArticleStream = useCallback(async (stream: ReadableStream, versionNumber: number) => {
@@ -143,6 +266,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         const decoder = new TextDecoder();
         let buffer = '';
         let accumulatedContent = '';
+        let imageUrl = ''; // Track the image URL
 
         try {
             while (true) {
@@ -178,10 +302,14 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                                 callbacks?.onData?.({ text: event.event_data.text });
                             }
+                            console.log("event", event);
 
-                            // Process batch data for images
-                            if (event.event_type === EventType.BatchDataOutput && event.event_data) {
-                                processQueryNodeData(event.event_data, versionNumber);
+                            // Process batch data for images - ensure we fully await this operation
+                            if (event.event_type === EventType.TextBatchOutput && event.event_data) {
+                                const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
+                                if (capturedUrl) {
+                                    imageUrl = capturedUrl;
+                                }
                             }
                         } catch (e) {
                             console.warn('Failed to parse final buffer:', buffer, e);
@@ -195,7 +323,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                             currentSessionIdRef.current,
                             "assistant",
                             accumulatedContent,
-                            versionNumber
+                            versionNumber,
+                            false,
+                            false,
+                            imageUrl
                         );
                     }
 
@@ -240,10 +371,13 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                                 callbacks?.onData?.({ text: event.event_data.text });
                             }
-
-                            // Process batch data for images
-                            if (event.event_type === EventType.BatchDataOutput && event.event_data) {
-                                processQueryNodeData(event.event_data, versionNumber);
+                            console.log("event", event);
+                            // Process batch data for images - ensure we fully await this operation
+                            if (event.event_type === EventType.TextBatchOutput && event.event_data) {
+                                const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
+                                if (capturedUrl) {
+                                    imageUrl = capturedUrl;
+                                }
                             }
                         } catch (e) {
                             console.warn('Failed to parse event:', eventJson, e);
@@ -271,7 +405,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         content: string,
         version: number = 1,
         isTopic: boolean = false,
-        isEdit: boolean = false
+        isEdit: boolean = false,
+        imageUrl?: string
     ) => {
         try {
             const supabase = createClient();
@@ -286,7 +421,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     content: content,
                     version: version,
                     is_topic: isTopic,
-                    is_edit: isEdit
+                    is_edit: isEdit,
+                    image: imageUrl
                 });
 
             if (error) {
@@ -306,36 +442,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             }
         } catch (error) {
             console.error('Error in storeMessageInSupabase:', error);
-        }
-    };
-
-    // Store image message in Supabase
-    const storeImageMessageInSupabase = async (
-        userId: string,
-        sessionId: string,
-        imageId: string,
-        storageType: string,
-        version: number = 1
-    ) => {
-        try {
-            const supabase = createClient();
-
-            // Store the image message with a special format to distinguish it from text messages
-            const { error } = await supabase
-                .from('chat_messages')
-                .insert({
-                    user_id: userId,
-                    session_id: sessionId,
-                    role: "assistant",
-                    content: JSON.stringify({ message_type: "image", imageId, storageType }),
-                    version: version
-                });
-
-            if (error) {
-                console.error('Error storing image message in Supabase:', error);
-            }
-        } catch (error) {
-            console.error('Error in storeImageMessageInSupabase:', error);
         }
     };
 
@@ -371,6 +477,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 topic: '',
                 currentVersion: 0,
                 versions: [],
+                image: newSession.imageUrl,
                 created_at: newSession.created_at,
                 updated_at: newSession.updated_at
             });
@@ -443,24 +550,37 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                     versionMessages.forEach(msg => {
                         if (msg.role === 'assistant') {
-                            // Check if it's an image message (JSON format)
-                            try {
-                                if (msg.content.trim().startsWith('{') && msg.content.trim().endsWith('}')) {
-                                    const contentData = JSON.parse(msg.content);
+                            // Check if message has an image field
+                            if (msg.image) {
+                                imageMessages.push({
+                                    id: msg.id || uuidv4(),
+                                    sender: 'assistant',
+                                    imageId: msg.id || uuidv4(),
+                                    storageType: 'supabase',
+                                    imageUrl: msg.image,
+                                    timestamp: new Date(msg.created_at),
+                                    version: v
+                                });
+                            } else {
+                                // Check if it's an image message (JSON format) - for backward compatibility
+                                try {
+                                    if (msg.content.trim().startsWith('{') && msg.content.trim().endsWith('}')) {
+                                        const contentData = JSON.parse(msg.content);
 
-                                    if (contentData.message_type === 'image' && contentData.imageId) {
-                                        imageMessages.push({
-                                            id: msg.id || uuidv4(),
-                                            sender: 'assistant',
-                                            imageId: contentData.imageId,
-                                            storageType: contentData.storageType || 'bucket',
-                                            timestamp: new Date(msg.created_at),
-                                            version: v
-                                        });
+                                        if (contentData.message_type === 'image' && contentData.imageId) {
+                                            imageMessages.push({
+                                                id: msg.id || uuidv4(),
+                                                sender: 'assistant',
+                                                imageId: contentData.imageId,
+                                                storageType: contentData.storageType || 'bucket',
+                                                timestamp: new Date(msg.created_at),
+                                                version: v
+                                            });
+                                        }
                                     }
+                                } catch (e) {
+                                    // Not a valid JSON, ignore
                                 }
-                            } catch (e) {
-                                // Not a valid JSON, ignore
                             }
                         }
                     });

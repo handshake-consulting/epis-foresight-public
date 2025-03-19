@@ -1,13 +1,57 @@
+import Dialog from '@/components/ui/Dialog';
+import { useSettingsStore } from '@/store/settingsStore';
 import { AlignCenter, AlignJustify, AlignLeft, BookOpen, Layout, Type } from 'lucide-react';
 import React, { useState } from 'react';
-import { useSettingsStore } from '../../store/settingsStore';
-import Dialog from '../ui/Dialog';
 
 const SettingsDialog: React.FC = () => {
     const { isSettingsOpen, settings, setSettings, setSettingsOpen } = useSettingsStore();
     const [activeTab, setActiveTab] = useState<'typography' | 'layout' | 'theme'>('typography');
 
     const handleClose = () => setSettingsOpen(false);
+
+    // Determine theme-based styles
+    const getThemeStyles = () => {
+        switch (settings.theme) {
+            case 'dark':
+                return {
+                    activeTabBorder: 'border-primary',
+                    activeTabText: 'text-primary',
+                    hoverTabText: 'hover:text-primary/90',
+                    inactiveTabText: 'text-muted-foreground',
+                    activeButtonBg: 'bg-accent',
+                    activeButtonBorder: 'border-primary',
+                    activeButtonText: 'text-primary',
+                    toggleActive: 'bg-primary',
+                    toggleInactive: 'bg-muted',
+                };
+            case 'sepia':
+                return {
+                    activeTabBorder: 'border-amber-800',
+                    activeTabText: 'text-amber-900',
+                    hoverTabText: 'hover:text-amber-800',
+                    inactiveTabText: 'text-amber-700',
+                    activeButtonBg: 'bg-amber-50',
+                    activeButtonBorder: 'border-amber-800',
+                    activeButtonText: 'text-amber-900',
+                    toggleActive: 'bg-amber-800',
+                    toggleInactive: 'bg-amber-300',
+                };
+            default: // light
+                return {
+                    activeTabBorder: 'border-primary',
+                    activeTabText: 'text-primary',
+                    hoverTabText: 'hover:text-primary/90',
+                    inactiveTabText: 'text-muted-foreground',
+                    activeButtonBg: 'bg-accent',
+                    activeButtonBorder: 'border-primary',
+                    activeButtonText: 'text-primary',
+                    toggleActive: 'bg-primary',
+                    toggleInactive: 'bg-muted',
+                };
+        }
+    };
+
+    const styles = getThemeStyles();
 
     return (
         <Dialog
@@ -20,8 +64,8 @@ const SettingsDialog: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('typography')}
                     className={`flex items-center gap-2 px-3 py-2 ${activeTab === 'typography'
-                            ? 'border-b-2 border-blue-500 text-blue-600'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? `border-b-2 ${styles.activeTabBorder} ${styles.activeTabText}`
+                        : `${styles.inactiveTabText} ${styles.hoverTabText}`
                         }`}
                 >
                     <Type className="h-4 w-4" />
@@ -30,8 +74,8 @@ const SettingsDialog: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('layout')}
                     className={`flex items-center gap-2 px-3 py-2 ${activeTab === 'layout'
-                            ? 'border-b-2 border-blue-500 text-blue-600'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? `border-b-2 ${styles.activeTabBorder} ${styles.activeTabText}`
+                        : `${styles.inactiveTabText} ${styles.hoverTabText}`
                         }`}
                 >
                     <Layout className="h-4 w-4" />
@@ -40,8 +84,8 @@ const SettingsDialog: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('theme')}
                     className={`flex items-center gap-2 px-3 py-2 ${activeTab === 'theme'
-                            ? 'border-b-2 border-blue-500 text-blue-600'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? `border-b-2 ${styles.activeTabBorder} ${styles.activeTabText}`
+                        : `${styles.inactiveTabText} ${styles.hoverTabText}`
                         }`}
                 >
                     <BookOpen className="h-4 w-4" />
@@ -106,8 +150,8 @@ const SettingsDialog: React.FC = () => {
                         <div className="flex space-x-2">
                             <button
                                 className={`p-2 border rounded flex-1 flex justify-center items-center ${settings.textAlign === 'left'
-                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
-                                        : 'hover:bg-gray-50'
+                                    ? `${styles.activeButtonBg} ${styles.activeButtonBorder} ${styles.activeButtonText}`
+                                    : 'hover:bg-accent/50'
                                     }`}
                                 onClick={() => setSettings({ textAlign: 'left' })}
                             >
@@ -115,8 +159,8 @@ const SettingsDialog: React.FC = () => {
                             </button>
                             <button
                                 className={`p-2 border rounded flex-1 flex justify-center items-center ${settings.textAlign === 'center'
-                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
-                                        : 'hover:bg-gray-50'
+                                    ? `${styles.activeButtonBg} ${styles.activeButtonBorder} ${styles.activeButtonText}`
+                                    : 'hover:bg-accent/50'
                                     }`}
                                 onClick={() => setSettings({ textAlign: 'center' })}
                             >
@@ -124,8 +168,8 @@ const SettingsDialog: React.FC = () => {
                             </button>
                             <button
                                 className={`p-2 border rounded flex-1 flex justify-center items-center ${settings.textAlign === 'justify'
-                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
-                                        : 'hover:bg-gray-50'
+                                    ? `${styles.activeButtonBg} ${styles.activeButtonBorder} ${styles.activeButtonText}`
+                                    : 'hover:bg-accent/50'
                                     }`}
                                 onClick={() => setSettings({ textAlign: 'justify' })}
                             >
@@ -183,8 +227,7 @@ const SettingsDialog: React.FC = () => {
                             />
                             <label
                                 htmlFor="toggle-page-numbers"
-                                className={`block overflow-hidden h-6 rounded-full cursor-pointer ${settings.showPageNumber ? 'bg-blue-500' : 'bg-gray-300'
-                                    }`}
+                                className={`block overflow-hidden h-6 rounded-full cursor-pointer ${settings.showPageNumber ? styles.toggleActive : styles.toggleInactive}`}
                             >
                                 <span
                                     className={`block h-6 w-6 rounded-full bg-white shadow transform transition-transform ${settings.showPageNumber ? 'translate-x-4' : 'translate-x-0'
@@ -207,8 +250,7 @@ const SettingsDialog: React.FC = () => {
                             />
                             <label
                                 htmlFor="toggle-animations"
-                                className={`block overflow-hidden h-6 rounded-full cursor-pointer ${settings.enableAnimations ? 'bg-blue-500' : 'bg-gray-300'
-                                    }`}
+                                className={`block overflow-hidden h-6 rounded-full cursor-pointer ${settings.enableAnimations ? styles.toggleActive : styles.toggleInactive}`}
                             >
                                 <span
                                     className={`block h-6 w-6 rounded-full bg-white shadow transform transition-transform ${settings.enableAnimations ? 'translate-x-4' : 'translate-x-0'
@@ -229,8 +271,8 @@ const SettingsDialog: React.FC = () => {
                         <div className="grid grid-cols-3 gap-3">
                             <button
                                 className={`p-4 border rounded-lg flex flex-col items-center ${settings.theme === 'light'
-                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
-                                        : 'hover:bg-gray-50'
+                                    ? `${styles.activeButtonBg} ${styles.activeButtonBorder} ${styles.activeButtonText}`
+                                    : 'hover:bg-accent/50'
                                     }`}
                                 onClick={() => setSettings({ theme: 'light' })}
                             >
@@ -239,8 +281,8 @@ const SettingsDialog: React.FC = () => {
                             </button>
                             <button
                                 className={`p-4 border rounded-lg flex flex-col items-center ${settings.theme === 'sepia'
-                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
-                                        : 'hover:bg-gray-50'
+                                    ? `${styles.activeButtonBg} ${styles.activeButtonBorder} ${styles.activeButtonText}`
+                                    : 'hover:bg-accent/50'
                                     }`}
                                 onClick={() => setSettings({ theme: 'sepia' })}
                             >
@@ -249,8 +291,8 @@ const SettingsDialog: React.FC = () => {
                             </button>
                             <button
                                 className={`p-4 border rounded-lg flex flex-col items-center ${settings.theme === 'dark'
-                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
-                                        : 'hover:bg-gray-50'
+                                    ? `${styles.activeButtonBg} ${styles.activeButtonBorder} ${styles.activeButtonText}`
+                                    : 'hover:bg-accent/50'
                                     }`}
                                 onClick={() => setSettings({ theme: 'dark' })}
                             >

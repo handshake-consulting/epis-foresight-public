@@ -56,6 +56,13 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, [article, currentVersionNumber]);
 
+    // Navigate to a specific version
+    const goToSpecificVersion = useCallback((versionNumber: number) => {
+        if (article && versionNumber >= 1 && versionNumber <= article.versions.length) {
+            setCurrentVersionNumber(versionNumber);
+        }
+    }, [article]);
+
     // Process QueryNode data to extract image information
     const processQueryNodeData = useCallback((data: any, versionNumber: number) => {
         if (data.node_type === LoreNodeOutputTypes.QUERY) {
@@ -664,6 +671,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         toggleSlider,
         goToPreviousVersion,
         goToNextVersion,
+        goToSpecificVersion,
         generateArticle,
         stopGeneration,
         resetArticle,

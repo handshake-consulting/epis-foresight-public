@@ -2,10 +2,11 @@
 
 import { ArticleVersion } from "@/components/chat/types";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { useSettingsStore } from "@/store/settingsStore";
+import { BookmarkItem, useSettingsStore } from "@/store/settingsStore";
 import { BookOpen, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArticleMarkdownRender } from "../article/ArticleMarkdownRender";
+import { Button } from "../ui/button";
 
 interface EbookContentProps {
     version: ArticleVersion;
@@ -16,6 +17,8 @@ interface EbookContentProps {
     onNextVersion?: () => void;
     currentVersionNumber: number;
     totalVersions: number;
+    articleId?: string;
+    articleTitle?: string;
 }
 
 export function EbookContent({
@@ -26,11 +29,16 @@ export function EbookContent({
     onPreviousVersion,
     onNextVersion,
     currentVersionNumber,
-    totalVersions
+    totalVersions,
+    articleId = "",
+    articleTitle = "Untitled Document"
 }: EbookContentProps) {
     const contentRef = useRef<HTMLDivElement>(null);
-    const { settings } = useSettingsStore();
+    const { settings, toggleBookmark, isBookmarked } = useSettingsStore();
     const [readingProgress, setReadingProgress] = useState(0);
+
+    // Check if current version is bookmarked
+    const bookmarked = isBookmarked(articleId, version.versionNumber);
 
     // Scroll to top when version changes
     useEffect(() => {
@@ -68,10 +76,10 @@ export function EbookContent({
             <div
                 ref={contentRef}
                 className={`flex-1 overflow-y-auto px-4 py-6 ${theme === "dark"
-                        ? "bg-gray-900"
-                        : theme === "sepia"
-                            ? "bg-amber-50"
-                            : "bg-gray-50"
+                    ? "bg-gray-900"
+                    : theme === "sepia"
+                        ? "bg-amber-50"
+                        : "bg-gray-50"
                     }`}
                 onScroll={handleScroll}
             >
@@ -89,26 +97,87 @@ export function EbookContent({
                                 })}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className={`${theme === "dark"
-                                ? "bg-gray-800 text-gray-300 border-gray-700"
-                                : "bg-white text-gray-700 border-gray-200"
-                                } px-2 py-1 rounded-full border text-xs`}>
-                                Version {version.versionNumber}
-                            </span>
-                            {isLatestVersion && (
-                                <span className={`${theme === "dark"
-                                    ? "bg-blue-900 text-blue-100 border-blue-800"
-                                    : "bg-blue-50 text-blue-700 border-blue-100"
-                                    } px-2 py-1 rounded-full border text-xs`}>
-                                    Latest
-                                </span>
+                        <div className="flex items-center space-x-2">
+                            {/* Version navigation - fixed position at bottom */}
+                            {totalVersions > 1 && (
+                                <div
+                                    className="flex flex-row space-x-1 items-center"
+                                // className={`fixed bottom-[52px] left-0 right-0 z-40 ${theme === "dark"
+                                //     ? "bg-gray-800 border-t border-gray-700"
+                                //     : theme === "sepia"
+                                //         ? "bg-amber-100 border-t border-amber-200"
+                                //         : "bg-white border-t border-gray-200"
+                                //     } py-2 px-4 flex justify-between items-center shadow-md`}
+
+                                >
+                                    <Button
+                                        onClick={onPreviousVersion}
+                                        disabled={currentVersionNumber <= 1}
+                                        size={"icon"}
+                                        variant={'outline'}
+                                        className="rounded-full w-7 h-7"
+                                        // className={`flex items-center gap-1 px-3 py-1.5 rounded-md ${currentVersionNumber <= 1
+                                        //     ? theme === "dark"
+                                        //         ? "text-gray-600 cursor-not-allowed"
+                                        //         : "text-gray-300 cursor-not-allowed"
+                                        //     : theme === "dark"
+                                        //         ? "text-gray-300 hover:bg-gray-700"
+                                        //         : "text-gray-700 hover:bg-gray-100"
+                                        //     } transition-colors`}
+                                        aria-label="Previous version"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                        <span className="sr-only">Previous Version</span>
+                                    </Button>
+
+                                    <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                        } italic font-medium`}>
+                                        Version {currentVersionNumber} of {totalVersions}
+                                    </div>
+
+                                    <Button
+                                        onClick={onNextVersion}
+                                        disabled={currentVersionNumber >= totalVersions}
+                                        size={"icon"}
+                                        variant={'outline'}
+                                        className="rounded-full h-7 w-7"
+                                        // className={`flex items-center gap-1 px-3 py-1.5 rounded-md ${currentVersionNumber >= totalVersions
+                                        //     ? theme === "dark"
+                                        //         ? "text-gray-600 cursor-not-allowed"
+                                        //         : "text-gray-300 cursor-not-allowed"
+                                        //     : theme === "dark"
+                                        //         ? "text-gray-300 hover:bg-gray-700"
+                                        //         : "text-gray-700 hover:bg-gray-100"
+                                        //     } transition-colors`}
+                                        aria-label="Next version"
+                                    >
+                                        <span className="sr-only">Next Version</span>
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             )}
+                            <div className="flex items-center gap-2">
+                                <span className={`${theme === "dark"
+                                    ? "bg-gray-800 text-gray-300 border-gray-700"
+                                    : "bg-white text-gray-700 border-gray-200"
+                                    } px-2 py-1 rounded-full border text-xs`}>
+                                    Version {version.versionNumber}
+                                </span>
+                                {isLatestVersion && (
+                                    <span className={`${theme === "dark"
+                                        ? "bg-blue-900 text-blue-100 border-blue-800"
+                                        : "bg-blue-50 text-blue-700 border-blue-100"
+                                        } px-2 py-1 rounded-full border text-xs`}>
+                                        Latest
+                                    </span>
+                                )}
+                            </div>
                         </div>
+
                     </div>
 
                     {/* Edit prompt if available */}
-                    {version.editPrompt && version.versionNumber > 1 && (
+                    {/* {version.editPrompt && version.versionNumber > 1 && (
                         <div className={`mb-6 ${theme === "dark"
                             ? "bg-gray-800 border-gray-700 text-gray-300"
                             : "bg-gray-100 border-gray-200 text-gray-700"
@@ -117,7 +186,7 @@ export function EbookContent({
                                 } mb-1`}>Edit prompt:</div>
                             <div>{version.editPrompt}</div>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Progress bar for generation */}
                     {isStreaming && (
@@ -137,10 +206,10 @@ export function EbookContent({
 
                     {/* Book-like container */}
                     <div className={`${theme === "dark"
-                            ? "bg-gray-800 border-gray-700 text-gray-100"
-                            : theme === "sepia"
-                                ? "bg-amber-100 border-amber-200 text-amber-900"
-                                : "bg-white border-gray-200 text-gray-800"
+                        ? "bg-gray-800 border-gray-700 text-gray-100"
+                        : theme === "sepia"
+                            ? "bg-amber-100 border-amber-200 text-amber-900"
+                            : "bg-white border-gray-200 text-gray-800"
                         } border rounded-lg shadow-lg p-8 mb-8 relative`}>
                         {/* Decorative book elements */}
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-b from-gray-200 to-transparent opacity-10"></div>
@@ -148,13 +217,27 @@ export function EbookContent({
 
                         {/* Bookmark button */}
                         <button
-                            className={`absolute top-2 right-2 p-1 rounded-full ${theme === "dark"
-                                ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
-                                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                            className={`absolute top-2 right-2 p-1 rounded-full ${bookmarked
+                                    ? theme === "dark"
+                                        ? "text-blue-400 hover:text-blue-300 hover:bg-gray-700"
+                                        : "text-blue-500 hover:text-blue-600 hover:bg-gray-100"
+                                    : theme === "dark"
+                                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                                 } transition-colors`}
-                            aria-label="Bookmark this page"
+                            aria-label={bookmarked ? "Remove bookmark" : "Bookmark this page"}
+                            onClick={() => {
+                                const bookmark: BookmarkItem = {
+                                    articleId,
+                                    versionNumber: version.versionNumber,
+                                    title: articleTitle,
+                                    timestamp: new Date(version.timestamp),
+                                    content: version.content.substring(0, 100) + "..." // Preview content
+                                };
+                                toggleBookmark(bookmark);
+                            }}
                         >
-                            <Bookmark className="h-4 w-4" />
+                            <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-current" : ""}`} />
                         </button>
 
                         {/* Page number */}
@@ -171,54 +254,7 @@ export function EbookContent({
                 </div>
             </div>
 
-            {/* Version navigation - fixed position at bottom */}
-            {totalVersions > 1 && (
-                <div className={`fixed bottom-[52px] left-0 right-0 z-40 ${theme === "dark"
-                        ? "bg-gray-800 border-t border-gray-700"
-                        : theme === "sepia"
-                            ? "bg-amber-100 border-t border-amber-200"
-                            : "bg-white border-t border-gray-200"
-                    } py-2 px-4 flex justify-between items-center shadow-md`}>
-                    <button
-                        onClick={onPreviousVersion}
-                        disabled={currentVersionNumber <= 1}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-md ${currentVersionNumber <= 1
-                            ? theme === "dark"
-                                ? "text-gray-600 cursor-not-allowed"
-                                : "text-gray-300 cursor-not-allowed"
-                            : theme === "dark"
-                                ? "text-gray-300 hover:bg-gray-700"
-                                : "text-gray-700 hover:bg-gray-100"
-                            } transition-colors`}
-                        aria-label="Previous version"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                        <span className="text-sm">Previous Version</span>
-                    </button>
 
-                    <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                        } italic font-medium`}>
-                        Version {currentVersionNumber} of {totalVersions}
-                    </div>
-
-                    <button
-                        onClick={onNextVersion}
-                        disabled={currentVersionNumber >= totalVersions}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-md ${currentVersionNumber >= totalVersions
-                            ? theme === "dark"
-                                ? "text-gray-600 cursor-not-allowed"
-                                : "text-gray-300 cursor-not-allowed"
-                            : theme === "dark"
-                                ? "text-gray-300 hover:bg-gray-700"
-                                : "text-gray-700 hover:bg-gray-100"
-                            } transition-colors`}
-                        aria-label="Next version"
-                    >
-                        <span className="text-sm">Next Version</span>
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
-                </div>
-            )}
 
             {/* Reading progress indicator */}
             <div className="fixed bottom-0 left-0 right-0 h-1">

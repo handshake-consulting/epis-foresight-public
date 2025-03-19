@@ -1,7 +1,4 @@
-import AutoLoginProvider from "@/components/AutoLoginProvider";
-import { getProfile } from "@/utils/profile";
-import { cookies } from "next/headers";
-import EbookHomePage from "./EbookHomePage";
+import { redirect } from "next/navigation";
 
 
 
@@ -16,42 +13,8 @@ interface UserProfile {
 
 const page = async () => {
     // Default profile to use if we can't get a real one
-    const defaultProfile: UserProfile = {
-        email: "ekemboy@gmail.com",
-        display_name: "Guest User",
-        photo_url: "",
-        email_verified: true,
-        new_user: false
-    };
 
-    // Try to get the profile with existing token
-    let profile: UserProfile = defaultProfile;
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('auth-token');
-
-        if (token) {
-            try {
-                const fetchedProfile = await getProfile();
-                if (fetchedProfile) {
-                    profile = fetchedProfile;
-                }
-            } catch (error) {
-                console.error("Error getting profile:", error);
-                // Continue with default profile
-            }
-        }
-    } catch (error) {
-        console.error("Error checking token:", error);
-        // Continue with default profile
-    }
-    console.log("profile", profile);
-
-    return (
-        <AutoLoginProvider>
-            <EbookHomePage profile={profile} />
-        </AutoLoginProvider>
-    );
+    return redirect("/article")
 };
 
 export default page;

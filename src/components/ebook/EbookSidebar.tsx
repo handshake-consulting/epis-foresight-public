@@ -1,7 +1,8 @@
 "use client"
 
 import { ChatSession } from "@/components/chat/types";
-import { BookMarked, BookPlus, ChevronLeft, FileText } from "lucide-react";
+import { useSettingsStore } from "@/store/settingsStore";
+import { BookMarked, BookPlus, ChevronLeft, FileText, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface EbookSidebarProps {
@@ -13,6 +14,7 @@ interface EbookSidebarProps {
     onNewArticle: () => void;
     onDeleteSession: (sessionId: string, e: React.MouseEvent) => void;
     theme: string;
+    onBookmarkSelect?: (articleId: string, versionNumber: number) => void;
 }
 
 export function EbookSidebar({
@@ -23,9 +25,11 @@ export function EbookSidebar({
     onSessionSelect,
     onNewArticle,
     onDeleteSession,
-    theme
+    theme,
+    onBookmarkSelect
 }: EbookSidebarProps) {
     const [activeTab, setActiveTab] = useState<"toc" | "bookmarks">("toc");
+    const { bookmarks, removeBookmark } = useSettingsStore();
 
     return (
         <div className={`fixed inset-0 z-20 ${isOpen ? "block" : "hidden"}`}>
@@ -38,18 +42,18 @@ export function EbookSidebar({
             {/* Sidebar */}
             <div
                 className={`absolute top-0 left-0 bottom-0 w-80 ${theme === "dark"
-                        ? "bg-gray-800 border-gray-700 text-gray-100"
-                        : theme === "sepia"
-                            ? "bg-amber-50 border-amber-200 text-amber-900"
-                            : "bg-white border-gray-200 text-gray-800"
+                    ? "bg-gray-800 border-gray-700 text-gray-100"
+                    : theme === "sepia"
+                        ? "bg-amber-50 border-amber-200 text-amber-900"
+                        : "bg-white border-gray-200 text-gray-800"
                     } border-r shadow-xl overflow-hidden transition-transform duration-300 flex flex-col`}
             >
                 {/* Header */}
                 <div className={`p-4 ${theme === "dark"
-                        ? "bg-gray-900"
-                        : theme === "sepia"
-                            ? "bg-amber-100"
-                            : "bg-gray-50"
+                    ? "bg-gray-900"
+                    : theme === "sepia"
+                        ? "bg-amber-100"
+                        : "bg-gray-50"
                     } border-b ${theme === "dark"
                         ? "border-gray-700"
                         : theme === "sepia"
@@ -190,14 +194,63 @@ export function EbookSidebar({
                             </div>
                         )
                     ) : (
-                        <div className={`text-center p-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                            }`}>
-                            <div className="mb-2">
-                                <BookMarked className="h-12 w-12 mx-auto opacity-30" />
+                        bookmarks.length > 0 ? (
+                            <div className="space-y-2">
+                                {bookmarks.map((bookmark, index) => (
+                                    <div
+                                        key={`${bookmark.articleId}-${bookmark.versionNumber}`}
+                                        className={`p-3 rounded-md cursor-pointer ${theme === "dark"
+                                            ? "hover:bg-gray-700 border border-gray-700"
+                                            : "hover:bg-gray-100 border border-gray-200"
+                                            } transition-colors`}
+                                        onClick={() => onBookmarkSelect && onBookmarkSelect(bookmark.articleId, bookmark.versionNumber)}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center">
+                                                <BookMarked className={`h-4 w-4 mr-2 ${theme === "dark" ? "text-blue-400" : "text-blue-500"
+                                                    }`} />
+                                                <span className={`font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-800"
+                                                    } flex-1 truncate`}>
+                                                    {bookmark.title.length > 20 ? bookmark.title.substring(0, 20) + '...' : bookmark.title}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeBookmark(bookmark.articleId, bookmark.versionNumber);
+                                                }}
+                                                className={`ml-2 p-1 rounded-full ${theme === "dark"
+                                                    ? "hover:bg-gray-600 text-gray-400 hover:text-gray-200"
+                                                    : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                                                    } transition-colors`}
+                                                aria-label="Remove bookmark"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                        <div className={`mt-1 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                            }`}>
+                                            Version {bookmark.versionNumber} • {new Date(bookmark.timestamp).toLocaleDateString()}
+                                        </div>
+                                        {bookmark.content && (
+                                            <div className={`mt-2 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                                } line-clamp-2 italic`}>
+                                                {bookmark.content}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                            <p>No bookmarks yet</p>
-                            <p className="text-sm mt-2">Bookmarking feature coming soon</p>
-                        </div>
+                        ) : (
+                            <div className={`text-center p-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                }`}>
+                                <div className="mb-2">
+                                    <BookMarked className="h-12 w-12 mx-auto opacity-30" />
+                                </div>
+                                <p>No bookmarks yet</p>
+                                <p className="text-sm mt-2">Click the bookmark icon on any page to add it here</p>
+                            </div>
+                        )
                     )}
                 </div>
             </div>

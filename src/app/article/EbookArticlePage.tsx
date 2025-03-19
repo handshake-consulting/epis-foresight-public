@@ -76,6 +76,7 @@ export default function EbookArticlePage({
         toggleSlider,
         goToPreviousVersion,
         goToNextVersion,
+        goToSpecificVersion,
         generateArticle,
         stopGeneration,
         resetArticle,
@@ -373,6 +374,27 @@ export default function EbookArticlePage({
         }
     };
 
+    // Navigate to bookmarked content
+    const navigateToBookmark = async (articleId: string, versionNumber: number) => {
+        if (!userId) return;
+
+        // Find the session for this article
+        const session = sessions.find(s => s.id === articleId);
+        if (session) {
+            // Switch to the session
+            await switchSession(session);
+
+            // Close sidebar
+            setSidebarOpen(false);
+
+            // Use a timeout to ensure article is fully loaded
+            setTimeout(() => {
+                // Use the new direct navigation function
+                goToSpecificVersion(versionNumber);
+            }, 500);
+        }
+    };
+
     return (
         <div className={`min-h-screen ${theme === "dark"
             ? "bg-gray-900 text-gray-100"
@@ -399,6 +421,7 @@ export default function EbookArticlePage({
                 onNewArticle={startNewArticle}
                 onDeleteSession={deleteSession}
                 theme={theme}
+                onBookmarkSelect={navigateToBookmark}
             />
 
             {/* Main content */}
@@ -414,6 +437,8 @@ export default function EbookArticlePage({
                     onNextVersion={goToNextVersion}
                     currentVersionNumber={currentVersionNumber}
                     totalVersions={article?.versions.length || 1}
+                    articleId={currentSession?.id}
+                    articleTitle={currentSession?.title}
                 />
             )}
 

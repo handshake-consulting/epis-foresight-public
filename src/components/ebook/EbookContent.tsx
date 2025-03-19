@@ -2,7 +2,7 @@
 
 import { ArticleVersion } from "@/components/chat/types";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { useSettingsStore } from "@/store/settingsStore";
+import { BookmarkItem, useSettingsStore } from "@/store/settingsStore";
 import { BookOpen, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArticleMarkdownRender } from "../article/ArticleMarkdownRender";
@@ -17,6 +17,8 @@ interface EbookContentProps {
     onNextVersion?: () => void;
     currentVersionNumber: number;
     totalVersions: number;
+    articleId?: string;
+    articleTitle?: string;
 }
 
 export function EbookContent({
@@ -27,11 +29,16 @@ export function EbookContent({
     onPreviousVersion,
     onNextVersion,
     currentVersionNumber,
-    totalVersions
+    totalVersions,
+    articleId = "",
+    articleTitle = "Untitled Document"
 }: EbookContentProps) {
     const contentRef = useRef<HTMLDivElement>(null);
-    const { settings } = useSettingsStore();
+    const { settings, toggleBookmark, isBookmarked } = useSettingsStore();
     const [readingProgress, setReadingProgress] = useState(0);
+
+    // Check if current version is bookmarked
+    const bookmarked = isBookmarked(articleId, version.versionNumber);
 
     // Scroll to top when version changes
     useEffect(() => {
@@ -210,13 +217,27 @@ export function EbookContent({
 
                         {/* Bookmark button */}
                         <button
-                            className={`absolute top-2 right-2 p-1 rounded-full ${theme === "dark"
-                                ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
-                                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                            className={`absolute top-2 right-2 p-1 rounded-full ${bookmarked
+                                    ? theme === "dark"
+                                        ? "text-blue-400 hover:text-blue-300 hover:bg-gray-700"
+                                        : "text-blue-500 hover:text-blue-600 hover:bg-gray-100"
+                                    : theme === "dark"
+                                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                                 } transition-colors`}
-                            aria-label="Bookmark this page"
+                            aria-label={bookmarked ? "Remove bookmark" : "Bookmark this page"}
+                            onClick={() => {
+                                const bookmark: BookmarkItem = {
+                                    articleId,
+                                    versionNumber: version.versionNumber,
+                                    title: articleTitle,
+                                    timestamp: new Date(version.timestamp),
+                                    content: version.content.substring(0, 100) + "..." // Preview content
+                                };
+                                toggleBookmark(bookmark);
+                            }}
                         >
-                            <Bookmark className="h-4 w-4" />
+                            <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-current" : ""}`} />
                         </button>
 
                         {/* Page number */}

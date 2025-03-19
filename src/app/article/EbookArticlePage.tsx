@@ -108,9 +108,10 @@ export default function EbookArticlePage({
         }
     });
 
-    // Get URL search params to check for new article flag
+    // Get URL search params
     const searchParams = useSearchParams();
     const isNewArticle = searchParams.get("new") === "true";
+    const versionParam = searchParams.get("version");
 
 
     // Start new article
@@ -175,6 +176,7 @@ export default function EbookArticlePage({
                     // If initialSessionId is provided, try to load that specific session
                     if (initialSessionId) {
                         const currentSessionIndex = allSessions.findIndex(s => s.id === initialSessionId);
+                        console.log(currentSessionIndex);
 
                         if (currentSessionIndex !== -1) {
                             const sessionData = allSessions[currentSessionIndex];
@@ -228,6 +230,19 @@ export default function EbookArticlePage({
         };
         loadUserAndSessions();
     }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle]);
+    console.log(initialSessionId);
+    // console.log(currentSession);
+
+
+    // Handle version parameter from URL
+    useEffect(() => {
+        if (versionParam && article) {
+            const version = parseInt(versionParam, 10);
+            if (!isNaN(version) && version >= 1 && version <= article.versions.length) {
+                goToSpecificVersion(version);
+            }
+        }
+    }, [article, versionParam, goToSpecificVersion]);
 
     // Refresh sessions list
     const refreshSessions = useCallback(async () => {

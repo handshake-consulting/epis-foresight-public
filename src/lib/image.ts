@@ -23,8 +23,25 @@ export async function genCloudflareImage(prompt: string): Promise<Blob | null> {
         console.error("resp", resp);
         return null;
     }
+    const testres = await resp.json();
+    console.log("resp", testres);
 
-    return await resp.blob();
+    // Extract image data from JSON response
+    if (testres.success && testres.result?.image) {
+        // Convert base64 image to blob
+        const base64Data = testres.result.image;
+        const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
+        const byteArrays = [];
+
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteArrays.push(byteCharacters.charCodeAt(i));
+        }
+
+        const byteArray = new Uint8Array(byteArrays);
+        return new Blob([byteArray], { type: 'image/jpeg' });
+    }
+
+    return null;
 }
 const genImageBlob = genCloudflareImage;
 export async function genAndUploadImage(prompt: string) {
@@ -32,6 +49,7 @@ export async function genAndUploadImage(prompt: string) {
     const filename = `images/${key}.jpg`;
 
     const blob = await genImageBlob(prompt);
+    console.log(blob);
 
     if (!blob) {
         return null;

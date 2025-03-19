@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
 
     // For all other paths, redirect to /chat
     const url = request.nextUrl.clone();
-    url.pathname = '/home';
+    url.pathname = '/article';
     return NextResponse.redirect(url);
 }
 

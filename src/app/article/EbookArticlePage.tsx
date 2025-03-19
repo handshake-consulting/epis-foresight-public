@@ -4,6 +4,7 @@ import { ImageSlider } from "@/components/article";
 import { ChatSession } from "@/components/chat/types";
 import { EbookContent, EbookFooter, EbookHeader, EbookSidebar, EmptyStateContent } from "@/components/ebook";
 import SettingsDialog from "@/components/settings/SettingsDialog";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -26,6 +27,7 @@ export default function EbookArticlePage({
     const [theme, setTheme] = useState("light");
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
     // Use the auth check hook to verify authentication on the client side
@@ -117,6 +119,7 @@ export default function EbookArticlePage({
     // Load user sessions and user info
     useEffect(() => {
         const loadUserAndSessions = async () => {
+            setIsLoading(true);
             const { user } = await getCurrentAuthState();
             if (user) {
                 setUserId(user.uid);
@@ -192,6 +195,7 @@ export default function EbookArticlePage({
                     }
                 }
             }
+            setIsLoading(false);
         };
         loadUserAndSessions();
     }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle]);
@@ -257,6 +261,7 @@ export default function EbookArticlePage({
     const switchSession = async (session: ChatSession) => {
         if (!userId) return;
 
+        setIsLoading(true);
         setCurrentSession(session);
         stopGeneration();
 
@@ -279,6 +284,8 @@ export default function EbookArticlePage({
 
         // Mark this article as last read
         localStorage.setItem("lastReadArticle", session.id);
+
+        setIsLoading(false);
 
         // Close sidebar after selection on mobile
         if (window.innerWidth < 768) {
@@ -319,8 +326,10 @@ export default function EbookArticlePage({
 
                 // If we deleted current session, switch to the most recent one
                 if (currentSession?.id === sessionId) {
+                    setIsLoading(true);
                     setCurrentSession(updatedSessions[0]);
                     await loadArticleSession(updatedSessions[0].id, userId);
+                    setIsLoading(false);
 
                     // Update next and previous articles
                     setPrevArticle(null);
@@ -424,10 +433,21 @@ export default function EbookArticlePage({
                 onBookmarkSelect={navigateToBookmark}
             />
 
+            {/* Loading indicator */}
+            {isLoading && (
+                <div className={`w-full max-w-4xl mx-auto px-4 py-8 ${theme === "dark" ? "text-gray-100" :
+                    theme === "sepia" ? "text-amber-900" :
+                        "text-gray-800"
+                    }`}>
+                    <div className="text-center mb-4">Loading article...</div>
+                    <ProgressBar isLoading={true} className="mb-8" />
+                </div>
+            )}
+
             {/* Main content */}
-            {isFirstGeneration ? (
+            {!isLoading && isFirstGeneration ? (
                 <EmptyStateContent theme={theme} />
-            ) : currentVersion && (
+            ) : !isLoading && currentVersion && (
                 <EbookContent
                     version={currentVersion}
                     isLatestVersion={isLatestVersion}

@@ -145,7 +145,88 @@ export default function EbookArticlePage({
 
                 const supabase = createClient();
 
-                // Load first page of sessions for navigation
+                // If initialSessionId is provided, first try to directly fetch that specific session
+                if (initialSessionId) {
+                    const { data: specificSession, error: specificError } = await supabase
+                        .from("chat_sessions")
+                        .select("*")
+                        .eq("id", initialSessionId)
+                        .eq("user_id", user.uid)
+                        .single();
+
+                    if (specificError) {
+                        console.error("Error loading specific session:", specificError);
+                    } else if (specificSession) {
+                        // Get the position of this session in the overall list to determine pagination
+                        const { data: positionData } = await supabase
+                            .from("chat_sessions")
+                            .select("id")
+                            .eq("user_id", user.uid)
+                            .eq("type", "article")
+                            .order("updated_at", { ascending: false });
+
+                        const sessionPosition = positionData ? positionData.findIndex(s => s.id === initialSessionId) : -1;
+
+                        if (sessionPosition !== -1) {
+                            // Calculate which page this session is on
+                            const sessionPage = Math.floor(sessionPosition / PAGE_SIZE);
+                            const start = sessionPage * PAGE_SIZE;
+                            const end = start + PAGE_SIZE - 1;
+
+                            // Load the page of sessions that contains this specific session
+                            const { data: pageSessions } = await supabase
+                                .from("chat_sessions")
+                                .select("*")
+                                .eq("user_id", user.uid)
+                                .eq("type", "article")
+                                .order("updated_at", { ascending: false })
+                                .range(start, end);
+
+                            if (pageSessions && pageSessions.length > 0) {
+                                setSessions(pageSessions);
+                                setCurrentPage(sessionPage + 1); // +1 because pages are 0-indexed in the calculation
+
+                                // Find the session in the loaded page
+                                const currentSessionIndex = pageSessions.findIndex(s => s.id === initialSessionId);
+
+                                if (currentSessionIndex !== -1) {
+                                    setCurrentSession(specificSession);
+
+                                    // Set next and previous articles for navigation
+                                    if (currentSessionIndex > 0) {
+                                        setPrevArticle(pageSessions[currentSessionIndex - 1]);
+                                    } else {
+                                        setPrevArticle(null);
+                                    }
+
+                                    if (currentSessionIndex < pageSessions.length - 1) {
+                                        setNextArticle(pageSessions[currentSessionIndex + 1]);
+                                    } else {
+                                        setNextArticle(null);
+                                    }
+
+                                    await loadArticleSession(specificSession.id, user.uid);
+
+                                    // Mark this article as last read
+                                    localStorage.setItem("lastReadArticle", specificSession.id);
+
+                                    // Check if there are more sessions
+                                    const { count } = await supabase
+                                        .from("chat_sessions")
+                                        .select("*", { count: "exact", head: true })
+                                        .eq("user_id", user.uid)
+                                        .eq("type", "article");
+
+                                    setHasMoreSessions(count !== null && count > (sessionPage + 1) * PAGE_SIZE);
+                                    setIsLoading(false);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // If no initialSessionId or specific session not found, load first page of sessions
                 const { data: allSessions, error } = await supabase
                     .from("chat_sessions")
                     .select("*")
@@ -170,60 +251,25 @@ export default function EbookArticlePage({
                 setHasMoreSessions(count !== null && count > PAGE_SIZE);
                 setCurrentPage(1); // We've loaded the first page
 
-                if (allSessions) {
+                if (allSessions && allSessions.length > 0) {
                     setSessions(allSessions);
+                    setCurrentSession(allSessions[0]);
 
-                    // If initialSessionId is provided, try to load that specific session
-                    if (initialSessionId) {
-                        const currentSessionIndex = allSessions.findIndex(s => s.id === initialSessionId);
-                        console.log(currentSessionIndex);
-
-                        if (currentSessionIndex !== -1) {
-                            const sessionData = allSessions[currentSessionIndex];
-                            setCurrentSession(sessionData);
-
-                            // Set next and previous articles for navigation
-                            if (currentSessionIndex > 0) {
-                                setPrevArticle(allSessions[currentSessionIndex - 1]);
-                            } else {
-                                setPrevArticle(null);
-                            }
-
-                            if (currentSessionIndex < allSessions.length - 1) {
-                                setNextArticle(allSessions[currentSessionIndex + 1]);
-                            } else {
-                                setNextArticle(null);
-                            }
-
-                            await loadArticleSession(sessionData.id, user.uid);
-
-                            // Mark this article as last read
-                            localStorage.setItem("lastReadArticle", sessionData.id);
-
-                            return;
-                        }
-                    }
-
-                    // If no initialSessionId or session not found, load most recent session
-                    if (allSessions.length > 0) {
-                        setCurrentSession(allSessions[0]);
-
-                        // Set next and previous articles for navigation
-                        setPrevArticle(null);
-                        if (allSessions.length > 1) {
-                            setNextArticle(allSessions[1]);
-                        } else {
-                            setNextArticle(null);
-                        }
-
-                        await loadArticleSession(allSessions[0].id, user.uid);
-
-                        // Mark this article as last read
-                        localStorage.setItem("lastReadArticle", allSessions[0].id);
+                    // Set next and previous articles for navigation
+                    setPrevArticle(null);
+                    if (allSessions.length > 1) {
+                        setNextArticle(allSessions[1]);
                     } else {
-                        // No article sessions yet
-                        resetArticle();
+                        setNextArticle(null);
                     }
+
+                    await loadArticleSession(allSessions[0].id, user.uid);
+
+                    // Mark this article as last read
+                    localStorage.setItem("lastReadArticle", allSessions[0].id);
+                } else {
+                    // No article sessions yet
+                    resetArticle();
                 }
             }
             setIsLoading(false);

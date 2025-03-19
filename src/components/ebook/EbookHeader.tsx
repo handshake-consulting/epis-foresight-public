@@ -36,7 +36,7 @@ export function EbookHeader({
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const searchRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<any>(null);
     const router = useRouter();
 
     // Close search dropdown when clicking outside

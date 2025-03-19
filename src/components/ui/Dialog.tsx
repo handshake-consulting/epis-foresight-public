@@ -10,8 +10,6 @@ interface DialogProps {
 }
 
 const Dialog: React.FC<DialogProps> = ({ isOpen, title, onClose, children }) => {
-  if (!isOpen) return null;
-
   const { settings } = useSettingsStore();
 
   // Determine theme-based styles
@@ -42,6 +40,8 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, title, onClose, children }) => 
   };
 
   const styles = getThemeStyles();
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

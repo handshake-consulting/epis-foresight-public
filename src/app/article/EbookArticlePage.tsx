@@ -127,6 +127,7 @@ export default function EbookArticlePage({
                 // If the new=true parameter is present, start a new article
                 if (isNewArticle) {
                     startNewArticle();
+                    setIsLoading(false);
                     return;
                 }
 

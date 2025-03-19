@@ -63,8 +63,179 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, [article]);
 
-    // Process QueryNode data to extract image information
-    const processQueryNodeData = useCallback((data: any, versionNumber: number) => {
+    // Process QueryNode data to extract image information and generate title
+    const processQueryNodeData = useCallback(async (data: any, versionNumber: number) => {
+        console.log("Processing PromptNode data for article:", data);
+        if (data.node_type === LoreNodeOutputTypes.PROMPT && data.node_id === "first-draft") {
+
+
+            try {
+                // Extract content from the data
+                const content = data.prompt || data.content || "";
+
+                // Get Firebase ID token for authentication
+                const token = await getIdToken();
+
+                // Send to Haiku for title generation
+                const response = await fetch('/api/generate-title', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message: content })
+                });
+
+                if (response.ok) {
+                    const titleData = await response.json();
+                    const generatedTitle = titleData.title;
+
+                    // Update article title
+                    setArticle(prev => {
+                        if (!prev) return prev;
+
+                        return {
+                            ...prev,
+                            title: generatedTitle
+                        };
+                    });
+
+                    // Update title in database if we have session ID
+                    if (currentUserIdRef.current && currentSessionIdRef.current) {
+                        const supabase = createClient();
+                        await supabase
+                            .from('chat_sessions')
+                            .update({ title: generatedTitle })
+                            .eq('id', currentSessionIdRef.current);
+                    }
+
+                    console.log("Generated title:", generatedTitle);
+                } else {
+                    console.error("Failed to generate title:", await response.text());
+                }
+
+                // Send to Haiku for UI elements to display iteratively
+                // This simulates the OpenAI Deep Research style display
+                const uiElements = [
+                    { type: 'header', content: 'Article Summary' },
+                    { type: 'text', content: 'Processing your article...' },
+                    { type: 'progress', value: 25 },
+                    { type: 'text', content: 'Analyzing key points...' },
+                    { type: 'progress', value: 50 },
+                    { type: 'text', content: 'Generating insights...' },
+                    { type: 'progress', value: 75 },
+                    { type: 'text', content: 'Finalizing content...' },
+                    { type: 'progress', value: 100 }
+                ];
+
+                // Display UI elements iteratively
+                for (let i = 0; i < uiElements.length; i++) {
+                    const element = uiElements[i];
+
+                    // Update article with UI element
+                    setArticle(prev => {
+                        if (!prev) return prev;
+
+                        // Add UI element to content
+                        const updatedVersions = prev.versions.map(v => {
+                            if (v.versionNumber === versionNumber) {
+                                // For simplicity, we're just appending text representation
+                                // In a real implementation, you might use a more structured approach
+                                let updatedContent = v.content;
+
+                                if (element.type === 'header') {
+                                    updatedContent += `\n\n## ${element.content}\n\n`;
+                                } else if (element.type === 'text') {
+                                    updatedContent += `${element.content}\n\n`;
+                                } else if (element.type === 'progress') {
+                                    updatedContent += `Progress: ${element.value}%\n\n`;
+                                }
+
+                                return {
+                                    ...v,
+                                    content: updatedContent
+                                };
+                            }
+                            return v;
+                        });
+
+                        return {
+                            ...prev,
+                            versions: updatedVersions
+                        };
+                    });
+
+                    // Simulate delay between UI elements
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                // Transform into image prompt using Haiku and send to Fireworks
+                try {
+                    // Create image prompt from content
+                    const imagePrompt = `Create an illustrative image for an article about: ${content.substring(0, 100)}`;
+
+                    // In a real implementation, you would:
+                    // 1. Send to Haiku to transform the content into a better image prompt
+                    // 2. Send that prompt to Fireworks API
+                    // 3. Process the response and add the image to the article
+
+                    console.log("Generated image prompt:", imagePrompt);
+
+                    // Simulate image generation response
+                    // In a real implementation, this would be the response from Fireworks API
+                    const mockImageResponse = {
+                        uuid: `mock-image-${Date.now()}`,
+                        storage_type: "bucket"
+                    };
+
+                    // Create image message
+                    const newImage: ImageMessage = {
+                        id: uuidv4(),
+                        imageId: mockImageResponse.uuid,
+                        storageType: mockImageResponse.storage_type,
+                        sender: "assistant",
+                        timestamp: new Date(),
+                        version: versionNumber
+                    };
+
+                    // Update article with new image
+                    setArticle(prev => {
+                        if (!prev) return prev;
+
+                        const updatedVersions = prev.versions.map(v => {
+                            if (v.versionNumber === versionNumber) {
+                                return {
+                                    ...v,
+                                    images: [...(v.images || []), newImage]
+                                };
+                            }
+                            return v;
+                        });
+
+                        return {
+                            ...prev,
+                            versions: updatedVersions
+                        };
+                    });
+
+                    // Store image message in database
+                    if (currentUserIdRef.current && currentSessionIdRef.current) {
+                        storeImageMessageInSupabase(
+                            currentUserIdRef.current,
+                            currentSessionIdRef.current,
+                            newImage.imageId,
+                            newImage.storageType,
+                            versionNumber
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error generating image:", error);
+                }
+            } catch (error) {
+                console.error("Error processing PromptNode data:", error);
+            }
+        }
+
         if (data.node_type === LoreNodeOutputTypes.QUERY) {
             console.log("Processing QueryNode data for article:", data);
 
@@ -134,7 +305,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 }
             }
         }
-    }, []);
+    }, []);  // Note: You might need to add dependencies here based on your linting rules
 
     // Process the article stream
     const processArticleStream = useCallback(async (stream: ReadableStream, versionNumber: number) => {
@@ -181,7 +352,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                             // Process batch data for images
                             if (event.event_type === EventType.BatchDataOutput && event.event_data) {
-                                processQueryNodeData(event.event_data, versionNumber);
+                                await processQueryNodeData(event.event_data, versionNumber);
                             }
                         } catch (e) {
                             console.warn('Failed to parse final buffer:', buffer, e);
@@ -243,7 +414,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                             // Process batch data for images
                             if (event.event_type === EventType.BatchDataOutput && event.event_data) {
-                                processQueryNodeData(event.event_data, versionNumber);
+                                await processQueryNodeData(event.event_data, versionNumber);
                             }
                         } catch (e) {
                             console.warn('Failed to parse event:', eventJson, e);

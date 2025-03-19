@@ -123,10 +123,19 @@ export function EbookSidebar({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent"
+                    style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: theme === "dark"
+                            ? '#4B5563 transparent'
+                            : theme === "sepia"
+                                ? '#D97706 transparent'
+                                : '#9CA3AF transparent'
+                    }}
+                >
                     {activeTab === "toc" ? (
                         sessions.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-full overflow-y-auto">
                                 {sessions.map((session, index) => (
                                     <div
                                         key={session.id}
@@ -195,7 +204,7 @@ export function EbookSidebar({
                         )
                     ) : (
                         bookmarks.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-full overflow-y-auto">
                                 {bookmarks.map((bookmark, index) => (
                                     <div
                                         key={`${bookmark.articleId}-${bookmark.versionNumber}`}

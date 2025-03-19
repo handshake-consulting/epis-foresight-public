@@ -186,7 +186,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Transform into image prompt using Haiku and send to Supabase
                 try {
                     // Create image prompt from content
-                    const imagePrompt = `Create an illustrative image for an article about: ${content.substring(0, 2000)}`;
+                    const imagePrompt = `Create an illustrative image for an article about: ${content.slice(0, 1000)}`;
 
                     console.log("Generated image prompt:", imagePrompt);
 

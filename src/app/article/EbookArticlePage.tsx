@@ -276,7 +276,7 @@ export default function EbookArticlePage({
         };
         loadUserAndSessions();
     }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle]);
-    console.log(initialSessionId);
+    //  console.log(initialSessionId);
     // console.log(currentSession);
 
 

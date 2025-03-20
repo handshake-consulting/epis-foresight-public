@@ -7,8 +7,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 interface EbookSidebarProps {
-    isOpen: boolean;
-    onClose: () => void;
     sessions: ChatSession[];
     currentSession: ChatSession | null;
     onSessionSelect: (session: ChatSession) => void;
@@ -20,8 +18,6 @@ interface EbookSidebarProps {
 }
 
 export function EbookSidebar({
-    isOpen,
-    onClose,
     sessions,
     currentSession,
     onSessionSelect,
@@ -31,6 +27,7 @@ export function EbookSidebar({
     onBookmarkSelect,
     onLoadMoreSessions
 }: EbookSidebarProps) {
+    const { isSidebarOpen, toggleSidebar } = useSettingsStore();
     const [activeTab, setActiveTab] = useState<"toc" | "bookmarks">("toc");
     const { bookmarks, removeBookmark } = useSettingsStore();
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -63,11 +60,11 @@ export function EbookSidebar({
     }, [hasMoreSessions, isLoadingMore, onLoadMoreSessions, activeTab]);
 
     return (
-        <div className={`fixed inset-0 z-20 ${isOpen ? "block" : "hidden"}`}>
+        <div className={`fixed inset-0 z-20 ${isSidebarOpen ? "block" : "hidden"}`}>
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black/30 transition-opacity duration-300"
-                onClick={onClose}
+                onClick={toggleSidebar}
             ></div>
 
             {/* Sidebar */}
@@ -97,7 +94,7 @@ export function EbookSidebar({
                             Document Library
                         </h2>
                         <button
-                            onClick={onClose}
+                            onClick={toggleSidebar}
                             className={`p-1 rounded-md ${theme === "dark"
                                 ? "hover:bg-gray-700"
                                 : "hover:bg-gray-200"

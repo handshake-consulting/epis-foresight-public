@@ -1,6 +1,7 @@
 "use client"
 
 import { Article, ArticleVersion, ImageMessage } from "@/components/chat/types";
+import { useSettingsStore } from "@/store/settingsStore";
 import { getIdToken } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
 import { useCallback, useRef, useState } from "react";
@@ -22,7 +23,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     const [currentVersionNumber, setCurrentVersionNumber] = useState<number>(1);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const [sliderOpen, setSliderOpen] = useState<boolean>(false);
 
     const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
     const currentUserIdRef = useRef<string | null>(null);
@@ -37,10 +37,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     // Check if current version is the latest
     const isLatestVersion = currentVersionNumber === article?.versions.length;
 
-    // Toggle image slider
-    const toggleSlider = useCallback(() => {
-        setSliderOpen(prev => !prev);
-    }, []);
+    // Get the image slider toggle function from the store
+    const { toggleImageSlider } = useSettingsStore();
 
     // Navigate to previous version
     const goToPreviousVersion = useCallback(() => {
@@ -811,8 +809,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         error,
         isFirstGeneration,
         isLatestVersion,
-        sliderOpen,
-        toggleSlider,
         goToPreviousVersion,
         goToNextVersion,
         goToSpecificVersion,

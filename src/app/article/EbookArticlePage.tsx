@@ -137,6 +137,11 @@ export default function EbookArticlePage({
         [searchParams]
     )
 
+    // useEffect(() => {
+    //     if (!searchParams.get('new')) {
+    //         router.push(`/article?new=true`);
+    //     }
+    // }, [searchParams])
 
     // Start new article
     const startNewArticle = async () => {
@@ -279,7 +284,9 @@ export default function EbookArticlePage({
                     // localStorage.setItem("lastReadArticle", sessionData[0].id);
                 } else {
                     // No article sessions yet
-                    resetArticle();
+                    //   resetArticle();
+
+
                 }
             }
             // setIsLoading(false);

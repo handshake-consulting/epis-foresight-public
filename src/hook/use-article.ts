@@ -328,10 +328,21 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                             // Process batch data for images - ensure we fully await this operation
                             if (event.event_type === EventType.TextBatchOutput && event.event_data) {
-                                const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
-                                if (capturedUrl) {
-                                    imageUrl = capturedUrl;
-                                }
+                                // Start the processing but don't wait for it
+                                const processPromise = processQueryNodeData(event.event_data, versionNumber);
+
+                                // Optionally handle the result when it's ready
+                                processPromise.then(capturedUrl => {
+                                    if (capturedUrl) {
+                                        imageUrl = capturedUrl;
+                                    }
+                                }).catch(error => {
+                                    console.error("Error in parallel processQueryNodeData:", error);
+                                });
+                                // const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
+                                // if (capturedUrl) {
+                                //     imageUrl = capturedUrl;
+                                // }
                             }
                         } catch (e) {
                             console.warn('Failed to parse final buffer:', buffer, e);

@@ -254,7 +254,7 @@ export default function EbookArticlePage({
                     resetArticle();
                 }
             }
-            setIsLoading(false);
+            // setIsLoading(false);
         };
 
         if (!isSessionsLoading) {

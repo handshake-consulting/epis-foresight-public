@@ -1,4 +1,4 @@
-'use react'
+'use client'
 import {
     QueryClient,
     QueryClientProvider,

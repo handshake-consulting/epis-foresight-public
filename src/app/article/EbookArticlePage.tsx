@@ -49,7 +49,7 @@ export default function EbookArticlePage({
 
     // Using the store for UI toggles
     const { toggleSidebar, toggleImageSlider, isSidebarOpen } = useSettingsStore();
-    console.log(isSidebarOpen);
+    // console.log(isSidebarOpen);
 
     // Toggle theme
     const toggleTheme = () => {
@@ -159,7 +159,7 @@ export default function EbookArticlePage({
 
     // Load user sessions and user info
     useEffect(() => {
-        console.log("trigger me");
+        // console.log("trigger me");
 
         const loadUserAndSessions = async () => {
             setIsLoading(true);
@@ -275,7 +275,7 @@ export default function EbookArticlePage({
         }
     }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, router]);
     //  console.log(initialSessionId);
-    console.log(sessionData);
+    // console.log(sessionData);
 
 
     // Handle version parameter from URL

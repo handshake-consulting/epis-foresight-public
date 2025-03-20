@@ -67,12 +67,12 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
         if (data.node_type === LoreNodeOutputTypes.PROMPT && data.node_id === "first-draft") {
 
-            console.log("Processing PromptNode data for article:", data);
+            // console.log("Processing PromptNode data for article:", data);
             try {
                 // Extract content from the data
                 const content = data?.node_result?.llm_output || "";
 
-                console.log("Content ", content);
+                //  console.log("Content ", content);
 
                 // Get Firebase ID token for authentication
                 const token = await getIdToken();
@@ -131,7 +131,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                 .eq('id', currentSessionIdRef.current);
                         }
 
-                        console.log("Generated title:", generatedTitle);
+                        //  console.log("Generated title:", generatedTitle);
                     } else {
                         console.error(`Failed to generate title: ${titleResponse.status} ${titleResponse.statusText}`);
                         if (titleResponse.status === 307) {
@@ -145,7 +145,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     if (imagePromptResponse.ok) {
                         const imagePromptData = await imagePromptResponse.json();
                         imagePrompt = imagePromptData.prompt;
-                        console.log("Generated image prompt:", imagePrompt);
+                        // console.log("Generated image prompt:", imagePrompt);
                     } else {
                         console.error(`Failed to generate image prompt: ${imagePromptResponse.status} ${imagePromptResponse.statusText}`);
                         if (imagePromptResponse.status === 307) {
@@ -230,7 +230,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         }
 
                         const imageData = await response.json();
-                        console.log("Generated image data:", imageData);
+                        //console.log("Generated image data:", imageData);
 
                         // Store the image URL for later use
                         capturedImageUrl = imageData.imageUrl || '';
@@ -298,7 +298,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     if (buffer.trim()) {
                         try {
                             const event = JSON.parse(buffer.trim()) as StreamEvent;
-                            console.log('event', event);
+                            //  console.log('event', event);
                             if (event.event_data?.text) {
                                 accumulatedContent += event.event_data.text;
 
@@ -324,7 +324,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                                 callbacks?.onData?.({ text: event.event_data.text });
                             }
-                            console.log("event", event);
+                            //  console.log("event", event);
 
                             // Process batch data for images - ensure we fully await this operation
                             if (event.event_type === EventType.TextBatchOutput && event.event_data) {
@@ -393,7 +393,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                                 callbacks?.onData?.({ text: event.event_data.text });
                             }
-                            console.log("event", event);
+                            //   console.log("event", event);
                             // Process batch data for images - ensure we fully await this operation
                             if (event.event_type === EventType.TextBatchOutput && event.event_data) {
                                 const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);

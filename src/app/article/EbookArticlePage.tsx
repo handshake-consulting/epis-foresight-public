@@ -34,7 +34,10 @@ export default function EbookArticlePage({
     const router = useRouter()
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
-
+    // Get URL search params
+    const searchParams = useSearchParams();
+    const isNewArticle = searchParams.get("new") === "true";
+    const versionParam = searchParams.get("version");
     // Get settings from the store
     const { settings, setSettings } = useSettingsStore();
 
@@ -45,7 +48,8 @@ export default function EbookArticlePage({
     }, [settings.theme]);
 
     // Using the store for UI toggles
-    const { toggleSidebar, toggleImageSlider } = useSettingsStore();
+    const { toggleSidebar, toggleImageSlider, isSidebarOpen } = useSettingsStore();
+    console.log(isSidebarOpen);
 
     // Toggle theme
     const toggleTheme = () => {
@@ -100,14 +104,23 @@ export default function EbookArticlePage({
                 }
             },
             onError: (error) => console.error("Hook error:", error),
-            onFinish: handleStreamFinish,
+            onFinish: () => {
+                createQueryString('new', 'false')
+                console.log('end');
+
+            },
         }
     });
 
-    // Get URL search params
-    const searchParams = useSearchParams();
-    const isNewArticle = searchParams.get("new") === "true";
-    const versionParam = searchParams.get("version");
+    const createQueryString = useCallback(
+        (name: string, value: string) => {
+            const params = new URLSearchParams(searchParams.toString())
+            params.set(name, value)
+
+            return params.toString()
+        },
+        [searchParams]
+    )
 
 
     // Start new article
@@ -146,6 +159,8 @@ export default function EbookArticlePage({
 
     // Load user sessions and user info
     useEffect(() => {
+        console.log("trigger me");
+
         const loadUserAndSessions = async () => {
             setIsLoading(true);
             const { user } = await getCurrentAuthState();
@@ -258,9 +273,9 @@ export default function EbookArticlePage({
         if (!isSessionsLoading) {
             loadUserAndSessions();
         }
-    }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, sessionData, isSessionsLoading]);
+    }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, router]);
     //  console.log(initialSessionId);
-    // console.log(currentSession);
+    console.log(sessionData);
 
 
     // Handle version parameter from URL

@@ -41,7 +41,7 @@ export function EbookFooter({
         if (isFirstGeneration && !isFooterOpen) {
             toggleFooter();
         }
-    }, [isFirstGeneration, isFooterOpen, toggleFooter]);
+    }, [isFirstGeneration, toggleFooter]);
 
     return (
         <div className={`fixed bottom-0 left-0 right-0 z-50 ${theme === "dark"

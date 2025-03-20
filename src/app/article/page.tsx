@@ -10,8 +10,20 @@ interface UserProfile {
     new_user: boolean;
 }
 
-const page = async () => {
+const page = async (
+    {
+        searchParams
+    }: {
+        searchParams: Promise<{ new: string }>
+    }
+) => {
+    const filters = (await searchParams).new
+    // console.log('filters', filters);
 
+    // if (!filters || filters === 'false') {
+    //     // console.log('wooow', filters);
+    //     redirect("/article?new=true")
+    // }
 
     return (
         <AutoLoginProvider>

@@ -33,6 +33,9 @@ export default function EbookArticlePage({
     const PAGE_SIZE = 10; // Number of sessions to load per page
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const router = useRouter()
+    // Fetch sessions using React Query
+    const { data: sessionData, isLoading: isSessionsLoading, error: sessionsError, refetch: refetchSessions } = useSessions(currentPage === 0 ? 1 : currentPage, PAGE_SIZE);
+
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
     // Get URL search params
@@ -138,6 +141,7 @@ export default function EbookArticlePage({
     )
 
 
+
     // Start new article
     const startNewArticle = async () => {
         if (!userId) return;
@@ -152,8 +156,6 @@ export default function EbookArticlePage({
         router.push("/article?new=true");
     };
 
-    // Fetch sessions using React Query
-    const { data: sessionData, isLoading: isSessionsLoading, error: sessionsError, refetch: refetchSessions } = useSessions(currentPage === 0 ? 1 : currentPage, PAGE_SIZE);
 
     // Update sessions state when sessionData changes
     useEffect(() => {
@@ -179,6 +181,8 @@ export default function EbookArticlePage({
         const loadUserAndSessions = async () => {
             setIsLoading(true);
             const { user } = await getCurrentAuthState();
+            // console.log(user);
+
             if (user) {
                 setUserId(user.uid);
 
@@ -186,6 +190,8 @@ export default function EbookArticlePage({
                 if (isNewArticle) {
                     startNewArticle();
                     setIsLoading(false);
+                    //    console.log('new article');
+
                     return;
                 }
 
@@ -258,7 +264,7 @@ export default function EbookArticlePage({
                         }
                     }
                 }
-
+                console.log('no article sessions yetttty');
                 // If sessionData is available from React Query
                 if (sessionData && sessionData.length > 0) {
                     router.push(`/article/${sessionData[0].id}`);
@@ -279,16 +285,20 @@ export default function EbookArticlePage({
                     // localStorage.setItem("lastReadArticle", sessionData[0].id);
                 } else {
                     // No article sessions yet
-                    resetArticle();
+
+                    startNewArticle()
+                    setIsLoading(false);
+                    console.log('no article sessions yet');
+                    return
                 }
             }
-            // setIsLoading(false);
+
         };
 
-        if (!isSessionsLoading) {
-            loadUserAndSessions();
-        }
-    }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, router]);
+        // if (!isSessionsLoading) {
+        loadUserAndSessions();
+        // }
+    }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle]);
     //  console.log(initialSessionId);
     // console.log(sessionData);
 
@@ -525,7 +535,15 @@ export default function EbookArticlePage({
         }
     };
 
+    // useEffect(() => {
 
+    //     if (searchParams.get('new')) {
+    //         console.log('weee');
+
+    //         resetArticle()
+    //     }
+
+    // }, [searchParams]);
 
     return (
         <div className={`min-h-screen ${theme === "dark"

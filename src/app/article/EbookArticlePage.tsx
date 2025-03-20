@@ -181,10 +181,11 @@ export default function EbookArticlePage({
     // Load user sessions and user info
     useEffect(() => {
         // console.log("trigger me");
+        console.log(isInitialLoad);
 
         const loadUserAndSessions = async () => {
             // Skip if this is a pagination update (not initial load)
-            if (!isInitialLoad && currentPage > 1) {
+            if (!isInitialLoad && currentPage > 0) {
                 return;
             }
 
@@ -200,7 +201,9 @@ export default function EbookArticlePage({
                     startNewArticle();
                     setIsLoading(false);
                     //    console.log('new article');
-
+                    if (isInitialLoad) {
+                        setIsInitialLoad(false);
+                    }
                     return;
                 }
 
@@ -299,7 +302,7 @@ export default function EbookArticlePage({
                     startNewArticle()
                     // setIsLoading(false);
                     console.log('no article sessions yet');
-                    return
+                    // return
                 }
             }
             setIsLoading(false);
@@ -315,7 +318,7 @@ export default function EbookArticlePage({
         }
     }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, sessionData, isInitialLoad, currentPage]);
     //  console.log(initialSessionId);
-    // console.log(sessionData);
+    console.log(sessionData);
     // console.log(initialSessionId);
     // console.log(isSessionsLoading);
     // console.log(params);

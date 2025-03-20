@@ -71,7 +71,7 @@ export default function EbookArticlePage({
     // Callback to handle stream finish and redirect to article page
     const handleStreamFinish = useCallback(() => {
         console.log("Stream finished, redirecting to article page");
-        router.push('/article');
+        router.push('/article/' + article?.id);
         // if (currentSession?.id) {
         //     console.log("Stream finished, redirecting to article page");
         //     router.push(`/article/${currentSession.id}`);
@@ -104,7 +104,7 @@ export default function EbookArticlePage({
                 }
             },
             onError: (error) => console.error("Hook error:", error),
-            // onFinish: handleStreamFinish,
+            onFinish: handleStreamFinish,
         }
     });
 
@@ -146,7 +146,7 @@ export default function EbookArticlePage({
             });
         }
     }, [sessionData, currentPage]);
-    console.log(sessionData);
+    //  console.log(sessionData);
 
     // Load user sessions and user info
     useEffect(() => {

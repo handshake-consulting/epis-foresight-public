@@ -11,7 +11,7 @@ import { useSessions } from "@/hook/use-sessions";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 export default function EbookArticlePage({
 
@@ -20,6 +20,7 @@ export default function EbookArticlePage({
 
     initialSessionId?: string;
 }) {
+    const params = useParams()
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
@@ -174,11 +175,19 @@ export default function EbookArticlePage({
     }, [sessionData, currentPage]);
     //  console.log(sessionData);
 
+    // Track if this is the initial load or a pagination update
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
     // Load user sessions and user info
     useEffect(() => {
         // console.log("trigger me");
 
         const loadUserAndSessions = async () => {
+            // Skip if this is a pagination update (not initial load)
+            if (!isInitialLoad && currentPage > 1) {
+                return;
+            }
+
             setIsLoading(true);
             const { user } = await getCurrentAuthState();
             // console.log(user);
@@ -196,6 +205,7 @@ export default function EbookArticlePage({
                 }
 
                 const supabase = createClient();
+                console.log(initialSessionId);
 
                 // If initialSessionId is provided, first try to directly fetch that specific session
                 if (initialSessionId) {
@@ -287,20 +297,29 @@ export default function EbookArticlePage({
                     // No article sessions yet
 
                     startNewArticle()
-                    setIsLoading(false);
+                    // setIsLoading(false);
                     console.log('no article sessions yet');
                     return
                 }
             }
+            setIsLoading(false);
 
+            // Mark initial load as complete
+            if (isInitialLoad) {
+                setIsInitialLoad(false);
+            }
         };
 
-        // if (!isSessionsLoading) {
-        loadUserAndSessions();
-        // }
-    }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle]);
+        if (!isSessionsLoading) {
+            loadUserAndSessions();
+        }
+    }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, sessionData, isInitialLoad, currentPage]);
     //  console.log(initialSessionId);
     // console.log(sessionData);
+    // console.log(initialSessionId);
+    // console.log(isSessionsLoading);
+    // console.log(params);
+
 
 
     // Handle version parameter from URL
@@ -554,7 +573,7 @@ export default function EbookArticlePage({
             }`}>
             {/* Header */}
             <EbookHeader
-                title={currentSession?.title || "New Document"}
+                title={currentSession?.title || article?.title || "New Document"}
                 theme={theme}
                 toggleTheme={toggleTheme}
                 toggleSidebar={toggleSidebar}

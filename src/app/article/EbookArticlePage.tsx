@@ -550,7 +550,7 @@ export default function EbookArticlePage({
         }
     };
 
-    // console.log(sessions);
+
 
     return (
         <div className={`min-h-screen ${theme === "dark"
@@ -628,11 +628,15 @@ export default function EbookArticlePage({
 
             {/* Image slider - collect images from all versions */}
             {article && article.versions && article.versions.length > 0 && (
-                <ImageSlider
-                    initialImages={article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl)}
-                    isOpen={sliderOpen}
-                    onToggle={toggleSlider}
-                />
+                <>
+
+                    <ImageSlider
+                        initialImages={(article && article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl))}
+                        isOpen={sliderOpen}
+                        onToggle={toggleSlider}
+                    />
+                </>
+
             )}
 
             {/* Error message */}

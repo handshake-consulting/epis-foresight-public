@@ -25,6 +25,8 @@ export function ImageSlider({
     isOpen = false,
     onToggle
 }: ImageSliderProps) {
+    console.log('init ', initialImages);
+
     const [images, setImages] = useState<ImageMessage[]>(initialImages);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -34,11 +36,13 @@ export function ImageSlider({
     const [pagination, setPagination] = useState<PaginationData>({
         total: 0,
         page: 1,
-        pageSize: 10,
+        pageSize: 2,
         totalPages: 0
     });
     const { settings } = useSettingsStore();
-
+    useEffect(() => {
+        setImages(initialImages)
+    }, [initialImages])
     // Fetch images from API
     const fetchImages = useCallback(async (page: number = 1, append: boolean = false) => {
         try {
@@ -238,9 +242,10 @@ export function ImageSlider({
     }, [settings.theme]);
 
     const theme = getThemeStyles();
+    console.log("images", images || initialImages);
 
     // No images to display and not loading - render nothing
-    if (images.length === 0 && !isLoading) {
+    if (images.length === 0) {
         return null;
     }
 

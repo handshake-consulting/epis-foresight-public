@@ -129,7 +129,7 @@ export default function EbookArticlePage({
     };
 
     // Fetch sessions using React Query
-    const { data: sessionData, isLoading: isSessionsLoading, error: sessionsError, refetch: refetchSessions } = useSessions(currentPage, PAGE_SIZE);
+    const { data: sessionData, isLoading: isSessionsLoading, error: sessionsError, refetch: refetchSessions } = useSessions(currentPage === 0 ? 1 : currentPage, PAGE_SIZE);
 
     // Update sessions state when sessionData changes
     useEffect(() => {
@@ -146,6 +146,7 @@ export default function EbookArticlePage({
             });
         }
     }, [sessionData, currentPage]);
+    console.log(sessionData);
 
     // Load user sessions and user info
     useEffect(() => {
@@ -234,21 +235,22 @@ export default function EbookArticlePage({
 
                 // If sessionData is available from React Query
                 if (sessionData && sessionData.length > 0) {
-                    setSessions(sessionData);
-                    setCurrentSession(sessionData[0]);
+                    router.push(`/article/${sessionData[0].id}`);
+                    // setSessions(sessionData);
+                    // setCurrentSession(sessionData[0]);
 
-                    // Set next and previous articles for navigation
-                    setPrevArticle(null);
-                    if (sessionData.length > 1) {
-                        setNextArticle(sessionData[1]);
-                    } else {
-                        setNextArticle(null);
-                    }
+                    // // Set next and previous articles for navigation
+                    // setPrevArticle(null);
+                    // if (sessionData.length > 1) {
+                    //     setNextArticle(sessionData[1]);
+                    // } else {
+                    //     setNextArticle(null);
+                    // }
 
-                    await loadArticleSession(sessionData[0].id, user.uid);
+                    // await loadArticleSession(sessionData[0].id, user.uid);
 
-                    // Mark this article as last read
-                    localStorage.setItem("lastReadArticle", sessionData[0].id);
+                    // // Mark this article as last read
+                    // localStorage.setItem("lastReadArticle", sessionData[0].id);
                 } else {
                     // No article sessions yet
                     resetArticle();

@@ -1,5 +1,4 @@
 import AutoLoginProvider from "@/components/AutoLoginProvider";
-import { redirect } from "next/navigation";
 import EbookArticlePage from "./EbookArticlePage";
 
 // Define the UserProfile interface locally to avoid import issues
@@ -21,10 +20,10 @@ const page = async (
     const filters = (await searchParams).new
     // console.log('filters', filters);
 
-    if (!filters || filters === 'false') {
-        // console.log('wooow', filters);
-        redirect("/article?new=true")
-    }
+    // if (!filters || filters === 'false') {
+    //     // console.log('wooow', filters);
+    //     redirect("/article?new=true")
+    // }
 
     return (
         <AutoLoginProvider>

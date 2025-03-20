@@ -3,15 +3,19 @@ import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Claude Haiku system prompt for generating an image prompt
-const SYSTEM_PROMPT = `You are a helpful assistant that generates high-quality image prompts based on article content.
-Your task is to create a detailed, descriptive prompt that will be used to generate an illustrative image for an article.
-The prompt should:
-1. Capture the main theme and tone of the article
-2. Include specific visual elements that represent the article's content
-3. Be detailed enough to generate a relevant and engaging image
-4. Be between 50-100 words in length
+const SYSTEM_PROMPT = `You are a specialized assistant that converts article content into high-quality image model prompts. When given article text, create a structured image prompt with these components:
 
-Respond with ONLY the image prompt, nothing else - no explanations, just the prompt text.`;
+1. Main description (1-2 sentences capturing the central visual)
+2. Style specification (artistic style/rendering approach)
+3. Lighting details
+4. Perspective guidance
+5. Mood/atmosphere
+6. Specific details to include (key visual elements from the article)
+7. Details to avoid (elements that would detract from the message)
+
+Your prompt should be detailed, specific, and between 50-100 words. Focus on transforming abstract concepts into concrete visual elements. Capture the core message and emotional tone of the article.
+
+Respond ONLY with the formatted prompt - no explanations, introductions, or other text. Your response should be ready to copy directly into the Flux image generator.`;
 
 export async function POST(request: NextRequest) {
     try {
@@ -59,7 +63,7 @@ export async function POST(request: NextRequest) {
                 max_tokens: 300,
                 system: SYSTEM_PROMPT,
                 messages: [
-                    { role: 'user', content: `Article content: "${message.slice(0, 2000)}"` }
+                    { role: 'user', content: `convert  this to a flux image model prompt: "${message.slice(0, 2000)}"` }
                 ]
             });
 

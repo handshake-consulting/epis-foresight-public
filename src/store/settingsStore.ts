@@ -28,6 +28,9 @@ interface EbookSettings {
     // Reading preferences
     showPageNumber: boolean;
     enableAnimations: boolean;
+
+    // First-time user experience
+    hasSeenWelcomeModal: boolean;
 }
 
 // Define UI open states type
@@ -53,6 +56,8 @@ interface SettingsState {
     toggleSidebar: () => void;
     toggleFooter: () => void;
     toggleImageSlider: () => void;
+    // Welcome modal functions
+    markWelcomeModalAsSeen: () => void;
 }
 
 // Create store with default values and persistence
@@ -76,6 +81,9 @@ export const useSettingsStore = create<SettingsState>()(
                 // Reading preferences defaults
                 showPageNumber: true,
                 enableAnimations: true,
+
+                // First-time user experience defaults
+                hasSeenWelcomeModal: false,
             },
             isSettingsOpen: false,
             bookmarks: [],
@@ -150,6 +158,12 @@ export const useSettingsStore = create<SettingsState>()(
             toggleImageSlider: () => {
                 const state = get();
                 state.setUIOpenState(state.isImageSliderOpen ? null : 'imageSlider');
+            },
+            // Welcome modal functions
+            markWelcomeModalAsSeen: () => {
+                set((state) => ({
+                    settings: { ...state.settings, hasSeenWelcomeModal: true }
+                }));
             }
         }),
         {

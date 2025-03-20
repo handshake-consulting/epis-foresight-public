@@ -1,6 +1,6 @@
 "use client"
 
-import { ImageSlider } from "@/components/article";
+import { ImageSlider, WelcomeModal } from "@/components/article";
 import { ChatSession } from "@/components/chat/types";
 import { EbookContent, EbookFooter, EbookHeader, EbookSidebar, EmptyStateContent } from "@/components/ebook";
 import SettingsDialog from "@/components/settings/SettingsDialog";
@@ -29,6 +29,7 @@ export default function EbookArticlePage({
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(0);
     const [hasMoreSessions, setHasMoreSessions] = useState(true);
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
     const PAGE_SIZE = 10; // Number of sessions to load per page
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const router = useRouter()
@@ -39,13 +40,27 @@ export default function EbookArticlePage({
     const isNewArticle = searchParams.get("new") === "true";
     const versionParam = searchParams.get("version");
     // Get settings from the store
-    const { settings, setSettings } = useSettingsStore();
+    const { settings, setSettings, markWelcomeModalAsSeen } = useSettingsStore();
 
     // Initialize theme from settings
     useEffect(() => {
         // Set theme based on settings
         setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
     }, [settings.theme]);
+
+    // Check if we should show the welcome modal
+    useEffect(() => {
+        // Only show the welcome modal if the user hasn't seen it before
+        if (!settings.hasSeenWelcomeModal) {
+            setShowWelcomeModal(true);
+        }
+    }, [settings.hasSeenWelcomeModal]);
+
+    // Handle closing the welcome modal
+    const handleCloseWelcomeModal = () => {
+        setShowWelcomeModal(false);
+        markWelcomeModalAsSeen();
+    };
 
     // Using the store for UI toggles
     const { toggleSidebar, toggleImageSlider, isSidebarOpen } = useSettingsStore();
@@ -602,6 +617,12 @@ export default function EbookArticlePage({
 
             {/* Settings Dialog */}
             <SettingsDialog />
+
+            {/* Welcome Modal */}
+            <WelcomeModal
+                isOpen={showWelcomeModal}
+                onClose={handleCloseWelcomeModal}
+            />
         </div>
     );
 }

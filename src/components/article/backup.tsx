@@ -2,105 +2,28 @@
 
 import { ImageMessage } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
-import { getIdToken } from "@/utils/firebase/client";
 import { ChevronLeft, ChevronRight, Download, Expand, Image as ImageIcon, X } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ImageSliderProps {
-    initialImages?: ImageMessage[];
+    images: ImageMessage[];
     isOpen?: boolean;
     onToggle?: () => void;
 }
 
-interface PaginationData {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-}
-
 export function ImageSlider({
-    initialImages = [],
+    images,
     isOpen = false,
     onToggle
 }: ImageSliderProps) {
-    const [images, setImages] = useState<ImageMessage[]>(initialImages);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [pagination, setPagination] = useState<PaginationData>({
-        total: 0,
-        page: 1,
-        pageSize: 10,
-        totalPages: 0
-    });
     const { settings } = useSettingsStore();
 
-    // Fetch images from API
-    const fetchImages = useCallback(async (page: number = 1, append: boolean = false) => {
-        try {
-            setIsLoading(true);
-            setError(null);
-
-            // Get Firebase ID token for authentication
-            const token = await getIdToken();
-
-            // Call our API to fetch images
-            const response = await fetch(`/api/article-images?page=${page}&pageSize=${pagination.pageSize}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch images: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-
-            // Update state with fetched images and pagination data
-            if (append) {
-                // Append new images to existing ones for infinite scroll
-                setImages(prevImages => [...prevImages, ...data.images]);
-            } else {
-                // Replace images when not appending (initial load)
-                setImages(data.images);
-                // Reset current index when loading a new page
-                setCurrentIndex(0);
-            }
-
-            setPagination(data.pagination);
-        } catch (err) {
-            console.error("Error fetching images:", err);
-            setError(err instanceof Error ? err.message : "Failed to fetch images");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [pagination.pageSize]);
-
-    // Load images when component mounts or when isOpen changes
-    useEffect(() => {
-        // fetchImages(1, false);
-        if (isOpen && images.length === 1) {
-            fetchImages(1, false);
-        }
-    }, [isOpen, fetchImages, images.length]);
-
-    // Load more images when needed
-    const loadMoreImages = useCallback(() => {
-        if (!isLoading && pagination.page < pagination.totalPages) {
-            // Load next page and append images
-            fetchImages(pagination.page + 1, true);
-            return true;
-        }
-        return false;
-    }, [fetchImages, isLoading, pagination.page, pagination.totalPages]);
-
-    // No images to display and not loading
-    if (images.length === 0 && !isLoading) {
+    // No images to display
+    if (images.length === 0) {
         return null;
     }
 
@@ -116,18 +39,6 @@ export function ImageSlider({
 
     const goToNext = () => {
         if (isTransitioning) return;
-
-        // Check if we're at the last image and need to load more
-        if (currentIndex === images.length - 1) {
-            // Try to load more images
-            const moreImagesLoaded = loadMoreImages();
-
-            // If more images are being loaded, stay on current image until they load
-            if (moreImagesLoaded) {
-                return;
-            }
-        }
-
         setIsTransitioning(true);
         setCurrentIndex((prevIndex) =>
             prevIndex === images.length - 1 ? 0 : prevIndex + 1
@@ -298,15 +209,8 @@ export function ImageSlider({
 
                 {/* Thumbnail strip in fullscreen */}
                 {images.length > 1 && (
-                    <div
-                        className={`absolute bottom-0 left-0 right-0 h-20 ${theme.tabBg} border-t ${theme.tabBorder} flex items-center px-4 overflow-x-auto ${theme.scrollbar}`}
-                    >
-                        <div className="flex gap-2 py-2 relative">
-                            {isLoading && pagination.page > 1 && (
-                                <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center bg-black/20 px-2 rounded">
-                                    <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"></div>
-                                </div>
-                            )}
+                    <div className={`absolute bottom-0 left-0 right-0 h-20 ${theme.tabBg} border-t ${theme.tabBorder} flex items-center px-4 overflow-x-auto ${theme.scrollbar}`}>
+                        <div className="flex gap-2 py-2">
                             {images.map((image, index) => (
                                 <button
                                     key={index}
@@ -332,10 +236,11 @@ export function ImageSlider({
             </div>
         );
     }
+
     return (
         <div
             className={`fixed right-0 top-16 bottom-16 z-10 ${theme.bg} ${theme.text} shadow-xl border-l ${theme.tabBorder} transition-all duration-300 ease-in-out flex`}
-            style={{ width: isOpen ? '650px' : '48px' }}
+            style={{ width: isOpen ? '360px' : '48px' }}
         >
             {/* Vertical tab */}
             <div
@@ -437,15 +342,8 @@ export function ImageSlider({
 
                         {/* Thumbnail strip */}
                         {images.length > 1 && (
-                            <div
-                                className={`mt-4 h-16 ${theme.thumbBg} rounded-lg border ${theme.thumbBorder} flex items-center px-2 overflow-x-auto ${theme.scrollbar}`}
-                            >
-                                <div className="flex gap-2 py-2 relative">
-                                    {isLoading && pagination.page > 1 && (
-                                        <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center bg-black/20 px-2 rounded">
-                                            <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"></div>
-                                        </div>
-                                    )}
+                            <div className={`mt-4 h-16 ${theme.thumbBg} rounded-lg border ${theme.thumbBorder} flex items-center px-2 overflow-x-auto ${theme.scrollbar}`}>
+                                <div className="flex gap-2 py-2">
                                     {images.map((image, index) => (
                                         <button
                                             key={index}

@@ -83,7 +83,7 @@ export function ImageSlider({
 
     // Load images when component mounts or when isOpen changes
     useEffect(() => {
-        // fetchImages(1, false);
+        // Only fetch images when the slider is open and has exactly one image
         if (isOpen && images.length === 1) {
             fetchImages(1, false);
         }
@@ -99,22 +99,17 @@ export function ImageSlider({
         return false;
     }, [fetchImages, isLoading, pagination.page, pagination.totalPages]);
 
-    // No images to display and not loading
-    if (images.length === 0 && !isLoading) {
-        return null;
-    }
-
     // Navigation functions
-    const goToPrevious = () => {
+    const goToPrevious = useCallback(() => {
         if (isTransitioning) return;
         setIsTransitioning(true);
         setCurrentIndex((prevIndex) =>
             prevIndex === 0 ? images.length - 1 : prevIndex - 1
         );
         setTimeout(() => setIsTransitioning(false), 300);
-    };
+    }, [isTransitioning, images.length]);
 
-    const goToNext = () => {
+    const goToNext = useCallback(() => {
         if (isTransitioning) return;
 
         // Check if we're at the last image and need to load more
@@ -133,33 +128,36 @@ export function ImageSlider({
             prevIndex === images.length - 1 ? 0 : prevIndex + 1
         );
         setTimeout(() => setIsTransitioning(false), 300);
-    };
+    }, [isTransitioning, currentIndex, images.length, loadMoreImages]);
 
-    const handleThumbnailClick = (index: number) => {
+    const handleThumbnailClick = useCallback((index: number) => {
         if (currentIndex === index || isTransitioning) return;
         setIsTransitioning(true);
         setCurrentIndex(index);
         setTimeout(() => setIsTransitioning(false), 300);
-    };
+    }, [currentIndex, isTransitioning]);
 
-    const handleDownload = () => {
+    const handleDownload = useCallback(() => {
+        if (images.length === 0) return;
         const link = document.createElement('a');
         link.href = images[currentIndex].imageUrl || '';
         link.download = `image-${currentIndex + 1}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+    }, [images, currentIndex]);
 
-    const toggleFullscreen = () => {
+    const toggleFullscreen = useCallback(() => {
         setIsFullscreen(!isFullscreen);
-    };
+    }, [isFullscreen]);
 
     // Handle keyboard navigation
     useEffect(() => {
-        if (!isOpen) return;
-
+        // Define the event handler
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Only process keyboard events if the slider is open
+            if (!isOpen) return;
+
             if (e.key === 'ArrowLeft') {
                 goToPrevious();
             } else if (e.key === 'ArrowRight') {
@@ -169,12 +167,15 @@ export function ImageSlider({
             }
         };
 
+        // Add the event listener
         window.addEventListener('keydown', handleKeyDown);
+
+        // Return cleanup function
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, isFullscreen, currentIndex, isTransitioning]);
+    }, [isOpen, isFullscreen, goToPrevious, goToNext]);
 
     // Theme-based styling
-    const getThemeStyles = () => {
+    const getThemeStyles = useCallback(() => {
         switch (settings.theme) {
             case "dark":
                 return {
@@ -234,9 +235,14 @@ export function ImageSlider({
                     scrollbar: "scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
                 };
         }
-    };
+    }, [settings.theme]);
 
     const theme = getThemeStyles();
+
+    // No images to display and not loading - render nothing
+    if (images.length === 0 && !isLoading) {
+        return null;
+    }
 
     // Fullscreen overlay
     if (isFullscreen) {
@@ -332,6 +338,8 @@ export function ImageSlider({
             </div>
         );
     }
+
+    // Regular view
     return (
         <div
             className={`fixed right-0 top-16 bottom-16 z-10 ${theme.bg} ${theme.text} shadow-xl border-l ${theme.tabBorder} transition-all duration-300 ease-in-out flex`}

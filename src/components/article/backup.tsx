@@ -4,7 +4,7 @@ import { ImageMessage } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
 import { ChevronLeft, ChevronRight, Download, Expand, Image as ImageIcon, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface ImageSliderProps {
     images: ImageMessage[];
@@ -67,22 +67,27 @@ export function ImageSlider({
     };
 
     // Handle keyboard navigation
-    useEffect(() => {
-        if (!isOpen) return;
+    // useEffect(() => {
+    //     // Define the event handler
+    //     const handleKeyDown = (e: KeyboardEvent) => {
+    //         // Only process keyboard events if the slider is open
+    //         if (!isOpen) return;
 
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'ArrowLeft') {
-                goToPrevious();
-            } else if (e.key === 'ArrowRight') {
-                goToNext();
-            } else if (e.key === 'Escape' && isFullscreen) {
-                setIsFullscreen(false);
-            }
-        };
+    //         if (e.key === 'ArrowLeft') {
+    //             goToPrevious();
+    //         } else if (e.key === 'ArrowRight') {
+    //             goToNext();
+    //         } else if (e.key === 'Escape' && isFullscreen) {
+    //             setIsFullscreen(false);
+    //         }
+    //     };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, isFullscreen, currentIndex, isTransitioning]);
+    //     // Add the event listener
+    //     window.addEventListener('keydown', handleKeyDown);
+
+    //     // Return cleanup function
+    //     return () => window.removeEventListener('keydown', handleKeyDown);
+    // }, [isOpen, isFullscreen, goToPrevious, goToNext]);
 
     // Theme-based styling
     const getThemeStyles = () => {

@@ -36,7 +36,7 @@ export function ImageSlider({
     const [pagination, setPagination] = useState<PaginationData>({
         total: 0,
         page: 1,
-        pageSize: 2,
+        pageSize: 10,
         totalPages: 0
     });
     const { settings } = useSettingsStore();
@@ -300,8 +300,17 @@ export function ImageSlider({
                                 <ChevronRight className="h-6 w-6" />
                             </button>
 
-                            <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full ${theme.counterBg} text-white font-medium`}>
-                                {currentIndex + 1} / {images.length}
+                            {/* Image counter with more images indicator */}
+                            <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center">
+                                <div className={`px-3 py-1.5 rounded-full ${theme.counterBg} text-white font-medium flex items-center gap-1.5`}>
+                                    {currentIndex + 1} / {images.length}
+                                    {pagination.page < pagination.totalPages && (
+                                        <span className="flex items-center ml-1" title="More images available">
+                                            <span className="text-sm">+</span>
+                                            <ChevronRight className="h-4 w-4" />
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </>
                     )}
@@ -313,6 +322,14 @@ export function ImageSlider({
                         className={`absolute bottom-0 left-0 right-0 h-20 ${theme.tabBg} border-t ${theme.tabBorder} flex items-center px-4 overflow-x-auto ${theme.scrollbar}`}
                     >
                         <div className="flex gap-2 py-2 relative">
+                            {pagination.page < pagination.totalPages && !isLoading && (
+                                <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center px-2">
+                                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${theme.counterBg} text-white text-xs`}>
+                                        <span>More</span>
+                                        <ChevronRight className="h-3 w-3" />
+                                    </div>
+                                </div>
+                            )}
                             {isLoading && pagination.page > 1 && (
                                 <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center bg-black/20 px-2 rounded">
                                     <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"></div>
@@ -362,9 +379,15 @@ export function ImageSlider({
             >
                 <div className="flex items-center p-2">
                     <ImageIcon className={`h-4 w-4 mb-2 ${theme.iconColor}`} />
-                    <span className={`text-sm font-medium ${theme.iconColor}`}>
+                    <div className={`text-sm font-medium ${theme.iconColor} flex items-center`}>
                         {images.length} {images.length === 1 ? 'Image' : 'Images'}
-                    </span>
+                        {pagination.page < pagination.totalPages && (
+                            <span className="flex items-center ml-1" title="More images available">
+                                <span className="text-xs">+</span>
+                                <ChevronRight className="h-3 w-3" />
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <button
                     className={`mt-2 ${theme.iconColor} ${theme.hoverColor} transition-colors duration-200`}
@@ -440,9 +463,17 @@ export function ImageSlider({
                                         <ChevronRight className="h-5 w-5" />
                                     </button>
 
-                                    {/* Image counter */}
-                                    <div className={`absolute bottom-3 left-1/2 -translate-x-1/2 text-xs font-medium px-2.5 py-1.5 rounded-full ${theme.counterBg} text-white shadow-md`}>
-                                        {currentIndex + 1} / {images.length}
+                                    {/* Image counter with more images indicator */}
+                                    <div className="absolute bottom-3 left-0 right-0 flex justify-center items-center">
+                                        <div className={`text-xs font-medium px-2.5 py-1.5 rounded-full ${theme.counterBg} text-white shadow-md flex items-center gap-1.5`}>
+                                            {currentIndex + 1} / {images.length}
+                                            {pagination.page < pagination.totalPages && (
+                                                <span className="flex items-center ml-1" title="More images available">
+                                                    <span className="text-xs">+</span>
+                                                    <ChevronRight className="h-3 w-3" />
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </>
                             )}
@@ -454,6 +485,14 @@ export function ImageSlider({
                                 className={`mt-4 h-16 ${theme.thumbBg} rounded-lg border ${theme.thumbBorder} flex items-center px-2 overflow-x-auto ${theme.scrollbar}`}
                             >
                                 <div className="flex gap-2 py-2 relative">
+                                    {pagination.page < pagination.totalPages && !isLoading && (
+                                        <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center px-2">
+                                            <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${theme.counterBg} text-white text-xs`}>
+                                                <span>More</span>
+                                                <ChevronRight className="h-3 w-3" />
+                                            </div>
+                                        </div>
+                                    )}
                                     {isLoading && pagination.page > 1 && (
                                         <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center bg-black/20 px-2 rounded">
                                             <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"></div>

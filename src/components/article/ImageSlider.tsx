@@ -25,7 +25,7 @@ export function ImageSlider({
     isOpen = false,
     onToggle
 }: ImageSliderProps) {
-    console.log('init ', initialImages);
+
 
     const [images, setImages] = useState<ImageMessage[]>(initialImages);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -242,7 +242,7 @@ export function ImageSlider({
     }, [settings.theme]);
 
     const theme = getThemeStyles();
-    console.log("images", images || initialImages);
+    // console.log("images", images || initialImages);
 
     // No images to display and not loading - render nothing
     if (images.length === 0) {

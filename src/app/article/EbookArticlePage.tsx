@@ -9,15 +9,14 @@ import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
-import { UserProfile } from "@/utils/profile";
 import { createClient } from "@/utils/supabase/clients";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 export default function EbookArticlePage({
-    profile,
+
     initialSessionId
 }: {
-    profile: UserProfile;
+
     initialSessionId?: string;
 }) {
     const [sessions, setSessions] = useState<ChatSession[]>([]);

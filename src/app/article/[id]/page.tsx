@@ -1,5 +1,5 @@
 import AutoLoginProvider from "@/components/AutoLoginProvider";
-import { getProfile } from "@/utils/profile";
+import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import EbookArticlePage from "../EbookArticlePage";
@@ -15,9 +15,46 @@ interface UserProfile {
 
 type Params = Promise<{ id: string }>
 
+export const dynamic = "force-dynamic";
+
+// Dynamic metadata
+export async function generateMetadata({
+    params,
+}: {
+    params: Params
+}) {
+
+    const { id } = (await params);
+    const cookieslist = await cookies()
+    const uidcook = cookieslist.get('auth-uid')
+    const supabase = await createClient();
+
+
+    //   const finalTitle = exists ? initialTitle : await changeTitle({ title: initialTitle });
+    const { data: specificSession, error: specificError } = await supabase
+        .from("chat_sessions")
+        .select("*")
+        .eq("id", id)
+        .eq("user_id", uidcook?.value)
+        .single();
+
+    if (specificError) {
+        console.error("Error fetching session for metadata:", specificError);
+        return {
+            title: "Article",
+        };
+    }
+
+    return {
+        title: specificSession?.title || "Article",
+    };
+}
+
+
+
 const page = async ({ params }: { params: Params }) => {
     const { id } = (await params);
-
+    // const sessionlist = await getSessionsList({ page: 1, pageSize: 10 })
     // Default profile to use if we can't get a real one
     const defaultProfile: UserProfile = {
         email: "ekemboy@gmail.com",
@@ -26,34 +63,13 @@ const page = async ({ params }: { params: Params }) => {
         email_verified: true,
         new_user: false
     };
+    // console.log('Session lIST', sessionlist);
 
-    // Try to get the profile with existing token
-    let profile: UserProfile = defaultProfile;
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('auth-token');
-
-        if (token) {
-            try {
-                const fetchedProfile = await getProfile();
-                if (fetchedProfile) {
-                    profile = fetchedProfile;
-                }
-            } catch (error) {
-                console.error("Error getting profile:", error);
-                // Continue with default profile
-            }
-        }
-    } catch (error) {
-        console.error("Error checking token:", error);
-        // Continue with default profile
-    }
-    console.log("profile", profile);
 
     return (
         <AutoLoginProvider>
             <Suspense fallback={<div>Loading...</div>}>
-                <EbookArticlePage profile={profile} initialSessionId={id} />
+                <EbookArticlePage initialSessionId={id} />
             </Suspense>
 
         </AutoLoginProvider>

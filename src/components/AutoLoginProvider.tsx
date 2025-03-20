@@ -63,6 +63,7 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
 
                     // Store the token in a cookie
                     document.cookie = `auth-token=${idToken}; path=/; max-age=3600; secure; samesite=strict`;
+                    document.cookie = `auth-uid=${user.uid}; path=/; max-age=3600; secure; samesite=strict`;
 
                     // Call the userLogin server action to complete the login process
                     const { status, message } = await userLogin(idToken);

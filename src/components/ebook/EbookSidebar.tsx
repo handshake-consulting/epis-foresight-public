@@ -3,6 +3,7 @@
 import { ChatSession } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
 import { BookMarked, BookPlus, ChevronLeft, FileText, Loader2, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 interface EbookSidebarProps {
@@ -167,28 +168,36 @@ export function EbookSidebar({
                         sessions.length > 0 ? (
                             <div className="space-y-2 max-h-full overflow-y-auto">
                                 {sessions.map((session, index) => (
-                                    <div
+                                    <Link
+                                        href={`/article/${session.id}`}
                                         key={session.id}
-                                        className={`p-3 rounded-md cursor-pointer ${currentSession?.id === session.id
-                                            ? theme === "dark"
-                                                ? "bg-gray-700 border border-gray-600"
-                                                : "bg-gray-100 border border-gray-200"
-                                            : theme === "dark"
-                                                ? "hover:bg-gray-700"
-                                                : "hover:bg-gray-100"
-                                            } transition-colors`}
-                                        onClick={() => onSessionSelect(session)}
+                                        className="block"
+                                    // onClick={(e) => {
+                                    //     // Prevent default to allow onSessionSelect to handle the navigation
+                                    //     e.preventDefault();
+                                    //     onSessionSelect(session);
+                                    // }}
                                     >
-                                        <div className="flex items-center">
-                                            <span className={`inline-block w-6 text-center ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                                                } mr-2`}>
-                                                {index + 1}.
-                                            </span>
-                                            <span className={`font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-800"
-                                                } flex-1 truncate`}>
-                                                {session.title}
-                                            </span>
-                                            {/* <button
+                                        <div
+                                            className={`p-3 rounded-md cursor-pointer ${currentSession?.id === session.id
+                                                ? theme === "dark"
+                                                    ? "bg-gray-700 border border-gray-600"
+                                                    : "bg-gray-100 border border-gray-200"
+                                                : theme === "dark"
+                                                    ? "hover:bg-gray-700"
+                                                    : "hover:bg-gray-100"
+                                                } transition-colors`}
+                                        >
+                                            <div className="flex items-center">
+                                                <span className={`inline-block w-6 text-center ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                                    } mr-2`}>
+                                                    {index + 1}.
+                                                </span>
+                                                <span className={`font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-800"
+                                                    } flex-1 truncate`}>
+                                                    {session.title}
+                                                </span>
+                                                {/* <button
                                                 onClick={(e) => onDeleteSession(session.id, e)}
                                                 className={`ml-2 p-1 rounded-full ${theme === "dark"
                                                         ? "hover:bg-gray-600 text-gray-400 hover:text-gray-200"
@@ -214,12 +223,13 @@ export function EbookSidebar({
                                                     <line x1="14" y1="11" x2="14" y2="17" />
                                                 </svg>
                                             </button> */}
+                                            </div>
+                                            <div className={`mt-1 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                                }`}>
+                                                {new Date(session.updated_at).toLocaleDateString()}
+                                            </div>
                                         </div>
-                                        <div className={`mt-1 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                                            }`}>
-                                            {new Date(session.updated_at).toLocaleDateString()}
-                                        </div>
-                                    </div>
+                                    </Link>
                                 ))}
 
                                 {/* Loading indicator and observer target */}

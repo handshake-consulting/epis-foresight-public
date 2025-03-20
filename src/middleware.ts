@@ -9,7 +9,9 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/article') ||
         request.nextUrl.pathname.startsWith('/settings-demo') ||
         request.nextUrl.pathname.startsWith('/api/generate-title') ||
-        request.nextUrl.pathname.startsWith('/api/generate-image')
+        request.nextUrl.pathname.startsWith('/api/generate-image') ||
+        request.nextUrl.pathname.startsWith('/api/article-images') ||
+        request.nextUrl.pathname.startsWith('/api/generate-image-prompt')
     ) {
         return NextResponse.next();
     }

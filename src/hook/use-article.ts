@@ -79,23 +79,40 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Get Firebase ID token for authentication
                 const token = await getIdToken();
 
+                // Run title generation and image prompt generation in parallel
                 try {
-
-                    // Send to Haiku for title generation with proper error handling for 307 redirects
-                    const response = await fetch('/api/generate-title', {
+                    // Create promises for both API calls
+                    const titlePromise = fetch('/api/generate-title', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify({ message: content }),
-                        // Add redirect handling to prevent 307 errors
                         redirect: 'follow'
                     });
 
-                    if (response.ok) {
-                        const titleData = await response.json();
-                        const generatedTitle = titleData.title;
+                    const imagePromptPromise = fetch('/api/generate-image-prompt', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ message: content }),
+                        redirect: 'follow'
+                    });
+
+                    // Wait for both promises to resolve
+                    const [titleResponse, imagePromptResponse] = await Promise.all([
+                        titlePromise,
+                        imagePromptPromise
+                    ]);
+
+                    // Process title response
+                    let generatedTitle = '';
+                    if (titleResponse.ok) {
+                        const titleData = await titleResponse.json();
+                        generatedTitle = titleData.title;
 
                         // Update article title
                         setArticle(prev => {
@@ -118,136 +135,143 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                         console.log("Generated title:", generatedTitle);
                     } else {
-                        console.error(`Failed to generate title: ${response.status} ${response.statusText}`);
-                        if (response.status === 307) {
+                        console.error(`Failed to generate title: ${titleResponse.status} ${titleResponse.statusText}`);
+                        if (titleResponse.status === 307) {
                             console.error("Received 307 redirect. This may indicate an authentication or session issue.");
                         }
-                        console.error("Response text:", await response.text());
+                        console.error("Response text:", await titleResponse.text());
                     }
-                } catch (titleError) {
-                    console.error("Error generating title:", titleError);
-                }
 
-                // Send to Haiku for UI elements to display iteratively
-                // This simulates the OpenAI Deep Research style display
-                const uiElements = [
-                    { type: 'header', content: 'Article Summary' },
-                    { type: 'text', content: 'Processing your article...' },
-                    { type: 'progress', value: 25 },
-                    { type: 'text', content: 'Analyzing key points...' },
-                    { type: 'progress', value: 50 },
-                    { type: 'text', content: 'Generating insights...' },
-                    { type: 'progress', value: 75 },
-                    { type: 'text', content: 'Finalizing content...' },
-                    { type: 'progress', value: 100 }
-                ];
+                    // Process image prompt response
+                    let imagePrompt = '';
+                    if (imagePromptResponse.ok) {
+                        const imagePromptData = await imagePromptResponse.json();
+                        imagePrompt = imagePromptData.prompt;
+                        console.log("Generated image prompt:", imagePrompt);
+                    } else {
+                        console.error(`Failed to generate image prompt: ${imagePromptResponse.status} ${imagePromptResponse.statusText}`);
+                        if (imagePromptResponse.status === 307) {
+                            console.error("Received 307 redirect. This may indicate an authentication or session issue.");
+                        }
+                        console.error("Response text:", await imagePromptResponse.text());
 
-                // Display UI elements iteratively
-                for (let i = 0; i < uiElements.length; i++) {
-                    const element = uiElements[i];
+                        // Fallback image prompt
+                        imagePrompt = `Create an illustrative image for an article about: ${content.slice(0, 1000)}`;
+                    }
 
-                    // Update article with UI element
-                    setArticle(prev => {
-                        if (!prev) return prev;
+                    // Send to Haiku for UI elements to display iteratively
+                    // This simulates the OpenAI Deep Research style display
+                    const uiElements = [
+                        { type: 'header', content: 'Article Summary' },
+                        { type: 'text', content: 'Processing your article...' },
+                        { type: 'progress', value: 25 },
+                        { type: 'text', content: 'Analyzing key points...' },
+                        { type: 'progress', value: 50 },
+                        { type: 'text', content: 'Generating insights...' },
+                        { type: 'progress', value: 75 },
+                        { type: 'text', content: 'Finalizing content...' },
+                        { type: 'progress', value: 100 }
+                    ];
 
-                        // Add UI element to content
-                        const updatedVersions = prev.versions.map(v => {
-                            if (v.versionNumber === versionNumber) {
-                                // For simplicity, we're just appending text representation
-                                // In a real implementation, you might use a more structured approach
-                                let updatedContent = v.content;
+                    // Display UI elements iteratively
+                    for (let i = 0; i < uiElements.length; i++) {
+                        const element = uiElements[i];
 
-                                if (element.type === 'header') {
-                                    updatedContent += `\n\n## ${element.content}\n\n`;
-                                } else if (element.type === 'text') {
-                                    updatedContent += `${element.content}\n\n`;
-                                } else if (element.type === 'progress') {
-                                    updatedContent += `Progress: ${element.value}%\n\n`;
+                        // Update article with UI element
+                        setArticle(prev => {
+                            if (!prev) return prev;
+
+                            // Add UI element to content
+                            const updatedVersions = prev.versions.map(v => {
+                                if (v.versionNumber === versionNumber) {
+                                    // For simplicity, we're just appending text representation
+                                    // In a real implementation, you might use a more structured approach
+                                    let updatedContent = v.content;
+
+                                    if (element.type === 'header') {
+                                        updatedContent += `\n\n## ${element.content}\n\n`;
+                                    } else if (element.type === 'text') {
+                                        updatedContent += `${element.content}\n\n`;
+                                    } else if (element.type === 'progress') {
+                                        updatedContent += `Progress: ${element.value}%\n\n`;
+                                    }
+
+                                    return {
+                                        ...v,
+                                        content: updatedContent
+                                    };
                                 }
+                                return v;
+                            });
 
-                                return {
-                                    ...v,
-                                    content: updatedContent
-                                };
-                            }
-                            return v;
+                            return {
+                                ...prev,
+                                versions: updatedVersions
+                            };
                         });
 
-                        return {
-                            ...prev,
-                            versions: updatedVersions
-                        };
-                    });
-
-                    // Simulate delay between UI elements
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-
-                // Transform into image prompt using Haiku and send to Supabase
-                try {
-                    // Create image prompt from content
-                    const imagePrompt = `Create an illustrative image for an article about: ${content.slice(0, 1000)}`;
-
-                    console.log("Generated image prompt:", imagePrompt);
-
-                    // Get Firebase ID token for authentication
-                    const token = await getIdToken();
-
-                    // Call our API to generate and upload the image
-                    const response = await fetch('/api/generate-image', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ prompt: imagePrompt }),
-                        redirect: 'follow'
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Failed to generate image: ${response.status} ${response.statusText}`);
+                        // Simulate delay between UI elements
+                        await new Promise(resolve => setTimeout(resolve, 500));
                     }
 
-                    const imageData = await response.json();
-                    console.log("Generated image data:", imageData);
-
-                    // Store the image URL for later use
-                    capturedImageUrl = imageData.imageUrl || '';
-
-                    // Create image message
-                    const newImage: any = {
-                        id: uuidv4(),
-                        imageId: imageData.uuid,
-                        storageType: imageData.storage_type,
-                        sender: "assistant",
-                        timestamp: new Date(),
-                        imageUrl: capturedImageUrl,
-                        version: versionNumber
-                    };
-
-                    // Update article with new image
-                    setArticle(prev => {
-                        if (!prev) return prev;
-
-                        const updatedVersions = prev.versions.map(v => {
-                            if (v.versionNumber === versionNumber) {
-                                return {
-                                    ...v,
-                                    images: [...(v.images || []), newImage]
-                                };
-                            }
-                            return v;
+                    // Generate and upload the image using the generated prompt
+                    try {
+                        // Call our API to generate and upload the image
+                        const response = await fetch('/api/generate-image', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ prompt: imagePrompt }),
+                            redirect: 'follow'
                         });
 
-                        return {
-                            ...prev,
-                            versions: updatedVersions
+                        if (!response.ok) {
+                            throw new Error(`Failed to generate image: ${response.status} ${response.statusText}`);
+                        }
+
+                        const imageData = await response.json();
+                        console.log("Generated image data:", imageData);
+
+                        // Store the image URL for later use
+                        capturedImageUrl = imageData.imageUrl || '';
+
+                        // Create image message
+                        const newImage: any = {
+                            id: uuidv4(),
+                            imageId: imageData.uuid,
+                            storageType: imageData.storage_type,
+                            sender: "assistant",
+                            timestamp: new Date(),
+                            imageUrl: capturedImageUrl,
+                            version: versionNumber
                         };
-                    });
 
+                        // Update article with new image
+                        setArticle(prev => {
+                            if (!prev) return prev;
 
-                } catch (error) {
-                    console.error("Error generating image:", error);
+                            const updatedVersions = prev.versions.map(v => {
+                                if (v.versionNumber === versionNumber) {
+                                    return {
+                                        ...v,
+                                        images: [...(v.images || []), newImage]
+                                    };
+                                }
+                                return v;
+                            });
+
+                            return {
+                                ...prev,
+                                versions: updatedVersions
+                            };
+                        });
+                    } catch (error) {
+                        console.error("Error generating image:", error);
+                    }
+                } catch (apiError) {
+                    console.error("Error in API calls:", apiError);
                 }
             } catch (error) {
                 console.error("Error processing PromptNode data:", error);

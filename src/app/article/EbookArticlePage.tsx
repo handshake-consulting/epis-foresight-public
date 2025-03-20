@@ -629,7 +629,7 @@ export default function EbookArticlePage({
             {/* Image slider - collect images from all versions */}
             {article && article.versions && article.versions.length > 0 && (
                 <ImageSlider
-                    images={article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl)}
+                    initialImages={article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl)}
                     isOpen={sliderOpen}
                     onToggle={toggleSlider}
                 />

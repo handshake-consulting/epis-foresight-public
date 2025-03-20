@@ -1,3 +1,4 @@
+'use server'
 import { verifyFirebaseToken } from "@/utils/firebase/edge";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
@@ -15,13 +16,19 @@ export const getSessionsList = async ({ page = 1, pageSize = 10 }: { page: numbe
     // Create Supabase client
     const supabase = await createClient();
 
-    // Query chat_messages table for all messages with images
-    const { data: messages, error, count } = await supabase
-        .from('chat_messages')
+    // Query chat_sessions table for article sessions
+    const { data: sessions, error, count } = await supabase
+        .from('chat_sessions')
         .select('*', { count: 'exact' })
         .eq('user_id', uid)
-        .not('image', 'is', null)
-        .order('created_at', { ascending: false })
+        .eq('type', 'article')
+        .order('updated_at', { ascending: false })
         .range(from, to);
-    return messages
+
+    if (error) {
+        console.error("Error fetching sessions:", error);
+        return [];
+    }
+
+    return sessions;
 }

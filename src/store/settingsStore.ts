@@ -30,15 +30,29 @@ interface EbookSettings {
     enableAnimations: boolean;
 }
 
+// Define UI open states type
+type UIElement = 'sidebar' | 'footer' | 'imageSlider' | null;
+
 interface SettingsState {
     settings: EbookSettings;
     isSettingsOpen: boolean;
     bookmarks: BookmarkItem[];
+    // UI open states
+    isSidebarOpen: boolean;
+    isFooterOpen: boolean;
+    isImageSliderOpen: boolean;
+    activeUIElement: UIElement;
+    // Functions
     setSettings: (settings: Partial<EbookSettings>) => void;
     setSettingsOpen: (open: boolean) => void;
     toggleBookmark: (bookmark: BookmarkItem) => void;
     removeBookmark: (articleId: string, versionNumber: number) => void;
     isBookmarked: (articleId: string, versionNumber: number) => boolean;
+    // UI open state functions
+    setUIOpenState: (element: UIElement) => void;
+    toggleSidebar: () => void;
+    toggleFooter: () => void;
+    toggleImageSlider: () => void;
 }
 
 // Create store with default values and persistence
@@ -65,6 +79,12 @@ export const useSettingsStore = create<SettingsState>()(
             },
             isSettingsOpen: false,
             bookmarks: [],
+            // UI open states defaults
+            isSidebarOpen: false,
+            isFooterOpen: false,
+            isImageSliderOpen: false,
+            activeUIElement: null,
+            // Functions
             setSettings: (newSettings) =>
                 set((state) => ({
                     settings: { ...state.settings, ...newSettings }
@@ -97,6 +117,39 @@ export const useSettingsStore = create<SettingsState>()(
                 return state.bookmarks.some(
                     b => b.articleId === articleId && b.versionNumber === versionNumber
                 );
+            },
+            // UI open state functions
+            setUIOpenState: (element) =>
+                set((state) => {
+                    // If the element is already active, toggle it off
+                    if (state.activeUIElement === element) {
+                        return {
+                            isSidebarOpen: false,
+                            isFooterOpen: false,
+                            isImageSliderOpen: false,
+                            activeUIElement: null
+                        };
+                    }
+
+                    // Otherwise, close all and open the requested one
+                    return {
+                        isSidebarOpen: element === 'sidebar',
+                        isFooterOpen: element === 'footer',
+                        isImageSliderOpen: element === 'imageSlider',
+                        activeUIElement: element
+                    };
+                }),
+            toggleSidebar: () => {
+                const state = get();
+                state.setUIOpenState(state.isSidebarOpen ? null : 'sidebar');
+            },
+            toggleFooter: () => {
+                const state = get();
+                state.setUIOpenState(state.isFooterOpen ? null : 'footer');
+            },
+            toggleImageSlider: () => {
+                const state = get();
+                state.setUIOpenState(state.isImageSliderOpen ? null : 'imageSlider');
             }
         }),
         {

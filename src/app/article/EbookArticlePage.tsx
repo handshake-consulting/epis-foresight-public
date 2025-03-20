@@ -23,7 +23,6 @@ export default function EbookArticlePage({
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [theme, setTheme] = useState("light");
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
@@ -45,9 +44,8 @@ export default function EbookArticlePage({
         setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
     }, [settings.theme]);
 
-    const toggleSidebar = () => {
-        setSidebarOpen(!sidebarOpen);
-    };
+    // Using the store for UI toggles
+    const { toggleSidebar, toggleImageSlider } = useSettingsStore();
 
     // Toggle theme
     const toggleTheme = () => {
@@ -87,8 +85,6 @@ export default function EbookArticlePage({
         error,
         isFirstGeneration,
         isLatestVersion,
-        sliderOpen,
-        toggleSlider,
         goToPreviousVersion,
         goToNextVersion,
         goToSpecificVersion,
@@ -386,7 +382,8 @@ export default function EbookArticlePage({
 
         // Close sidebar after selection on mobile
         if (window.innerWidth < 768) {
-            setSidebarOpen(false);
+            // Use the store's function to close the sidebar
+            useSettingsStore.getState().setUIOpenState(null);
         }
     };
 
@@ -488,7 +485,7 @@ export default function EbookArticlePage({
             await switchSession(session);
 
             // Close sidebar
-            setSidebarOpen(false);
+            useSettingsStore.getState().setUIOpenState(null);
 
             // Use a timeout to ensure article is fully loaded
             setTimeout(() => {
@@ -518,8 +515,6 @@ export default function EbookArticlePage({
 
             {/* Sidebar */}
             <EbookSidebar
-                isOpen={sidebarOpen}
-                onClose={toggleSidebar}
                 sessions={sessions}
                 currentSession={currentSession}
                 onSessionSelect={switchSession}
@@ -577,14 +572,10 @@ export default function EbookArticlePage({
             {/* Image slider - collect images from all versions */}
             {article && article.versions && article.versions.length > 0 && (
                 <>
-
                     <ImageSlider
                         initialImages={(article && article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl))}
-                        isOpen={sliderOpen}
-                        onToggle={toggleSlider}
                     />
                 </>
-
             )}
 
             {/* Error message */}

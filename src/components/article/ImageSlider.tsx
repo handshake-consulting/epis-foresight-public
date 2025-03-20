@@ -9,8 +9,6 @@ import { useCallback, useEffect, useState } from "react";
 
 interface ImageSliderProps {
     initialImages?: ImageMessage[];
-    isOpen?: boolean;
-    onToggle?: () => void;
 }
 
 interface PaginationData {
@@ -21,11 +19,10 @@ interface PaginationData {
 }
 
 export function ImageSlider({
-    initialImages = [],
-    isOpen = false,
-    onToggle
+    initialImages = []
 }: ImageSliderProps) {
-
+    // Use the store for image slider open state
+    const { isImageSliderOpen, toggleImageSlider } = useSettingsStore();
 
     const [images, setImages] = useState<ImageMessage[]>(initialImages);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -85,13 +82,13 @@ export function ImageSlider({
         }
     }, [pagination.pageSize]);
 
-    // Load images when component mounts or when isOpen changes
+    // Load images when component mounts or when isImageSliderOpen changes
     useEffect(() => {
         // Only fetch images when the slider is open and has exactly one image
-        if (isOpen && images.length === 1) {
+        if (isImageSliderOpen && images.length === 1) {
             fetchImages(1, false);
         }
-    }, [isOpen, fetchImages, images.length]);
+    }, [isImageSliderOpen, fetchImages, images.length]);
 
     // Load more images when needed
     const loadMoreImages = useCallback(() => {
@@ -160,7 +157,7 @@ export function ImageSlider({
         // Define the event handler
         const handleKeyDown = (e: KeyboardEvent) => {
             // Only process keyboard events if the slider is open
-            if (!isOpen) return;
+            if (!isImageSliderOpen) return;
 
             if (e.key === 'ArrowLeft') {
                 goToPrevious();
@@ -176,7 +173,7 @@ export function ImageSlider({
 
         // Return cleanup function
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, isFullscreen, goToPrevious, goToNext]);
+    }, [isImageSliderOpen, isFullscreen, goToPrevious, goToNext]);
 
     // Theme-based styling
     const getThemeStyles = useCallback(() => {
@@ -365,12 +362,12 @@ export function ImageSlider({
     return (
         <div
             className={`fixed right-0 top-16 bottom-16 z-10 ${theme.bg} ${theme.text} shadow-xl border-l ${theme.tabBorder} transition-all duration-300 ease-in-out flex`}
-            style={{ width: isOpen ? '650px' : '48px' }}
+            style={{ width: isImageSliderOpen ? '650px' : '48px' }}
         >
             {/* Vertical tab */}
             <div
                 className={`h-full w-12 flex flex-col items-center justify-center cursor-pointer border-r ${theme.tabBg} ${theme.tabBorder} transition-colors duration-200`}
-                onClick={onToggle}
+                onClick={toggleImageSlider}
                 style={{
                     writingMode: 'vertical-rl',
                     textOrientation: 'mixed',
@@ -391,9 +388,9 @@ export function ImageSlider({
                 </div>
                 <button
                     className={`mt-2 ${theme.iconColor} ${theme.hoverColor} transition-colors duration-200`}
-                    aria-label={isOpen ? "Hide images" : "Show images"}
+                    aria-label={isImageSliderOpen ? "Hide images" : "Show images"}
                 >
-                    {isOpen ? (
+                    {isImageSliderOpen ? (
                         <ChevronRight className="h-4 w-4" />
                     ) : (
                         <ChevronLeft className="h-4 w-4" />
@@ -402,7 +399,7 @@ export function ImageSlider({
             </div>
 
             {/* Image slider (only visible when open) */}
-            {isOpen && (
+            {isImageSliderOpen && (
                 <div className="flex-1 flex flex-col">
                     <div className="flex justify-between items-center p-4 border-b ${theme.tabBorder}">
                         <h3 className={`text-lg font-semibold ${theme.text}`}>Gallery</h3>
@@ -422,7 +419,7 @@ export function ImageSlider({
                                 <Expand className="h-4 w-4" />
                             </button>
                             <button
-                                onClick={onToggle}
+                                onClick={toggleImageSlider}
                                 className={`rounded-full p-1.5 ${theme.iconColor} ${theme.hoverColor} transition-colors duration-200`}
                                 aria-label="Close gallery"
                             >

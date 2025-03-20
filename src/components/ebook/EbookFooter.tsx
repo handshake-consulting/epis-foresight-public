@@ -2,8 +2,9 @@
 
 import { ChatSession } from "@/components/chat/types";
 import { Button } from "@/components/ui/button";
+import { useSettingsStore } from "@/store/settingsStore";
 import { ArrowLeft, ArrowRight, BookPlus, ChevronDown, ChevronUp, Feather, StopCircle } from "lucide-react";
-import { FormEvent, RefObject, useEffect, useState } from "react";
+import { FormEvent, RefObject, useEffect } from "react";
 
 interface EbookFooterProps {
     inputRef: RefObject<HTMLTextAreaElement>;
@@ -32,19 +33,15 @@ export function EbookFooter({
     onNextArticle,
     theme
 }: EbookFooterProps) {
+    // Use the store for footer open state
+    const { isFooterOpen, toggleFooter } = useSettingsStore();
+
     // Auto-expand the input area when it's a new document
-    const [isExpanded, setIsExpanded] = useState(isFirstGeneration);
-
-    // Update expanded state when isFirstGeneration changes
     useEffect(() => {
-        if (isFirstGeneration) {
-            setIsExpanded(true);
+        if (isFirstGeneration && !isFooterOpen) {
+            toggleFooter();
         }
-    }, [isFirstGeneration]);
-
-    const toggleExpanded = () => {
-        setIsExpanded(!isExpanded);
-    };
+    }, [isFirstGeneration, isFooterOpen, toggleFooter]);
 
     return (
         <div className={`fixed bottom-0 left-0 right-0 z-50 ${theme === "dark"
@@ -56,16 +53,16 @@ export function EbookFooter({
             {/* Toggle button */}
             <div className="absolute -top-10 right-4">
                 <button
-                    onClick={toggleExpanded}
+                    onClick={toggleFooter}
                     className={`p-2 rounded-t-lg ${theme === "dark"
                         ? "bg-gray-800 text-gray-300 border-t border-l border-r border-gray-700"
                         : theme === "sepia"
                             ? "bg-amber-100 text-amber-900 border-t border-l border-r border-amber-200"
                             : "bg-white text-gray-700 border-t border-l border-r border-gray-200"
                         } shadow-md transition-colors duration-200`}
-                    aria-label={isExpanded ? "Hide editor" : "Show editor"}
+                    aria-label={isFooterOpen ? "Hide editor" : "Show editor"}
                 >
-                    {isExpanded ? (
+                    {isFooterOpen ? (
                         <ChevronDown className="h-5 w-5" />
                     ) : (
                         <ChevronUp className="h-5 w-5" />
@@ -130,7 +127,7 @@ export function EbookFooter({
             </div>
 
             {/* Input area - collapsible */}
-            <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-300 ${isFooterOpen ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
                 <div className="container mx-auto px-4 py-3">
                     <form onSubmit={onSubmit} className="w-full max-w-3xl mx-auto">
                         <div className="mb-2">

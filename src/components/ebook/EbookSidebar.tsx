@@ -7,10 +7,8 @@ import {
     BookPlus,
     ChevronLeft,
     ChevronRight,
-    ChevronUp,
     FileText,
     Loader2,
-    Search,
     Trash2
 } from "lucide-react";
 import Link from "next/link";
@@ -111,7 +109,7 @@ export function EbookSidebar({
                             Document Library
                         </h2>
                         <div className="flex items-center">
-                            <button
+                            {/* <button
                                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                                 className={`p-1 rounded-md mr-2 ${theme === "dark"
                                     ? "hover:bg-gray-700"
@@ -121,7 +119,7 @@ export function EbookSidebar({
                             >
                                 <Search className={`h-5 w-5 ${theme === "dark" ? "text-gray-300" : "text-gray-600"
                                     }`} />
-                            </button>
+                            </button> */}
                             <button
                                 onClick={toggleSidebar}
                                 className={`p-1 rounded-md ${theme === "dark"
@@ -137,7 +135,7 @@ export function EbookSidebar({
                     </div>
 
                     {/* Search input */}
-                    {isSearchOpen && (
+                    {/* {isSearchOpen && (
                         <div className="mb-4">
                             <div className={`flex items-center p-2 rounded-md ${theme === "dark"
                                 ? "bg-gray-700"
@@ -170,7 +168,7 @@ export function EbookSidebar({
                                 )}
                             </div>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Tabs */}
                     <div className="flex border-b mb-4 pb-1">

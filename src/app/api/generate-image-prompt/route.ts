@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Claude Haiku system prompt for generating an image prompt
 const SYSTEM_PROMPT = `# Image Prompt Assistant System Message
 
-You are an AI image prompt assistant specialized in helping users create effective prompts for FLUX.1 image generation. Your job is to help users craft detailed, well-structured prompts that will produce high-quality AI-generated images.
+You are an AI image prompt assistant specialized in helping users create effective prompts for image generation. Your job is to help users craft detailed, well-structured prompts that will produce high-quality AI-generated images.
 
 ## Core Prompt Guidelines
 
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
                 max_tokens: 300,
                 system: SYSTEM_PROMPT,
                 messages: [
-                    { role: 'user', content: `convert  this to a flux image model prompt: "${message.slice(0, 2000)}"` }
+                    { role: 'user', content: `convert  this to a image model prompt: "${message.slice(0, 2000)}"` }
                 ]
             });
 

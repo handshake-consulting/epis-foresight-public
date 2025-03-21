@@ -624,17 +624,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 actualSessionId = await createArticleSession(userId);
                 nextVersionNumber = 1;
 
-                // Store topic
-                await storeMessageInSupabase(
-                    userId,
-                    actualSessionId,
-                    "user",
-                    prompt,
-                    nextVersionNumber,
-                    true, // is_topic
-                    false // is_edit
-                );
-
                 // Update article state with topic and an initial version placeholder
                 setArticle(prev => {
                     // Create a placeholder version
@@ -667,17 +656,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Use existing session
                 actualSessionId = sessionId;
                 nextVersionNumber = article?.versions.length ? article.versions.length + 1 : 1;
-
-                // Store edit prompt
-                await storeMessageInSupabase(
-                    userId,
-                    actualSessionId,
-                    "user",
-                    prompt,
-                    nextVersionNumber,
-                    false, // is_topic
-                    true // is_edit
-                );
 
                 // Add new version placeholder
                 setArticle(prev => {
@@ -726,6 +704,31 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
             if (!response.ok) {
                 throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            // Now that we have a successful response, store the user prompt in Supabase
+            if (isNewArticle || !sessionId) {
+                // Store topic
+                await storeMessageInSupabase(
+                    userId,
+                    actualSessionId,
+                    "user",
+                    prompt,
+                    nextVersionNumber,
+                    true, // is_topic
+                    false // is_edit
+                );
+            } else {
+                // Store edit prompt
+                await storeMessageInSupabase(
+                    userId,
+                    actualSessionId,
+                    "user",
+                    prompt,
+                    nextVersionNumber,
+                    false, // is_topic
+                    true // is_edit
+                );
             }
 
             if (response.body) {

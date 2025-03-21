@@ -313,12 +313,12 @@ export default function EbookArticlePage({
             }
         };
 
-        if (!isSessionsLoading) {
+        if (!isSessionsLoading && currentPage === 0) {
             loadUserAndSessions();
         }
     }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, sessionData, isInitialLoad, currentPage]);
     //  console.log(initialSessionId);
-    console.log(sessionData);
+    console.log(currentPage);
     // console.log(initialSessionId);
     // console.log(isSessionsLoading);
     // console.log(params);

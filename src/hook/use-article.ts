@@ -101,11 +101,13 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     });
 
                     // Wait for both promises to resolve
-                    const [titleResponse, imagePromptResponse] = await Promise.all([
+                    const [uichanges, titleResponse, imagePromptResponse] = await Promise.all([
+                        handleUiChnages,
                         titlePromise,
                         imagePromptPromise
                     ]);
 
+                    uichanges(versionNumber).then(() => { })
                     // Process title response
                     let generatedTitle = '';
                     if (titleResponse.ok) {
@@ -157,60 +159,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         imagePrompt = `Create an illustrative image for an article about: ${content.slice(0, 1000)}`;
                     }
 
-                    // Send to Haiku for UI elements to display iteratively
-                    // This simulates the OpenAI Deep Research style display
-                    const uiElements = [
-                        { type: 'header', content: 'Article Summary' },
-                        { type: 'text', content: 'Processing your article...' },
-                        { type: 'progress', value: 25 },
-                        { type: 'text', content: 'Analyzing key points...' },
-                        { type: 'progress', value: 50 },
-                        { type: 'text', content: 'Generating insights...' },
-                        { type: 'progress', value: 75 },
-                        { type: 'text', content: 'Finalizing content...' },
-                        { type: 'progress', value: 100 }
-                    ];
 
-                    // Display UI elements iteratively
-                    for (let i = 0; i < uiElements.length; i++) {
-                        const element = uiElements[i];
-
-                        // Update article with UI element
-                        setArticle(prev => {
-                            if (!prev) return prev;
-
-                            // Add UI element to content
-                            const updatedVersions = prev.versions.map(v => {
-                                if (v.versionNumber === versionNumber) {
-                                    // For simplicity, we're just appending text representation
-                                    // In a real implementation, you might use a more structured approach
-                                    let updatedContent = v.content;
-
-                                    if (element.type === 'header') {
-                                        updatedContent += `\n\n## ${element.content}\n\n`;
-                                    } else if (element.type === 'text') {
-                                        updatedContent += `${element.content}\n\n`;
-                                    } else if (element.type === 'progress') {
-                                        updatedContent += `Progress: ${element.value}%\n\n`;
-                                    }
-
-                                    return {
-                                        ...v,
-                                        content: updatedContent
-                                    };
-                                }
-                                return v;
-                            });
-
-                            return {
-                                ...prev,
-                                versions: updatedVersions
-                            };
-                        });
-
-                        // Simulate delay between UI elements
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
 
                     // Generate and upload the image using the generated prompt
                     try {
@@ -299,7 +248,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         try {
                             const event = JSON.parse(buffer.trim()) as StreamEvent;
                             //  console.log('event', event);
-                            if (event.event_data?.text) {
+                            if (event.event_type === EventType.TextStreamOutput) {
                                 accumulatedContent += event.event_data.text;
 
                                 // Update the current version content
@@ -811,6 +760,65 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         setIsStreaming(false);
         stopGeneration();
     }, [stopGeneration]);
+
+    const handleUiChnages = async ({ versionNumber }: any) => {
+        // Send to Haiku for UI elements to display iteratively
+        // This simulates the OpenAI Deep Research style display
+        const uiElements = [
+            { type: 'header', content: 'Article Summary' },
+            { type: 'text', content: 'Processing your article...' },
+            { type: 'progress', value: 25 },
+            { type: 'text', content: 'Analyzing key points...' },
+            { type: 'progress', value: 50 },
+            { type: 'text', content: 'Generating insights...' },
+            { type: 'progress', value: 75 },
+            { type: 'text', content: 'Finalizing content...' },
+            { type: 'progress', value: 100 }
+        ];
+
+        // Display UI elements iteratively
+        for (let i = 0; i < uiElements.length; i++) {
+            console.log('hit');
+
+            const element = uiElements[i];
+
+            // Update article with UI element
+            setArticle(prev => {
+                if (!prev) return prev;
+
+                // Add UI element to content
+                const updatedVersions = prev.versions.map(v => {
+                    if (v.versionNumber === versionNumber) {
+                        // For simplicity, we're just appending text representation
+                        // In a real implementation, you might use a more structured approach
+                        let updatedContent = v.content;
+
+                        if (element.type === 'header') {
+                            updatedContent += `\n\n## ${element.content}\n\n`;
+                        } else if (element.type === 'text') {
+                            updatedContent += `${element.content}\n\n`;
+                        } else if (element.type === 'progress') {
+                            updatedContent += `Progress: ${element.value}%\n\n`;
+                        }
+
+                        return {
+                            ...v,
+                            content: updatedContent
+                        };
+                    }
+                    return v;
+                });
+
+                return {
+                    ...prev,
+                    versions: updatedVersions
+                };
+            });
+
+            // Simulate delay between UI elements
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
 
     return {
         article,

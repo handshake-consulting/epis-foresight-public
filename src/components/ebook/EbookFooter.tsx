@@ -18,6 +18,7 @@ interface EbookFooterProps {
     onPrevArticle: () => void;
     onNextArticle: () => void;
     theme: string;
+    allArticles?: ChatSession[];
 }
 
 export function EbookFooter({
@@ -31,7 +32,8 @@ export function EbookFooter({
     nextArticle,
     onPrevArticle,
     onNextArticle,
-    theme
+    theme,
+    allArticles = []
 }: EbookFooterProps) {
     // Use the store for footer open state
     const { isFooterOpen, toggleFooter } = useSettingsStore();
@@ -78,14 +80,10 @@ export function EbookFooter({
                         variant="ghost"
                         size="sm"
                         onClick={onPrevArticle}
-                        disabled={!prevArticle}
-                        className={`rounded-md ${!prevArticle
-                            ? theme === "dark"
-                                ? "text-gray-600 cursor-not-allowed"
-                                : "text-gray-300 cursor-not-allowed"
-                            : theme === "dark"
-                                ? "text-gray-300 hover:bg-gray-700 hover:text-gray-100"
-                                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        title={!prevArticle ? "Go to last document" : "Go to previous document"}
+                        className={`rounded-md ${theme === "dark"
+                            ? "text-gray-300 hover:bg-gray-700 hover:text-gray-100"
+                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                             } transition-colors duration-200`}
                     >
                         <ArrowLeft className="h-4 w-4 mr-1" />
@@ -96,14 +94,10 @@ export function EbookFooter({
                         variant="ghost"
                         size="sm"
                         onClick={onNextArticle}
-                        disabled={!nextArticle}
-                        className={`rounded-md ${!nextArticle
-                            ? theme === "dark"
-                                ? "text-gray-600 cursor-not-allowed"
-                                : "text-gray-300 cursor-not-allowed"
-                            : theme === "dark"
-                                ? "text-gray-300 hover:bg-gray-700 hover:text-gray-100"
-                                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        title={!nextArticle ? "Go to first document" : "Go to next document"}
+                        className={`rounded-md ${theme === "dark"
+                            ? "text-gray-300 hover:bg-gray-700 hover:text-gray-100"
+                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                             } transition-colors duration-200`}
                     >
                         <span className="hidden sm:inline">Next Document</span>
@@ -111,19 +105,21 @@ export function EbookFooter({
                     </Button>
                 </div>
 
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onNewArticle}
-                    className={`rounded-md ${theme === "dark"
-                        ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
-                        : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-300"
-                        } transition-colors duration-200`}
-                >
-                    <BookPlus className="h-4 w-4 mr-1" />
-                    <span>New Document</span>
-                </Button>
+                {!isFirstGeneration && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onNewArticle}
+                        className={`rounded-md ${theme === "dark"
+                            ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-300"
+                            } transition-colors duration-200`}
+                    >
+                        <BookPlus className="h-4 w-4 mr-1" />
+                        <span>New Document</span>
+                    </Button>
+                )}
             </div>
 
             {/* Input area - collapsible */}

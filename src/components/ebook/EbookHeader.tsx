@@ -207,7 +207,7 @@ export function EbookHeader({
 
                 {/* Center section - Title */}
                 <div className="text-center flex-1 px-4">
-                    <h1 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} truncate`}>
+                    <h1 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} break-words hyphens-auto leading-tight`}>
                         {title || 'New Document'}
                     </h1>
                 </div>

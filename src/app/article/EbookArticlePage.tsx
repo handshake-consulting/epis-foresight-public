@@ -11,93 +11,82 @@ import { useSessions } from "@/hook/use-sessions";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-export default function EbookArticlePage({
 
+// Custom hook to fetch a specific article session
+const useArticleSession = (sessionId: string | undefined, userId: string | null) => {
+    return useQuery({
+        queryKey: ['articleSession', sessionId, userId],
+        queryFn: async () => {
+            if (!sessionId || !userId) return null;
+
+            const supabase = createClient();
+            const { data, error } = await supabase
+                .from("chat_sessions")
+                .select("*")
+                .eq("id", sessionId)
+                .eq("user_id", userId)
+                .single();
+
+            if (error) {
+                console.error("Error loading specific session:", error);
+                return null;
+            }
+
+            return data as ChatSession;
+        },
+        enabled: !!sessionId && !!userId,
+    });
+};
+
+export default function EbookArticlePage({
     initialSessionId
 }: {
-
     initialSessionId?: string;
 }) {
-    const params = useParams()
-    const [sessions, setSessions] = useState<ChatSession[]>([]);
-    const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+    const params = useParams();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+
+    // State
     const [userId, setUserId] = useState<string | null>(null);
     const [theme, setTheme] = useState("light");
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
     const [hasMoreSessions, setHasMoreSessions] = useState(true);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
     const PAGE_SIZE = 10; // Number of sessions to load per page
-    const inputRef = useRef<HTMLTextAreaElement>(null);
-    const router = useRouter()
-    // Fetch sessions using React Query
-    const { data: sessionData, isLoading: isSessionsLoading, error: sessionsError, refetch: refetchSessions } = useSessions(currentPage === 0 ? 1 : currentPage, PAGE_SIZE);
+
+    // URL parameters
+    const isNewArticle = searchParams.get("new") === "true";
+    const versionParam = searchParams.get("version");
+
+    // Settings from store
+    const { settings, setSettings, markWelcomeModalAsSeen, toggleSidebar, toggleImageSlider } = useSettingsStore();
 
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
-    // Get URL search params
-    const searchParams = useSearchParams();
-    const isNewArticle = searchParams.get("new") === "true";
-    const versionParam = searchParams.get("version");
-    // Get settings from the store
-    const { settings, setSettings, markWelcomeModalAsSeen } = useSettingsStore();
 
-    // Initialize theme from settings
-    useEffect(() => {
-        // Set theme based on settings
-        setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
-    }, [settings.theme]);
+    // Fetch sessions using React Query
+    const {
+        data: sessionData,
+        isLoading: isSessionsLoading,
+        refetch: refetchSessions
+    } = useSessions(currentPage, PAGE_SIZE);
 
-    // Check if we should show the welcome modal
-    useEffect(() => {
-        // Only show the welcome modal if the user hasn't seen it before
-        if (!settings.hasSeenWelcomeModal) {
-            setShowWelcomeModal(true);
-        }
-    }, [settings.hasSeenWelcomeModal]);
-
-    // Handle closing the welcome modal
-    const handleCloseWelcomeModal = () => {
-        setShowWelcomeModal(false);
-        markWelcomeModalAsSeen();
-    };
-
-    // Using the store for UI toggles
-    const { toggleSidebar, toggleImageSlider, isSidebarOpen } = useSettingsStore();
-    // console.log(isSidebarOpen);
-
-    // Toggle theme
-    const toggleTheme = () => {
-        const currentTheme = theme;
-        let newTheme: 'light' | 'dark' | 'sepia';
-
-        // Cycle through themes: light -> sepia -> dark -> light
-        if (currentTheme === 'light') {
-            newTheme = 'sepia';
-        } else if (currentTheme === 'sepia') {
-            newTheme = 'dark';
-        } else {
-            newTheme = 'light';
-        }
-
-        // Update the settings store
-        setSettings({ theme: newTheme });
-        setTheme(newTheme);
-    };
-
-    // Callback to handle stream finish and redirect to article page
-    const handleStreamFinish = useCallback(() => {
-        console.log("Stream finished, redirecting to article page");
-        router.push('/article/' + article?.id);
-        // if (currentSession?.id) {
-        //     console.log("Stream finished, redirecting to article page");
-        //     router.push(`/article/${currentSession.id}`);
-        // }
-    }, [currentSession?.id, router]);
+    // Fetch specific article session if initialSessionId is provided
+    const {
+        data: specificSession,
+        isLoading: isSpecificSessionLoading
+    } = useArticleSession(initialSessionId, userId);
 
     // Use the article hook
     const {
@@ -124,24 +113,56 @@ export default function EbookArticlePage({
             },
             onError: (error) => console.error("Hook error:", error),
             onFinish: () => {
-                createQueryString('new', 'false')
-                console.log('end');
-
+                createQueryString('new', 'false');
             },
         }
     });
 
+    // Initialize theme from settings
+    useEffect(() => {
+        setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
+    }, [settings.theme]);
+
+    // Check if we should show the welcome modal
+    useEffect(() => {
+        if (!settings.hasSeenWelcomeModal) {
+            setShowWelcomeModal(true);
+        }
+    }, [settings.hasSeenWelcomeModal]);
+
+    // Handle closing the welcome modal
+    const handleCloseWelcomeModal = () => {
+        setShowWelcomeModal(false);
+        markWelcomeModalAsSeen();
+    };
+
+    // Toggle theme
+    const toggleTheme = () => {
+        const currentTheme = theme;
+        let newTheme: 'light' | 'dark' | 'sepia';
+
+        // Cycle through themes: light -> sepia -> dark -> light
+        if (currentTheme === 'light') {
+            newTheme = 'sepia';
+        } else if (currentTheme === 'sepia') {
+            newTheme = 'dark';
+        } else {
+            newTheme = 'light';
+        }
+
+        // Update the settings store
+        setSettings({ theme: newTheme });
+        setTheme(newTheme);
+    };
+
     const createQueryString = useCallback(
         (name: string, value: string) => {
-            const params = new URLSearchParams(searchParams.toString())
-            params.set(name, value)
-
-            return params.toString()
+            const params = new URLSearchParams(searchParams.toString());
+            params.set(name, value);
+            return params.toString();
         },
         [searchParams]
-    )
-
-
+    );
 
     // Start new article
     const startNewArticle = async () => {
@@ -157,6 +178,24 @@ export default function EbookArticlePage({
         router.push("/article?new=true");
     };
 
+    // Initialize user and handle initial article loading
+    useEffect(() => {
+        const initializeUser = async () => {
+            const { user } = await getCurrentAuthState();
+            if (user) {
+                setUserId(user.uid);
+            }
+        };
+
+        initializeUser();
+    }, []);
+
+    // Handle new article creation
+    useEffect(() => {
+        if (userId && isNewArticle) {
+            startNewArticle();
+        }
+    }, [userId, isNewArticle]);
 
     // Update sessions state when sessionData changes
     useEffect(() => {
@@ -173,157 +212,73 @@ export default function EbookArticlePage({
             });
         }
     }, [sessionData, currentPage]);
-    //  console.log(sessionData);
 
-    // Track if this is the initial load or a pagination update
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-    // Load user sessions and user info
+    // Handle specific session loading when initialSessionId is provided
     useEffect(() => {
-        // console.log("trigger me");
-        console.log(isInitialLoad);
-
-        const loadUserAndSessions = async () => {
-            // Skip if this is a pagination update (not initial load)
-            if (!isInitialLoad && currentPage > 0) {
-                return;
-            }
+        const loadSpecificArticle = async () => {
+            if (!userId || !specificSession || isNewArticle) return;
 
             setIsLoading(true);
-            const { user } = await getCurrentAuthState();
-            // console.log(user);
+            setCurrentSession(specificSession);
 
-            if (user) {
-                setUserId(user.uid);
+            // Find position in session list for navigation
+            if (sessionData && sessionData.length > 0) {
+                const currentSessionIndex = sessionData.findIndex(s => s.id === specificSession.id);
 
-                // If the new=true parameter is present, start a new article
-                if (isNewArticle) {
-                    startNewArticle();
-                    setIsLoading(false);
-                    //    console.log('new article');
-                    if (isInitialLoad) {
-                        setIsInitialLoad(false);
+                if (currentSessionIndex !== -1) {
+                    // Set next and previous articles for navigation
+                    if (currentSessionIndex > 0) {
+                        setPrevArticle(sessionData[currentSessionIndex - 1]);
+                    } else {
+                        setPrevArticle(null);
                     }
-                    return;
-                }
 
-                const supabase = createClient();
-                console.log(initialSessionId);
-
-                // If initialSessionId is provided, first try to directly fetch that specific session
-                if (initialSessionId) {
-                    const { data: specificSession, error: specificError } = await supabase
-                        .from("chat_sessions")
-                        .select("*")
-                        .eq("id", initialSessionId)
-                        .eq("user_id", user.uid)
-                        .single();
-
-                    if (specificError) {
-                        console.error("Error loading specific session:", specificError);
-                    } else if (specificSession) {
-                        // Get the position of this session in the overall list to determine pagination
-                        const { data: positionData } = await supabase
-                            .from("chat_sessions")
-                            .select("id")
-                            .eq("user_id", user.uid)
-                            .eq("type", "article")
-                            .order("updated_at", { ascending: false });
-
-                        const sessionPosition = positionData ? positionData.findIndex(s => s.id === initialSessionId) : -1;
-
-                        if (sessionPosition !== -1) {
-                            // Calculate which page this session is on
-                            const sessionPage = Math.floor(sessionPosition / PAGE_SIZE);
-                            setCurrentPage(sessionPage + 1); // +1 because pages are 0-indexed in the calculation
-
-                            // Find the session in the loaded page
-                            if (sessionData && sessionData.length > 0) {
-                                const currentSessionIndex = sessionData.findIndex(s => s.id === initialSessionId);
-
-                                if (currentSessionIndex !== -1) {
-                                    setCurrentSession(specificSession);
-
-                                    // Set next and previous articles for navigation
-                                    if (currentSessionIndex > 0) {
-                                        setPrevArticle(sessionData[currentSessionIndex - 1]);
-                                    } else {
-                                        setPrevArticle(null);
-                                    }
-
-                                    if (currentSessionIndex < sessionData.length - 1) {
-                                        setNextArticle(sessionData[currentSessionIndex + 1]);
-                                    } else {
-                                        setNextArticle(null);
-                                    }
-
-                                    await loadArticleSession(specificSession.id, user.uid);
-
-                                    // Mark this article as last read
-                                    localStorage.setItem("lastReadArticle", specificSession.id);
-
-                                    // Check if there are more sessions
-                                    const { count } = await supabase
-                                        .from("chat_sessions")
-                                        .select("*", { count: "exact", head: true })
-                                        .eq("user_id", user.uid)
-                                        .eq("type", "article");
-
-                                    setHasMoreSessions(count !== null && count > (sessionPage + 1) * PAGE_SIZE);
-                                    setIsLoading(false);
-                                    return;
-                                }
-                            }
-                        }
+                    if (currentSessionIndex < sessionData.length - 1) {
+                        setNextArticle(sessionData[currentSessionIndex + 1]);
+                    } else {
+                        setNextArticle(null);
                     }
-                }
-                console.log('no article sessions yetttty');
-                // If sessionData is available from React Query
-                if (sessionData && sessionData.length > 0) {
-                    router.push(`/article/${sessionData[0].id}`);
-                    // setSessions(sessionData);
-                    // setCurrentSession(sessionData[0]);
-
-                    // // Set next and previous articles for navigation
-                    // setPrevArticle(null);
-                    // if (sessionData.length > 1) {
-                    //     setNextArticle(sessionData[1]);
-                    // } else {
-                    //     setNextArticle(null);
-                    // }
-
-                    // await loadArticleSession(sessionData[0].id, user.uid);
-
-                    // // Mark this article as last read
-                    // localStorage.setItem("lastReadArticle", sessionData[0].id);
-                } else {
-                    // No article sessions yet
-
-                    startNewArticle()
-                    // setIsLoading(false);
-                    console.log('no article sessions yet');
-                    // return
                 }
             }
-            setIsLoading(false);
 
-            // Mark initial load as complete
-            if (isInitialLoad) {
-                setIsInitialLoad(false);
+            // Load the article content
+            await loadArticleSession(specificSession.id, userId);
+
+            // Mark this article as last read
+            localStorage.setItem("lastReadArticle", specificSession.id);
+
+            // Check if there are more sessions
+            const supabase = createClient();
+            const { count } = await supabase
+                .from("chat_sessions")
+                .select("*", { count: "exact", head: true })
+                .eq("user_id", userId)
+                .eq("type", "article");
+
+            setHasMoreSessions(count !== null && count > currentPage * PAGE_SIZE);
+            setIsLoading(false);
+        };
+        console.log('loadSpecificArticle');
+        loadSpecificArticle();
+    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle, currentPage]);
+
+    // Handle default article loading when no initialSessionId is provided
+    useEffect(() => {
+        const loadDefaultArticle = async () => {
+            if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
+
+            if (sessionData.length > 0) {
+                // Redirect to the first article
+                router.push(`/article/${sessionData[0].id}`);
+            } else {
+                // No articles yet, start a new one
+                startNewArticle();
             }
         };
+        console.log('loadDefaultArticle');
 
-        if (!isSessionsLoading) {
-            loadUserAndSessions();
-        }
-    }, [initialSessionId, isNewArticle, loadArticleSession, resetArticle, sessionData, isInitialLoad, currentPage]);
-    //  console.log(initialSessionId);
-    console.log(sessionData);
-    // console.log(initialSessionId);
-    // console.log(isSessionsLoading);
-    // console.log(params);
-
-
+        loadDefaultArticle();
+    }, [userId, sessionData, isSessionsLoading, isNewArticle, initialSessionId, router, startNewArticle]);
 
     // Handle version parameter from URL
     useEffect(() => {
@@ -335,7 +290,7 @@ export default function EbookArticlePage({
         }
     }, [article, versionParam, goToSpecificVersion]);
 
-    // Refresh sessions list - now using React Query's refetch
+    // Refresh sessions list
     const refreshSessions = useCallback(async () => {
         if (!userId) return;
 
@@ -366,27 +321,30 @@ export default function EbookArticlePage({
     const loadMoreSessions = useCallback(async () => {
         if (!userId || !hasMoreSessions) return false;
 
+        console.log("Loading more sessions, current page:", currentPage);
+
         // Increment the page to trigger React Query to fetch the next page
-        setCurrentPage(prevPage => prevPage + 1);
+        const nextPage = currentPage + 1;
+        setCurrentPage(nextPage);
 
         // We'll determine if there are more sessions based on the data length
-        if (sessionData && sessionData.length > 0) {
-            const supabase = createClient();
-            // Check if there are more sessions
-            const { count } = await supabase
-                .from("chat_sessions")
-                .select("*", { count: "exact", head: true })
-                .eq("user_id", userId)
-                .eq("type", "article");
+        const supabase = createClient();
+        // Check if there are more sessions
+        const { count } = await supabase
+            .from("chat_sessions")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .eq("type", "article");
 
-            const hasMore = count !== null && count > (currentPage + 1) * PAGE_SIZE;
-            setHasMoreSessions(hasMore);
-            return hasMore;
-        }
+        console.log("Total sessions count:", count, "Next page:", nextPage, "PAGE_SIZE:", PAGE_SIZE);
 
-        setHasMoreSessions(false);
-        return false;
-    }, [userId, currentPage, hasMoreSessions, sessionData]);
+        // Check if there are more sessions to load
+        const hasMore = count !== null && count > nextPage * PAGE_SIZE;
+        console.log("Has more sessions:", hasMore);
+
+        setHasMoreSessions(hasMore);
+        return hasMore;
+    }, [userId, currentPage, hasMoreSessions]);
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -410,7 +368,6 @@ export default function EbookArticlePage({
         // Refresh sessions list after generation
         refreshSessions();
     };
-
 
     // Switch to a different article session
     const switchSession = async (session: ChatSession) => {
@@ -523,16 +480,14 @@ export default function EbookArticlePage({
     // Navigate to next article
     const goToNextArticle = () => {
         if (nextArticle) {
-            router.push('/article/' + nextArticle.id)
-            // switchSession(nextArticle);
+            router.push('/article/' + nextArticle.id);
         }
     };
 
     // Navigate to previous article
     const goToPreviousArticle = () => {
         if (prevArticle) {
-            router.push('/article/' + prevArticle.id)
-            //  switchSession(prevArticle);
+            router.push('/article/' + prevArticle.id);
         }
     };
 
@@ -556,16 +511,6 @@ export default function EbookArticlePage({
             }, 500);
         }
     };
-
-    // useEffect(() => {
-
-    //     if (searchParams.get('new')) {
-    //         console.log('weee');
-
-    //         resetArticle()
-    //     }
-
-    // }, [searchParams]);
 
     return (
         <div className={`min-h-screen ${theme === "dark"
@@ -593,6 +538,9 @@ export default function EbookArticlePage({
                 theme={theme}
                 onBookmarkSelect={navigateToBookmark}
                 onLoadMoreSessions={loadMoreSessions}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                hasMoreSessions={hasMoreSessions}
             />
 
             {/* Loading indicator */}

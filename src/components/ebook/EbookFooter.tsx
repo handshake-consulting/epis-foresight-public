@@ -78,14 +78,9 @@ export function EbookFooter({
                         variant="ghost"
                         size="sm"
                         onClick={onPrevArticle}
-                        disabled={!prevArticle}
-                        className={`rounded-md ${!prevArticle
-                            ? theme === "dark"
-                                ? "text-gray-600 cursor-not-allowed"
-                                : "text-gray-300 cursor-not-allowed"
-                            : theme === "dark"
-                                ? "text-gray-300 hover:bg-gray-700 hover:text-gray-100"
-                                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        className={`rounded-md ${theme === "dark"
+                            ? "text-gray-300 hover:bg-gray-700 hover:text-gray-100"
+                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                             } transition-colors duration-200`}
                     >
                         <ArrowLeft className="h-4 w-4 mr-1" />
@@ -111,19 +106,21 @@ export function EbookFooter({
                     </Button>
                 </div>
 
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onNewArticle}
-                    className={`rounded-md ${theme === "dark"
-                        ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
-                        : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-300"
-                        } transition-colors duration-200`}
-                >
-                    <BookPlus className="h-4 w-4 mr-1" />
-                    <span>New Document</span>
-                </Button>
+                {!isFirstGeneration && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onNewArticle}
+                        className={`rounded-md ${theme === "dark"
+                            ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-300"
+                            } transition-colors duration-200`}
+                    >
+                        <BookPlus className="h-4 w-4 mr-1" />
+                        <span>New Document</span>
+                    </Button>
+                )}
             </div>
 
             {/* Input area - collapsible */}

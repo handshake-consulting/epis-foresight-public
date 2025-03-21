@@ -34,7 +34,7 @@ export function EbookContent({
     articleTitle = "Untitled Document"
 }: EbookContentProps) {
     const contentRef = useRef<HTMLDivElement>(null);
-    const { settings, toggleBookmark, isBookmarked } = useSettingsStore();
+    const { settings, toggleBookmark, isBookmarked, isFooterOpen } = useSettingsStore();
     const [readingProgress, setReadingProgress] = useState(0);
 
     // Check if current version is bookmarked
@@ -70,8 +70,11 @@ export function EbookContent({
         padding: `${settings.pageMargin}px`,
     };
 
+    // Calculate extra padding for the footer when it's expanded
+    const extraPadding = isFooterOpen ? "pb-[320px]" : "pb-12";
+
     return (
-        <div className="flex flex-col h-full pt-16 pb-12">
+        <div className={`flex flex-col h-full pt-16 ${extraPadding}`}>
             {/* Main content area */}
             <div
                 ref={contentRef}
@@ -218,12 +221,12 @@ export function EbookContent({
                         {/* Bookmark button */}
                         <button
                             className={`absolute top-2 right-2 p-1 rounded-full ${bookmarked
-                                    ? theme === "dark"
-                                        ? "text-blue-400 hover:text-blue-300 hover:bg-gray-700"
-                                        : "text-blue-500 hover:text-blue-600 hover:bg-gray-100"
-                                    : theme === "dark"
-                                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
-                                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                ? theme === "dark"
+                                    ? "text-blue-400 hover:text-blue-300 hover:bg-gray-700"
+                                    : "text-blue-500 hover:text-blue-600 hover:bg-gray-100"
+                                : theme === "dark"
+                                    ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                                 } transition-colors`}
                             aria-label={bookmarked ? "Remove bookmark" : "Bookmark this page"}
                             onClick={() => {

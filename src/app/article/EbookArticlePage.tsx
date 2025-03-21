@@ -531,8 +531,10 @@ export default function EbookArticlePage({
     // Navigate to previous article
     const goToPreviousArticle = () => {
         if (prevArticle) {
-            router.push('/article/' + prevArticle.id)
-            //  switchSession(prevArticle);
+            router.push('/article/' + prevArticle.id);
+        } else if (isFirstGeneration && sessions.length > 0) {
+            // When generating a new document, navigate to the last document in the sessions array
+            router.push('/article/' + sessions[sessions.length - 1].id);
         }
     };
 

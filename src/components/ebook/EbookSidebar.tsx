@@ -2,9 +2,19 @@
 
 import { ChatSession } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
-import { BookMarked, BookPlus, ChevronLeft, FileText, Loader2, Trash2 } from "lucide-react";
+import {
+    BookMarked,
+    BookPlus,
+    ChevronLeft,
+    ChevronRight,
+    ChevronUp,
+    FileText,
+    Loader2,
+    Search,
+    Trash2
+} from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 interface EbookSidebarProps {
     sessions: ChatSession[];
@@ -14,7 +24,10 @@ interface EbookSidebarProps {
     onDeleteSession: (sessionId: string, e: React.MouseEvent) => void;
     theme: string;
     onBookmarkSelect?: (articleId: string, versionNumber: number) => void;
-    onLoadMoreSessions?: () => Promise<boolean>; // Returns whether there are more sessions to load
+    onLoadMoreSessions?: () => Promise<boolean>;
+    currentPage: number;
+    setCurrentPage: (page: number) => void;
+    hasMoreSessions: boolean;
 }
 
 export function EbookSidebar({
@@ -25,42 +38,46 @@ export function EbookSidebar({
     onDeleteSession,
     theme,
     onBookmarkSelect,
-    onLoadMoreSessions
+    onLoadMoreSessions,
+    currentPage,
+    setCurrentPage,
+    hasMoreSessions
 }: EbookSidebarProps) {
     const { isSidebarOpen, toggleSidebar } = useSettingsStore();
     const [activeTab, setActiveTab] = useState<"toc" | "bookmarks">("toc");
     const { bookmarks, removeBookmark } = useSettingsStore();
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [hasMoreSessions, setHasMoreSessions] = useState(true);
-    const observerTarget = useRef<HTMLDivElement>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-    // Set up intersection observer for infinite scroll
-    useEffect(() => {
-        if (!observerTarget.current || !hasMoreSessions || activeTab !== "toc" || !onLoadMoreSessions) return;
+    // Handle next page
+    const handleNextPage = async () => {
+        if (isLoadingMore || !hasMoreSessions || !onLoadMoreSessions) return;
 
-        const observer = new IntersectionObserver(
-            async (entries) => {
-                if (entries[0].isIntersecting && !isLoadingMore && hasMoreSessions) {
-                    setIsLoadingMore(true);
-                    const hasMore = await onLoadMoreSessions();
-                    setHasMoreSessions(hasMore);
-                    setIsLoadingMore(false);
-                }
-            },
-            { threshold: 0.1 }
-        );
+        setIsLoadingMore(true);
+        try {
+            const hasMore = await onLoadMoreSessions();
+            setIsLoadingMore(false);
+        } catch (error) {
+            console.error("Error loading more sessions:", error);
+            setIsLoadingMore(false);
+        }
+    };
 
-        observer.observe(observerTarget.current);
+    // Handle previous page
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
 
-        return () => {
-            if (observerTarget.current) {
-                observer.unobserve(observerTarget.current);
-            }
-        };
-    }, [hasMoreSessions, isLoadingMore, onLoadMoreSessions, activeTab]);
+    // Filter sessions based on search query
+    const filteredSessions = sessions.filter(session =>
+        session.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
-        <div className={`fixed inset-0 z-20 ${isSidebarOpen ? "block" : "hidden"}`}>
+        <div className={`fixed inset-0 z-60 ${isSidebarOpen ? "block" : "hidden"}`}>
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black/30 transition-opacity duration-300"
@@ -93,18 +110,67 @@ export function EbookSidebar({
                             }`}>
                             Document Library
                         </h2>
-                        <button
-                            onClick={toggleSidebar}
-                            className={`p-1 rounded-md ${theme === "dark"
-                                ? "hover:bg-gray-700"
-                                : "hover:bg-gray-200"
-                                } transition-colors`}
-                            aria-label="Close sidebar"
-                        >
-                            <ChevronLeft className={`h-5 w-5 ${theme === "dark" ? "text-gray-300" : "text-gray-600"
-                                }`} />
-                        </button>
+                        <div className="flex items-center">
+                            <button
+                                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                                className={`p-1 rounded-md mr-2 ${theme === "dark"
+                                    ? "hover:bg-gray-700"
+                                    : "hover:bg-gray-200"
+                                    } transition-colors`}
+                                aria-label="Search documents"
+                            >
+                                <Search className={`h-5 w-5 ${theme === "dark" ? "text-gray-300" : "text-gray-600"
+                                    }`} />
+                            </button>
+                            <button
+                                onClick={toggleSidebar}
+                                className={`p-1 rounded-md ${theme === "dark"
+                                    ? "hover:bg-gray-700"
+                                    : "hover:bg-gray-200"
+                                    } transition-colors`}
+                                aria-label="Close sidebar"
+                            >
+                                <ChevronLeft className={`h-5 w-5 ${theme === "dark" ? "text-gray-300" : "text-gray-600"
+                                    }`} />
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Search input */}
+                    {isSearchOpen && (
+                        <div className="mb-4">
+                            <div className={`flex items-center p-2 rounded-md ${theme === "dark"
+                                ? "bg-gray-700"
+                                : theme === "sepia"
+                                    ? "bg-amber-100"
+                                    : "bg-gray-100"
+                                }`}>
+                                <Search className={`h-4 w-4 mr-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                    }`} />
+                                <input
+                                    type="text"
+                                    placeholder="Search documents..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className={`w-full bg-transparent border-none focus:outline-none ${theme === "dark"
+                                        ? "text-white placeholder-gray-400"
+                                        : "text-gray-800 placeholder-gray-500"
+                                        }`}
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className={`p-1 rounded-full ${theme === "dark"
+                                            ? "hover:bg-gray-600 text-gray-400"
+                                            : "hover:bg-gray-200 text-gray-500"
+                                            }`}
+                                    >
+                                        <ChevronUp className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Tabs */}
                     <div className="flex border-b mb-4 pb-1">
@@ -162,18 +228,13 @@ export function EbookSidebar({
                     }}
                 >
                     {activeTab === "toc" ? (
-                        sessions.length > 0 ? (
+                        filteredSessions.length > 0 ? (
                             <div className="space-y-2 max-h-full overflow-y-auto">
-                                {sessions.map((session, index) => (
+                                {filteredSessions.map((session, index) => (
                                     <Link
                                         href={`/article/${session.id}`}
                                         key={session.id}
                                         className="block"
-                                    // onClick={(e) => {
-                                    //     // Prevent default to allow onSessionSelect to handle the navigation
-                                    //     e.preventDefault();
-                                    //     onSessionSelect(session);
-                                    // }}
                                     >
                                         <div
                                             className={`p-3 rounded-md cursor-pointer ${currentSession?.id === session.id
@@ -194,32 +255,6 @@ export function EbookSidebar({
                                                     } flex-1 truncate`}>
                                                     {session.title}
                                                 </span>
-                                                {/* <button
-                                                onClick={(e) => onDeleteSession(session.id, e)}
-                                                className={`ml-2 p-1 rounded-full ${theme === "dark"
-                                                        ? "hover:bg-gray-600 text-gray-400 hover:text-gray-200"
-                                                        : "hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-                                                    } transition-colors`}
-                                                aria-label="Delete document"
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="16"
-                                                    height="16"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                >
-                                                    <path d="M3 6h18" />
-                                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                                </svg>
-                                            </button> */}
                                             </div>
                                             <div className={`mt-1 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"
                                                 }`}>
@@ -229,25 +264,54 @@ export function EbookSidebar({
                                     </Link>
                                 ))}
 
-                                {/* Loading indicator and observer target */}
-                                {activeTab === "toc" && (
-                                    <div
-                                        ref={observerTarget}
-                                        className="py-4 flex justify-center"
+                                {/* Pagination controls */}
+                                <div className="mt-6 flex justify-between items-center">
+                                    <button
+                                        onClick={handlePreviousPage}
+                                        disabled={currentPage <= 1}
+                                        className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${currentPage <= 1
+                                            ? theme === "dark"
+                                                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            : theme === "dark"
+                                                ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                            } transition-colors`}
                                     >
-                                        {isLoadingMore && (
-                                            <div className="flex items-center justify-center">
-                                                <Loader2 className={`h-5 w-5 animate-spin ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`} />
-                                                <span className={`ml-2 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                                                    Loading more...
-                                                </span>
-                                            </div>
-                                        )}
-                                        {!isLoadingMore && !hasMoreSessions && sessions.length > 0 && (
-                                            <div className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                                                No more documents
-                                            </div>
-                                        )}
+                                        <ChevronLeft className="h-4 w-4" />
+                                        <span>Previous</span>
+                                    </button>
+
+                                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
+                                        Page {currentPage}
+                                    </span>
+
+                                    <button
+                                        onClick={handleNextPage}
+                                        disabled={isLoadingMore || !hasMoreSessions}
+                                        className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${isLoadingMore || !hasMoreSessions
+                                            ? theme === "dark"
+                                                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            : theme === "dark"
+                                                ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                            } transition-colors`}
+                                    >
+                                        <span>Next</span>
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                </div>
+
+                                {/* Loading indicator */}
+                                {isLoadingMore && (
+                                    <div className="py-4 flex justify-center">
+                                        <div className="flex items-center justify-center">
+                                            <Loader2 className={`h-5 w-5 animate-spin ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`} />
+                                            <span className={`ml-2 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                                                Loading more...
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                             </div>

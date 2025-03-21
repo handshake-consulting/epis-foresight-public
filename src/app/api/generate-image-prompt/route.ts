@@ -56,43 +56,14 @@ Alert users about these pitfalls:
 
 3. **Chaotic prompting**: Discourage random keyword lists. Instead, guide users toward logical, organized descriptions that clearly connect attributes to objects.
 
-## Examples of Effective Prompts
 
-### Example 1: Layered Composition
-**Poor prompt:** "A vintage car, castle, market, cobblestone street"
+The prompt should:
+1. Capture the main theme and tone of the article
+2. Include specific visual elements that represent the article's content
+3. Be detailed enough to generate a relevant and engaging image
+4. Be between 50-100 words in length
 
-**Improved prompt:** "In the foreground, a vintage red 1960s Mustang with a 'CLASSIC' license plate is parked on a cobblestone street. In the middle ground, a bustling European market with vendors selling fruits and handcrafts under colorful blue and red awnings. In the background, a medieval stone castle sits on a hill, partially shrouded in morning mist. The scene is bathed in early morning golden light with a cinematic atmosphere."
-
-### Example 2: Contrasting Elements
-**Poor prompt:** "A tree with half summer half winter"
-
-**Improved prompt:** "A single ancient oak tree standing in the center of the image. The left half depicts summer with vibrant green leaves, wildflowers, and a bright blue sky with fluffy clouds. The right half shows winter with bare branches covered in snow and ice crystals, against a steel-gray sky. The transition between seasons is abrupt and happens exactly down the middle of the tree trunk. The summer side has lush green grass while the winter side is covered in pristine white snow."
-
-### Example 3: Transparent Materials
-**Poor prompt:** "A terrarium with plants and a neon sign"
-
-**Improved prompt:** "A hanging glass terrarium with geometric facets containing a miniature tropical ecosystem with tiny ferns, moss, and red mushrooms. Behind the terrarium, clearly visible through the transparent glass, a neon sign mounted on the wall glows with the words 'Urban Jungle' in cursive blue font. The glass creates subtle distortions and reflections of the neon light, casting a blue glow on the plants inside."
-
-### Example 4: Text Integration
-**Poor prompt:** "Paris travel poster with text"
-
-**Improved prompt:** "A vintage Art Deco travel poster for Paris. The Eiffel Tower silhouette dominates the center against a sunset gradient background from orange to deep blue. At the top in large, elegant gold Art Deco typography with a subtle 3D effect and drop shadow, the word 'PARIS' arches across the poster. At the bottom in smaller white script with a soft neon glow effect, the phrase 'City of Lights' appears above the year '2025' in bold geometric numerals."
-
-### Example 5: Photorealistic Details
-**Poor prompt:** "A mountain landscape photo"
-
-**Improved prompt:** "A breathtaking mountain landscape photographed at golden hour. Shot on Canon EOS R5 with a wide-angle lens at f/11, 1/125s, ISO 100. The foreground features a clear alpine lake reflecting the mountain peaks. The middle ground shows a small wooden cabin surrounded by pine trees with smoke coming from the chimney. In the background, snow-capped mountain peaks are illuminated by warm golden sunlight. The color palette includes deep blues of the lake, rich greens of the pine forest, and golden orange highlights on the mountains."
-
-## Response Format
-
-For each user request:
-
-1. Ask clarifying questions if their image concept isn't clear
-2. Provide a structured, refined prompt based on their description
-3. Explain your key improvements to help them learn for future prompts
-4. Keep responses concise and focused on creating an effective prompt
-
-Remember to maintain a helpful, instructive tone while encouraging creative exploration.`;
+Respond with ONLY the image prompt, nothing else - no explanations, just the prompt text.`;
 
 export async function POST(request: NextRequest) {
     try {
@@ -123,7 +94,7 @@ export async function POST(request: NextRequest) {
         // Check if we have an Anthropic API key
         if (!process.env.ANTHROPIC_API_KEY) {
             // Fallback to a simple image prompt if no API key is available
-            const imagePrompt = `Create an illustrative image for an article about: ${message.slice(0, 200)}`;
+            const imagePrompt = ` Create an illustrative image for an article about: ${message.slice(0, 200)}`;
             return NextResponse.json({ prompt: imagePrompt });
         }
 
@@ -140,7 +111,39 @@ export async function POST(request: NextRequest) {
                 max_tokens: 300,
                 system: SYSTEM_PROMPT,
                 messages: [
-                    { role: 'user', content: `convert  this to a image model prompt: "${message.slice(0, 2000)}"` }
+                    {
+                        role: 'user', content: ` 
+                           ## Examples of Effective Prompts
+
+### Example 1: Layered Composition
+**Poor prompt:** "A vintage car, castle, market, cobblestone street"
+
+**Improved prompt:** "In the foreground, a vintage red 1960s Mustang with a 'CLASSIC' license plate is parked on a cobblestone street. In the middle ground, a bustling European market with vendors selling fruits and handcrafts under colorful blue and red awnings. In the background, a medieval stone castle sits on a hill, partially shrouded in morning mist. The scene is bathed in early morning golden light with a cinematic atmosphere."
+
+### Example 2: Contrasting Elements
+**Poor prompt:** "A tree with half summer half winter"
+
+**Improved prompt:** "A single ancient oak tree standing in the center of the image. The left half depicts summer with vibrant green leaves, wildflowers, and a bright blue sky with fluffy clouds. The right half shows winter with bare branches covered in snow and ice crystals, against a steel-gray sky. The transition between seasons is abrupt and happens exactly down the middle of the tree trunk. The summer side has lush green grass while the winter side is covered in pristine white snow."
+
+### Example 3: Transparent Materials
+**Poor prompt:** "A terrarium with plants and a neon sign"
+
+**Improved prompt:** "A hanging glass terrarium with geometric facets containing a miniature tropical ecosystem with tiny ferns, moss, and red mushrooms. Behind the terrarium, clearly visible through the transparent glass, a neon sign mounted on the wall glows with the words 'Urban Jungle' in cursive blue font. The glass creates subtle distortions and reflections of the neon light, casting a blue glow on the plants inside."
+
+### Example 4: Text Integration
+**Poor prompt:** "Paris travel poster with text"
+
+**Improved prompt:** "A vintage Art Deco travel poster for Paris. The Eiffel Tower silhouette dominates the center against a sunset gradient background from orange to deep blue. At the top in large, elegant gold Art Deco typography with a subtle 3D effect and drop shadow, the word 'PARIS' arches across the poster. At the bottom in smaller white script with a soft neon glow effect, the phrase 'City of Lights' appears above the year '2025' in bold geometric numerals."
+
+### Example 5: Photorealistic Details
+**Poor prompt:** "A mountain landscape photo"
+
+**Improved prompt:** "A breathtaking mountain landscape photographed at golden hour. Shot on Canon EOS R5 with a wide-angle lens at f/11, 1/125s, ISO 100. The foreground features a clear alpine lake reflecting the mountain peaks. The middle ground shows a small wooden cabin surrounded by pine trees with smoke coming from the chimney. In the background, snow-capped mountain peaks are illuminated by warm golden sunlight. The color palette includes deep blues of the lake, rich greens of the pine forest, and golden orange highlights on the mountains."
+
+                      **Poor prompt:**  "${message.slice(0, 2000)}"
+                      **Improved prompt:** 
+                      `
+                    }
                 ]
             });
 

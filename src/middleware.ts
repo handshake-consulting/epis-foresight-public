@@ -11,7 +11,8 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/api/generate-title') ||
         request.nextUrl.pathname.startsWith('/api/generate-image') ||
         request.nextUrl.pathname.startsWith('/api/article-images') ||
-        request.nextUrl.pathname.startsWith('/api/generate-image-prompt')
+        request.nextUrl.pathname.startsWith('/api/generate-image-prompt') ||
+        request.nextUrl.pathname.startsWith('/api/generate-loading-text')
     ) {
         return NextResponse.next();
     }

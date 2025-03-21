@@ -61,6 +61,141 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, [article]);
 
+    // Handle UI changes with loading messages
+    const handleUiChanges = async (content: string, versionNumber: number) => {
+        try {
+            // Initial loading header
+            setArticle(prev => {
+                if (!prev) return prev;
+
+                const updatedVersions = prev.versions.map(v => {
+                    if (v.versionNumber === versionNumber) {
+                        let updatedContent = v.content;
+                        updatedContent += `\n\n## Article Processing\n\n`;
+                        updatedContent += `Starting to analyze your article...\n\n`;
+                        return {
+                            ...v,
+                            content: updatedContent
+                        };
+                    }
+                    return v;
+                });
+
+                return {
+                    ...prev,
+                    versions: updatedVersions
+                };
+            });
+
+            // Get Firebase ID token for authentication
+            const token = await getIdToken();
+
+            // Call the loading text generator API
+            const response = await fetch('/api/generate-loading-text', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ message: content }),
+                redirect: 'follow'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to generate loading text: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const loadingMessages = data.loadingMessages || [
+                "Analyzing your article content...",
+                "Extracting key concepts and themes...",
+                "Organizing information into a coherent structure...",
+                "Refining arguments and supporting evidence...",
+                "Finalizing your article for presentation...",
+                "Almost ready to display your complete article..."
+            ];
+
+            // Display loading messages with progress indicators
+            for (let i = 0; i < loadingMessages.length; i++) {
+                const message = loadingMessages[i];
+                const progress = Math.round((i + 1) / loadingMessages.length * 100);
+
+                // Update article with loading message and progress
+                setArticle(prev => {
+                    if (!prev) return prev;
+
+                    const updatedVersions = prev.versions.map(v => {
+                        if (v.versionNumber === versionNumber) {
+                            // Find the last occurrence of "## Article Processing" and everything after it
+                            const processingIndex = v.content.lastIndexOf("## Article Processing");
+
+                            // If found, replace everything after it with new content
+                            let updatedContent = v.content;
+                            if (processingIndex !== -1) {
+                                updatedContent = v.content.substring(0, processingIndex);
+                                updatedContent += "## Article Processing\n\n";
+
+                                // Add all messages up to current index with progress
+                                for (let j = 0; j <= i; j++) {
+                                    updatedContent += `${loadingMessages[j]}\n\n`;
+                                    if (j === i) {
+                                        updatedContent += `Progress: ${progress}%\n\n`;
+                                    }
+                                }
+                            } else {
+                                // Fallback if header not found
+                                updatedContent += `\n\n${message}\n\n`;
+                                updatedContent += `Progress: ${progress}%\n\n`;
+                            }
+
+                            return {
+                                ...v,
+                                content: updatedContent
+                            };
+                        }
+                        return v;
+                    });
+
+                    return {
+                        ...prev,
+                        versions: updatedVersions
+                    };
+                });
+
+                // Add delay between messages to simulate processing
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+
+            return loadingMessages;
+        } catch (error: any) {
+            console.error("Error in handleUiChanges:", error);
+
+            // Fallback to basic loading message if there's an error
+            setArticle(prev => {
+                if (!prev) return prev;
+
+                const updatedVersions = prev.versions.map(v => {
+                    if (v.versionNumber === versionNumber) {
+                        let updatedContent = v.content;
+                        updatedContent += `\n\nProcessing your article...\n\n`;
+                        return {
+                            ...v,
+                            content: updatedContent
+                        };
+                    }
+                    return v;
+                });
+
+                return {
+                    ...prev,
+                    versions: updatedVersions
+                };
+            });
+
+            return ["Processing your article..."];
+        }
+    };
+
     // Process QueryNode data to extract image information and generate title
     const processQueryNodeData = useCallback(async (data: any, versionNumber: number) => {
         let capturedImageUrl = '';
@@ -100,14 +235,20 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         redirect: 'follow'
                     });
 
-                    // Wait for both promises to resolve
-                    const [uichanges, titleResponse, imagePromptResponse] = await Promise.all([
-                        handleUiChnages,
+                    // Start handleUiChanges in parallel with other API calls
+                    const uiChangesPromise = handleUiChanges(content, versionNumber);
+
+                    // Wait for title and image prompt API calls to resolve
+                    const [titleResponse, imagePromptResponse] = await Promise.all([
                         titlePromise,
                         imagePromptPromise
                     ]);
 
-                    uichanges(versionNumber).then(() => { })
+                    // Don't wait for UI changes to complete - let it run in parallel
+                    uiChangesPromise.catch(error => {
+                        console.error("Error in parallel UI changes:", error);
+                    });
+
                     // Process title response
                     let generatedTitle = '';
                     if (titleResponse.ok) {
@@ -158,8 +299,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         // Fallback image prompt
                         imagePrompt = `Create an illustrative image for an article about: ${content.slice(0, 1000)}`;
                     }
-
-
 
                     // Generate and upload the image using the generated prompt
                     try {
@@ -224,8 +363,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 console.error("Error processing PromptNode data:", error);
             }
         }
-
-
 
         return capturedImageUrl;
     }, []);  // Note: You might need to add dependencies here based on your linting rules
@@ -763,65 +900,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         setIsStreaming(false);
         stopGeneration();
     }, [stopGeneration]);
-
-    const handleUiChnages = async ({ versionNumber }: any) => {
-        // Send to Haiku for UI elements to display iteratively
-        // This simulates the OpenAI Deep Research style display
-        const uiElements = [
-            { type: 'header', content: 'Article Summary' },
-            { type: 'text', content: 'Processing your article...' },
-            { type: 'progress', value: 25 },
-            { type: 'text', content: 'Analyzing key points...' },
-            { type: 'progress', value: 50 },
-            { type: 'text', content: 'Generating insights...' },
-            { type: 'progress', value: 75 },
-            { type: 'text', content: 'Finalizing content...' },
-            { type: 'progress', value: 100 }
-        ];
-
-        // Display UI elements iteratively
-        for (let i = 0; i < uiElements.length; i++) {
-            console.log('hit');
-
-            const element = uiElements[i];
-
-            // Update article with UI element
-            setArticle(prev => {
-                if (!prev) return prev;
-
-                // Add UI element to content
-                const updatedVersions = prev.versions.map(v => {
-                    if (v.versionNumber === versionNumber) {
-                        // For simplicity, we're just appending text representation
-                        // In a real implementation, you might use a more structured approach
-                        let updatedContent = v.content;
-
-                        if (element.type === 'header') {
-                            updatedContent += `\n\n## ${element.content}\n\n`;
-                        } else if (element.type === 'text') {
-                            updatedContent += `${element.content}\n\n`;
-                        } else if (element.type === 'progress') {
-                            updatedContent += `Progress: ${element.value}%\n\n`;
-                        }
-
-                        return {
-                            ...v,
-                            content: updatedContent
-                        };
-                    }
-                    return v;
-                });
-
-                return {
-                    ...prev,
-                    versions: updatedVersions
-                };
-            });
-
-            // Simulate delay between UI elements
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-    }
 
     return {
         article,

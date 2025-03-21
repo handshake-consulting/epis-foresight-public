@@ -525,6 +525,10 @@ export default function EbookArticlePage({
         if (nextArticle) {
             router.push('/article/' + nextArticle.id)
             // switchSession(nextArticle);
+        } else if (sessions.length > 0) {
+            // If there's no next article (we're at the last one),
+            // navigate to the first document in the sessions array (circular navigation)
+            router.push('/article/' + sessions[0].id);
         }
     };
 
@@ -532,8 +536,9 @@ export default function EbookArticlePage({
     const goToPreviousArticle = () => {
         if (prevArticle) {
             router.push('/article/' + prevArticle.id);
-        } else if (isFirstGeneration && sessions.length > 0) {
-            // When generating a new document, navigate to the last document in the sessions array
+        } else if (sessions.length > 0) {
+            // If there's no previous article (we're at the first one), 
+            // navigate to the last document in the sessions array (circular navigation)
             router.push('/article/' + sessions[sessions.length - 1].id);
         }
     };

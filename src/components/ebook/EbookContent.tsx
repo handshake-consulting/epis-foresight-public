@@ -78,7 +78,7 @@ export function EbookContent({
             {/* Main content area */}
             <div
                 ref={contentRef}
-                className={`flex-1 overflow-y-auto px-4 py-6 ${theme === "dark"
+                className={`flex-1 overflow-y-auto px-4 py-6 pt-8 ${theme === "dark"
                     ? "bg-gray-900"
                     : theme === "sepia"
                         ? "bg-amber-50"
@@ -88,7 +88,7 @@ export function EbookContent({
             >
                 <div className="max-w-3xl mx-auto" style={pageStyle}>
                     {/* Version indicator */}
-                    <div className="mb-4 text-sm flex items-center justify-between">
+                    <div className="mb-6 mt-2 text-sm flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className={`flex items-center gap-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
                             } italic`}>
                             <BookOpen className="h-4 w-4" />
@@ -100,18 +100,11 @@ export function EbookContent({
                                 })}
                             </span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            {/* Version navigation - fixed position at bottom */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Version navigation */}
                             {totalVersions > 1 && (
                                 <div
-                                    className="flex flex-row space-x-1 items-center"
-                                // className={`fixed bottom-[52px] left-0 right-0 z-40 ${theme === "dark"
-                                //     ? "bg-gray-800 border-t border-gray-700"
-                                //     : theme === "sepia"
-                                //         ? "bg-amber-100 border-t border-amber-200"
-                                //         : "bg-white border-t border-gray-200"
-                                //     } py-2 px-4 flex justify-between items-center shadow-md`}
-
+                                    className="flex flex-row items-center mr-2 space-x-1"
                                 >
                                     <Button
                                         onClick={onPreviousVersion}
@@ -119,14 +112,6 @@ export function EbookContent({
                                         size={"icon"}
                                         variant={'outline'}
                                         className="rounded-full w-7 h-7"
-                                        // className={`flex items-center gap-1 px-3 py-1.5 rounded-md ${currentVersionNumber <= 1
-                                        //     ? theme === "dark"
-                                        //         ? "text-gray-600 cursor-not-allowed"
-                                        //         : "text-gray-300 cursor-not-allowed"
-                                        //     : theme === "dark"
-                                        //         ? "text-gray-300 hover:bg-gray-700"
-                                        //         : "text-gray-700 hover:bg-gray-100"
-                                        //     } transition-colors`}
                                         aria-label="Previous version"
                                     >
                                         <ChevronLeft className="h-4 w-4" />
@@ -144,14 +129,6 @@ export function EbookContent({
                                         size={"icon"}
                                         variant={'outline'}
                                         className="rounded-full h-7 w-7"
-                                        // className={`flex items-center gap-1 px-3 py-1.5 rounded-md ${currentVersionNumber >= totalVersions
-                                        //     ? theme === "dark"
-                                        //         ? "text-gray-600 cursor-not-allowed"
-                                        //         : "text-gray-300 cursor-not-allowed"
-                                        //     : theme === "dark"
-                                        //         ? "text-gray-300 hover:bg-gray-700"
-                                        //         : "text-gray-700 hover:bg-gray-100"
-                                        //     } transition-colors`}
                                         aria-label="Next version"
                                     >
                                         <span className="sr-only">Next Version</span>
@@ -163,20 +140,19 @@ export function EbookContent({
                                 <span className={`${theme === "dark"
                                     ? "bg-gray-800 text-gray-300 border-gray-700"
                                     : "bg-white text-gray-700 border-gray-200"
-                                    } px-2 py-1 rounded-full border text-xs`}>
+                                    } px-2 py-1 rounded-full border text-xs whitespace-nowrap`}>
                                     Version {version.versionNumber}
                                 </span>
                                 {isLatestVersion && (
                                     <span className={`${theme === "dark"
                                         ? "bg-blue-900 text-blue-100 border-blue-800"
                                         : "bg-blue-50 text-blue-700 border-blue-100"
-                                        } px-2 py-1 rounded-full border text-xs`}>
+                                        } px-2 py-1 rounded-full border text-xs whitespace-nowrap`}>
                                         Latest
                                     </span>
                                 )}
                             </div>
                         </div>
-
                     </div>
 
                     {/* Edit prompt if available */}
@@ -256,8 +232,6 @@ export function EbookContent({
                     </div>
                 </div>
             </div>
-
-
 
             {/* Reading progress indicator */}
             <div className="fixed bottom-0 left-0 right-0 h-1">

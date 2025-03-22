@@ -182,7 +182,7 @@ export function EbookHeader({
                 : 'bg-white border-gray-200 text-gray-800'
             } 
       border-b shadow-sm transition-colors duration-200`}>
-            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div className="container mx-auto px-4 py-3 pb-4 flex justify-between items-start">
                 {/* Left section */}
                 <div className="flex items-center space-x-3">
                     <button

@@ -104,13 +104,13 @@ export function MobileImageSlider({
     }, [pagination.pageSize]);
 
     // Load images when component mounts or when isImageSliderOpen changes
-    useEffect(() => {
-        // Only fetch images when the slider is open and has exactly one image
-        if (!isloaded && images.length === 1) {
-            fetchImages(1, false);
-        }
-        // fetchImages(1, false);
-    }, [isloaded, fetchImages, images.length]);
+    // useEffect(() => {
+    //     // Only fetch images when the slider is open and has exactly one image
+    //     if (!isloaded && images.length === 1) {
+    //         fetchImages(1, false);
+    //     }
+    //     // fetchImages(1, false);
+    // }, [isloaded, fetchImages, images.length]);
 
     // Load more images when needed
     const loadMoreImages = useCallback(() => {

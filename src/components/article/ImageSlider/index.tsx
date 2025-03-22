@@ -103,12 +103,12 @@ export function ImageSlider({
     }, [pagination.pageSize]);
 
     // Load images when component mounts or when isImageSliderOpen changes
-    useEffect(() => {
-        // Only fetch images when the slider is open and has exactly one image
-        if (isImageSliderOpen && images.length === 1) {
-            fetchImages(1, false);
-        }
-    }, [isImageSliderOpen, fetchImages, images.length]);
+    // useEffect(() => {
+    //     // Only fetch images when the slider is open and has exactly one image
+    //     if (isImageSliderOpen && images.length === 1) {
+    //         fetchImages(1, false);
+    //     }
+    // }, [isImageSliderOpen, fetchImages, images.length]);
 
     // Load more images when needed
     const loadMoreImages = useCallback(() => {

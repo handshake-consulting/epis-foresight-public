@@ -4,21 +4,22 @@ import { ImageMessage } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getIdToken } from "@/utils/firebase/client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FullscreenView } from "./FullscreenView";
-import { RegularView } from "./RegularView";
+import { ImageDisplay } from "./ImageDisplay";
+import { NavigationControls } from "./NavigationControls";
+import { ThumbnailStrip } from "./ThumbnailStrip";
 import { PaginationData } from "./types";
 
-interface ImageSliderProps {
-    initialImages?: ImageMessage[];
-
+interface MobileImageSliderProps {
+    initialImages: ImageMessage[];
+    isloaded: boolean;
 }
 
-export function ImageSlider({
-    initialImages = [],
-
-}: ImageSliderProps) {
+export function MobileImageSlider({
+    initialImages,
+    isloaded
+}: MobileImageSliderProps) {
     // Use the store for image slider open state
-    const { isImageSliderOpen, toggleImageSlider, settings } = useSettingsStore();
+    const { settings } = useSettingsStore();
 
     const [images, setImages] = useState<ImageMessage[]>(initialImages);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -105,10 +106,11 @@ export function ImageSlider({
     // Load images when component mounts or when isImageSliderOpen changes
     useEffect(() => {
         // Only fetch images when the slider is open and has exactly one image
-        if (isImageSliderOpen && images.length === 1) {
+        if (!isloaded && images.length === 1) {
             fetchImages(1, false);
         }
-    }, [isImageSliderOpen, fetchImages, images.length]);
+        // fetchImages(1, false);
+    }, [isloaded, fetchImages, images.length]);
 
     // Load more images when needed
     const loadMoreImages = useCallback(() => {
@@ -189,7 +191,7 @@ export function ImageSlider({
         // Define the event handler
         const handleKeyDown = (e: KeyboardEvent) => {
             // Only process keyboard events if the slider is open
-            if (!isImageSliderOpen) return;
+            if (isloaded) return;
 
             if (e.key === 'ArrowLeft') {
                 goToPrevious();
@@ -205,7 +207,7 @@ export function ImageSlider({
 
         // Return cleanup function
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isImageSliderOpen, isFullscreen, goToPrevious, goToNext]);
+    }, [isloaded, isFullscreen, goToPrevious, goToNext]);
 
     // Theme-based styling
     const getThemeStyles = useCallback(() => {
@@ -286,53 +288,50 @@ export function ImageSlider({
         return null;
     }
 
-    // Fullscreen overlay
-    if (isFullscreen) {
-        return (
-            <FullscreenView
-                images={images}
-                currentIndex={currentIndex}
-                isLoading={isLoading}
-                imageLoading={imageLoading}
-                isTransitioning={isTransitioning}
-                pagination={pagination}
-                theme={theme}
-                fullscreenThumbnailContainerRef={fullscreenThumbnailContainerRef}
-                onThumbnailClick={handleThumbnailClick}
-                onScroll={scrollThumbnails}
-                onPrevious={goToPrevious}
-                onNext={goToNext}
-                onDownload={handleDownload}
-                onExitFullscreen={toggleFullscreen}
-                onImageLoadStart={() => setImageLoading(true)}
-                onImageLoad={() => setImageLoading(false)}
-            />
-        );
-    }
-
-    // Regular view
     return (
-        <RegularView
-            images={images}
-            currentIndex={currentIndex}
-            isLoading={isLoading}
-            imageLoading={imageLoading}
-            isTransitioning={isTransitioning}
-            pagination={pagination}
-            theme={theme}
-            isOpen={isImageSliderOpen}
-            width={isImageSliderOpen ? '650px' : '48px'}
-            thumbnailContainerRef={thumbnailContainerRef}
-            onThumbnailClick={handleThumbnailClick}
-            onScroll={(direction) => scrollThumbnails(direction)}
-            onPrevious={goToPrevious}
-            onNext={goToNext}
-            onDownload={handleDownload}
-            onFullscreen={toggleFullscreen}
-            onToggle={toggleImageSlider}
-            onImageLoadStart={() => setImageLoading(true)}
-            onImageLoad={() => setImageLoading(false)}
+        <div >
+            <div className="flex-1 p-4 flex flex-col">
+                {/* Main image display with loading indicator */}
+                <div className="relative flex-1">
+                    <ImageDisplay
+                        image={images[currentIndex]}
+                        isLoading={isLoading}
+                        imageLoading={imageLoading}
+                        isTransitioning={isTransitioning}
+                        theme={theme}
+                        onLoadStart={() => setImageLoading(true)}
+                        onLoad={() => setImageLoading(false)}
+                    />
 
-        />
+                    {/* Navigation controls */}
+                    {images.length > 1 && (
+                        <NavigationControls
+                            currentIndex={currentIndex}
+                            totalImages={images.length}
+                            hasMoreImages={pagination.page < pagination.totalPages}
+                            theme={theme}
+                            onPrevious={goToPrevious}
+                            onNext={goToNext}
+                        />
+                    )}
+                </div>
+
+                {/* Improved thumbnail strip with fixed width container and scroll buttons */}
+                {images.length > 1 && (
+                    <div className={`mt-4 h-16 ${theme.thumbBg} rounded-lg border ${theme.thumbBorder} relative`}>
+                        <ThumbnailStrip
+                            images={images}
+                            currentIndex={currentIndex}
+                            isLoading={isLoading}
+                            pagination={pagination}
+                            theme={theme}
+                            containerRef={thumbnailContainerRef}
+                            onThumbnailClick={handleThumbnailClick}
+                            onScroll={(direction) => scrollThumbnails(direction)}
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

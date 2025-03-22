@@ -1,4 +1,6 @@
 import AutoLoginProvider from "@/components/AutoLoginProvider";
+import { getArticleById } from "@/data/getArticle";
+import { getSessionsList } from "@/data/getSession";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
@@ -54,7 +56,9 @@ export async function generateMetadata({
 
 const page = async ({ params }: { params: Params }) => {
     const { id } = (await params);
-    // const sessionlist = await getSessionsList({ page: 1, pageSize: 10 })
+    const sessionlist = await getSessionsList({ fetchAll: true });
+    const articleData = await getArticleById(id);
+
     // Default profile to use if we can't get a real one
     const defaultProfile: UserProfile = {
         email: "ekemboy@gmail.com",
@@ -63,15 +67,16 @@ const page = async ({ params }: { params: Params }) => {
         email_verified: true,
         new_user: false
     };
-    // console.log('Session lIST', sessionlist);
-
 
     return (
         <AutoLoginProvider>
             <Suspense fallback={<div>Loading...</div>}>
-                <EbookArticlePage initialSessionId={id} />
+                <EbookArticlePage
+                    initialSessionId={id}
+                    sessionList={sessionlist}
+                    articleData={articleData}
+                />
             </Suspense>
-
         </AutoLoginProvider>
     );
 };

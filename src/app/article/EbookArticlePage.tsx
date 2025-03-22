@@ -7,54 +7,36 @@ import SettingsDialog from "@/components/settings/SettingsDialog";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
-import { useSessions } from "@/hook/use-sessions";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
-import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Custom hook to fetch a specific article session
-const useArticleSession = (sessionId: string | undefined, userId: string | null) => {
-    return useQuery({
-        queryKey: ['articleSession', sessionId, userId],
-        queryFn: async () => {
-            if (!sessionId || !userId) return null;
-
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from("chat_sessions")
-                .select("*")
-                .eq("id", sessionId)
-                .eq("user_id", userId)
-                .single();
-
-            if (error) {
-                console.error("Error loading specific session:", error);
-                return null;
-            }
-
-            return data as ChatSession;
-        },
-        enabled: !!sessionId && !!userId,
-    });
-};
+// This hook is no longer needed as we're getting the data from the server
 
 export default function EbookArticlePage({
-    initialSessionId
+    initialSessionId,
+    sessionList,
+    articleData
 }: {
+    sessionList?: any;
     initialSessionId?: string;
+    articleData?: {
+        session: any;
+        messages: any[];
+    } | null;
 }) {
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    console.log('articleData ', articleData);
 
     // State
     const [userId, setUserId] = useState<string | null>(null);
     const [theme, setTheme] = useState("light");
-    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [sessions, setSessions] = useState<ChatSession[]>(sessionList);
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
@@ -71,18 +53,18 @@ export default function EbookArticlePage({
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
 
-    // Fetch all sessions using React Query
-    const {
-        data: sessionData,
-        isLoading: isSessionsLoading,
-        refetch: refetchSessions
-    } = useSessions();
+    // Use server-provided session list instead of fetching client-side
+    const sessionData = sessionList || [];
+    const refetchSessions = useCallback(async () => {
+        // This is now a no-op as we're using server-fetched data
+        // We'll only refresh the page if needed
+        if (initialSessionId) {
+            router.refresh();
+        }
+    }, [initialSessionId, router]);
 
-    // Fetch specific article session if initialSessionId is provided
-    const {
-        data: specificSession,
-        isLoading: isSpecificSessionLoading
-    } = useArticleSession(initialSessionId, userId);
+    // Use server-provided specific session
+    const specificSession = articleData?.session as ChatSession || null;
 
     // Use the article hook
     const {
@@ -193,9 +175,9 @@ export default function EbookArticlePage({
         }
     }, [userId, isNewArticle]);
 
-    // Handle specific session loading when initialSessionId is provided
+    // Initialize with server data when component mounts
     useEffect(() => {
-        const loadSpecificArticle = async () => {
+        const initializeFromServerData = async () => {
             if (!userId || !specificSession || isNewArticle) return;
 
             setIsLoading(true);
@@ -203,7 +185,7 @@ export default function EbookArticlePage({
 
             // Find position in session list for navigation
             if (sessionData && sessionData.length > 0) {
-                const currentSessionIndex = sessionData.findIndex(s => s.id === specificSession.id);
+                const currentSessionIndex = sessionData.findIndex((s: ChatSession) => s.id === specificSession.id);
 
                 if (currentSessionIndex !== -1) {
                     // Set next and previous articles for navigation
@@ -221,36 +203,33 @@ export default function EbookArticlePage({
                 }
             }
 
-            // Load the article content
-            await loadArticleSession(specificSession.id, userId);
+            // If we have article data from the server, use it to initialize the article state
+            if (articleData?.messages && articleData.messages.length > 0) {
+                // Process the messages to build the article
+                await loadArticleSession(specificSession.id, userId);
+            }
 
             // Mark this article as last read
             localStorage.setItem("lastReadArticle", specificSession.id);
 
-            // Check if there are more sessions
-            const supabase = createClient();
-            const { count } = await supabase
-                .from("chat_sessions")
-                .select("*", { count: "exact", head: true })
-                .eq("user_id", userId)
-                .eq("type", "article");
-
             setSessions(prevSessions => {
-                const existingIds = new Set(prevSessions.map(s => s.id));
-                const newSessions = [specificSession];
-                return [...prevSessions, ...newSessions];
+                const existingIds = new Set(prevSessions.map((s: ChatSession) => s.id));
+                if (!existingIds.has(specificSession.id)) {
+                    return [...prevSessions, specificSession];
+                }
+                return prevSessions;
             });
 
             setIsLoading(false);
         };
-        console.log('loadSpecificArticle');
-        loadSpecificArticle();
-    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
+
+        initializeFromServerData();
+    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle, articleData]);
 
     // Handle default article loading when no initialSessionId is provided
     useEffect(() => {
         const loadDefaultArticle = async () => {
-            if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
+            if (!userId || isNewArticle || initialSessionId || !sessionData) return;
 
             if (sessionData.length > 0) {
                 // Redirect to the first article
@@ -263,7 +242,7 @@ export default function EbookArticlePage({
         console.log('loadDefaultArticle');
 
         loadDefaultArticle();
-    }, [userId, sessionData, isSessionsLoading, isNewArticle, initialSessionId, router, startNewArticle]);
+    }, [userId, sessionData, isNewArticle, initialSessionId, router, startNewArticle]);
 
     // Handle version parameter from URL
     useEffect(() => {
@@ -284,7 +263,7 @@ export default function EbookArticlePage({
 
         // Update next and previous articles if we have session data
         if (sessionData && currentSession) {
-            const currentIndex = sessionData.findIndex(s => s.id === currentSession.id);
+            const currentIndex = sessionData.findIndex((s: ChatSession) => s.id === currentSession.id);
             if (currentIndex > 0) {
                 setPrevArticle(sessionData[currentIndex - 1]);
             } else {
@@ -331,7 +310,7 @@ export default function EbookArticlePage({
         stopGeneration();
 
         // Update next and previous articles
-        const currentIndex = sessions.findIndex(s => s.id === session.id);
+        const currentIndex = sessions.findIndex((s: ChatSession) => s.id === session.id);
         if (currentIndex > 0) {
             setPrevArticle(sessions[currentIndex - 1]);
         } else {
@@ -404,7 +383,7 @@ export default function EbookArticlePage({
                     localStorage.setItem("lastReadArticle", newCurrentSession.id);
                 } else {
                     // Update next and previous articles if needed
-                    const currentIndex = sessions.findIndex(s => s.id === currentSession?.id);
+                    const currentIndex = sessions.findIndex((s: ChatSession) => s.id === currentSession?.id);
                     if (currentIndex > 0) {
                         setPrevArticle(sessions[currentIndex - 1]);
                     } else {
@@ -458,7 +437,7 @@ export default function EbookArticlePage({
         if (!userId) return;
 
         // Find the session for this article
-        const session = sessions.find(s => s.id === articleId);
+        const session = sessions.find((s: ChatSession) => s.id === articleId);
         if (session) {
             // Switch to the session
             await switchSession(session);

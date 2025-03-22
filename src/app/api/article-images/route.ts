@@ -31,12 +31,13 @@ export async function GET(request: NextRequest) {
         // Create Supabase client
         const supabase = await createClient();
 
-        // Query chat_messages table for all messages with images
+        // Query chat_messages table for all messages with non-empty images
         const { data: messages, error, count } = await supabase
             .from('chat_messages')
             .select('*', { count: 'exact' })
             .eq('user_id', uid)
             .not('image', 'is', null)
+            .not('image', 'eq', '')
             .order('created_at', { ascending: false })
             .range(from, to);
 
@@ -52,8 +53,8 @@ export async function GET(request: NextRequest) {
         const imageMessages: ImageMessage[] = [];
 
         for (const message of messages) {
-            // Check if the message has an image
-            if (message.image) {
+            // Check if the message has a non-empty image
+            if (message.image && message.image.trim() !== '') {
                 try {
                     // Add image message
                     imageMessages.push({

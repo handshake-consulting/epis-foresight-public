@@ -58,7 +58,7 @@ export default function EbookArticlePage({
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
     // URL parameters

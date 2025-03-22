@@ -43,6 +43,7 @@ export function RegularView({
     isOpen,
     width,
     thumbnailContainerRef,
+
     onThumbnailClick,
     onScroll,
     onPrevious,
@@ -53,6 +54,7 @@ export function RegularView({
     onImageLoadStart,
     onImageLoad
 }: RegularViewProps) {
+
     return (
         <div
             className={`fixed right-0 top-16 bottom-16 z-10 ${theme.bg} ${theme.text} shadow-xl border-l ${theme.tabBorder} transition-all duration-300 ease-in-out flex`}
@@ -158,4 +160,6 @@ export function RegularView({
             )}
         </div>
     );
+
+
 }

@@ -453,6 +453,8 @@ export default function EbookArticlePage({
         }
     };
 
+
+
     // Navigate to bookmarked content
     const navigateToBookmark = async (articleId: string, versionNumber: number) => {
         if (!userId) return;
@@ -528,8 +530,11 @@ export default function EbookArticlePage({
                     totalVersions={article?.versions.length || 1}
                     articleId={currentSession?.id}
                     articleTitle={currentSession?.title}
+                    images={article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : []}
                 />
             )}
+
+
 
             {/* Footer with input */}
             <EbookFooter
@@ -546,12 +551,16 @@ export default function EbookArticlePage({
                 theme={theme}
             />
 
-            {/* Image slider - collect images from all versions */}
+            {/* Desktop Image slider - collect images from all versions */}
             {article && article.versions && article.versions.length > 0 && (
                 <>
-                    <ImageSlider
-                        initialImages={(article && article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl))}
-                    />
+                    {/* Desktop version with modal */}
+                    <div className="hidden md:block">
+                        <ImageSlider
+                            initialImages={(article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : [])}
+
+                        />
+                    </div>
                 </>
             )}
 

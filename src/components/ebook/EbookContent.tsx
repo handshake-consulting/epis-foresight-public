@@ -6,6 +6,7 @@ import { BookmarkItem, useSettingsStore } from "@/store/settingsStore";
 import { BookOpen, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArticleMarkdownRender } from "../article/ArticleMarkdownRender";
+import { MobileImageSlider } from "../article/ImageSlider/MobileImageSlider";
 import { Button } from "../ui/button";
 
 interface EbookContentProps {
@@ -19,6 +20,7 @@ interface EbookContentProps {
     totalVersions: number;
     articleId?: string;
     articleTitle?: string;
+    images?: any[]; // Array of images for the MobileImageSlider
 }
 
 export function EbookContent({
@@ -31,7 +33,8 @@ export function EbookContent({
     currentVersionNumber,
     totalVersions,
     articleId = "",
-    articleTitle = "Untitled Document"
+    articleTitle = "Untitled Document",
+    images = []
 }: EbookContentProps) {
     const contentRef = useRef<HTMLDivElement>(null);
     const { settings, toggleBookmark, isBookmarked, isFooterOpen } = useSettingsStore();
@@ -257,6 +260,15 @@ export function EbookContent({
                 </div>
             </div>
 
+            {/* Mobile Image slider - only visible on mobile */}
+            {images.length > 0 && (
+                <div className="md:hidden">
+                    <MobileImageSlider
+                        initialImages={images}
+                        isloaded={isStreaming}
+                    />
+                </div>
+            )}
 
 
             {/* Reading progress indicator */}

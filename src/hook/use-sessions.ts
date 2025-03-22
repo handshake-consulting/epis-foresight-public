@@ -4,10 +4,10 @@ import { ChatSession } from "@/components/chat/types";
 import { getSessionsList } from "@/data/getSession";
 import { useQuery } from "@tanstack/react-query";
 
-export const useSessions = (page: number = 1, pageSize: number = 10) => {
+export const useSessions = () => {
     return useQuery<ChatSession[]>({
-        queryKey: ['sessions', page, pageSize],
-        queryFn: () => getSessionsList({ page, pageSize }),
+        queryKey: ['sessions', 'all'],
+        queryFn: () => getSessionsList({ fetchAll: true }),
         staleTime: 1000 * 60 * 5, // 5 minutes
         refetchOnWindowFocus: false,
         retry: 1,

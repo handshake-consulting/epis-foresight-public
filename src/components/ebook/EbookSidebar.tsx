@@ -6,9 +6,7 @@ import {
     BookMarked,
     BookPlus,
     ChevronLeft,
-    ChevronRight,
     FileText,
-    Loader2,
     Trash2
 } from "lucide-react";
 import Link from "next/link";
@@ -22,9 +20,6 @@ interface EbookSidebarProps {
     onDeleteSession: (sessionId: string, e: React.MouseEvent) => void;
     theme: string;
     onBookmarkSelect?: (articleId: string, versionNumber: number) => void;
-    onLoadMoreSessions?: () => Promise<boolean>;
-    currentPage: number;
-    setCurrentPage: (page: number) => void;
     hasMoreSessions: boolean;
 }
 
@@ -36,38 +31,13 @@ export function EbookSidebar({
     onDeleteSession,
     theme,
     onBookmarkSelect,
-    onLoadMoreSessions,
-    currentPage,
-    setCurrentPage,
     hasMoreSessions
 }: EbookSidebarProps) {
     const { isSidebarOpen, toggleSidebar } = useSettingsStore();
     const [activeTab, setActiveTab] = useState<"toc" | "bookmarks">("toc");
     const { bookmarks, removeBookmark } = useSettingsStore();
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-    // Handle next page
-    const handleNextPage = async () => {
-        if (isLoadingMore || !hasMoreSessions || !onLoadMoreSessions) return;
-
-        setIsLoadingMore(true);
-        try {
-            const hasMore = await onLoadMoreSessions();
-            setIsLoadingMore(false);
-        } catch (error) {
-            console.error("Error loading more sessions:", error);
-            setIsLoadingMore(false);
-        }
-    };
-
-    // Handle previous page
-    const handlePreviousPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
 
     // Filter sessions based on search query
     const filteredSessions = sessions.filter(session =>
@@ -215,7 +185,8 @@ export function EbookSidebar({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent"
+                <div
+                    className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-180px)] scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent"
                     style={{
                         scrollbarWidth: 'thin',
                         scrollbarColor: theme === "dark"
@@ -261,57 +232,6 @@ export function EbookSidebar({
                                         </div>
                                     </Link>
                                 ))}
-
-                                {/* Pagination controls */}
-                                <div className="mt-6 flex justify-between items-center">
-                                    <button
-                                        onClick={handlePreviousPage}
-                                        disabled={currentPage <= 1}
-                                        className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${currentPage <= 1
-                                            ? theme === "dark"
-                                                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                            : theme === "dark"
-                                                ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                            } transition-colors`}
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                        <span>Previous</span>
-                                    </button>
-
-                                    <span className={`text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>
-                                        Page {currentPage}
-                                    </span>
-
-                                    <button
-                                        onClick={handleNextPage}
-                                        disabled={isLoadingMore || !hasMoreSessions}
-                                        className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm ${isLoadingMore || !hasMoreSessions
-                                            ? theme === "dark"
-                                                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                            : theme === "dark"
-                                                ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                            } transition-colors`}
-                                    >
-                                        <span>Next</span>
-                                        <ChevronRight className="h-4 w-4" />
-                                    </button>
-                                </div>
-
-                                {/* Loading indicator */}
-                                {isLoadingMore && (
-                                    <div className="py-4 flex justify-center">
-                                        <div className="flex items-center justify-center">
-                                            <Loader2 className={`h-5 w-5 animate-spin ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`} />
-                                            <span className={`ml-2 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                                                Loading more...
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <div className={`text-center p-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"

@@ -216,18 +216,10 @@ export function EbookSidebar({
                                                 } transition-colors`}
                                         >
                                             <div className="flex items-center">
-                                                <span className={`inline-block w-6 text-center ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                                                    } mr-2`}>
-                                                    {index + 1}.
-                                                </span>
                                                 <span className={`font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-800"
                                                     } flex-1 truncate`}>
                                                     {session.title}
                                                 </span>
-                                            </div>
-                                            <div className={`mt-1 text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                                                }`}>
-                                                {new Date(session.updated_at).toLocaleDateString()}
                                             </div>
                                         </div>
                                     </Link>

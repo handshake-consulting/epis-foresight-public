@@ -59,11 +59,7 @@ export default function EbookArticlePage({
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [hasMoreSessions, setHasMoreSessions] = useState(true);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-
-    const PAGE_SIZE = 10; // Number of sessions to load per page
 
     // URL parameters
     const isNewArticle = searchParams.get("new") === "true";
@@ -75,12 +71,12 @@ export default function EbookArticlePage({
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
 
-    // Fetch sessions using React Query
+    // Fetch all sessions using React Query
     const {
         data: sessionData,
         isLoading: isSessionsLoading,
         refetch: refetchSessions
-    } = useSessions(currentPage, PAGE_SIZE);
+    } = useSessions();
 
     // Fetch specific article session if initialSessionId is provided
     const {
@@ -197,22 +193,6 @@ export default function EbookArticlePage({
         }
     }, [userId, isNewArticle]);
 
-    // Update sessions state when sessionData changes
-    useEffect(() => {
-        if (sessionData) {
-            setSessions(prevSessions => {
-                // If we're on the first page, replace all sessions
-                if (currentPage === 1) {
-                    return [...sessionData];
-                }
-                // Otherwise, append new sessions to existing ones
-                const existingIds = new Set(prevSessions.map(s => s.id));
-                const newSessions = sessionData.filter(s => !existingIds.has(s.id));
-                return [...prevSessions, ...newSessions];
-            });
-        }
-    }, [sessionData, currentPage]);
-
     // Handle specific session loading when initialSessionId is provided
     useEffect(() => {
         const loadSpecificArticle = async () => {
@@ -255,12 +235,17 @@ export default function EbookArticlePage({
                 .eq("user_id", userId)
                 .eq("type", "article");
 
-            setHasMoreSessions(count !== null && count > currentPage * PAGE_SIZE);
+            setSessions(prevSessions => {
+                const existingIds = new Set(prevSessions.map(s => s.id));
+                const newSessions = [specificSession];
+                return [...prevSessions, ...newSessions];
+            });
+
             setIsLoading(false);
         };
         console.log('loadSpecificArticle');
         loadSpecificArticle();
-    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle, currentPage]);
+    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
 
     // Handle default article loading when no initialSessionId is provided
     useEffect(() => {
@@ -294,9 +279,6 @@ export default function EbookArticlePage({
     const refreshSessions = useCallback(async () => {
         if (!userId) return;
 
-        // Reset pagination to first page
-        setCurrentPage(1);
-
         // Explicitly refetch sessions
         await refetchSessions();
 
@@ -316,35 +298,6 @@ export default function EbookArticlePage({
             }
         }
     }, [userId, currentSession, sessionData, refetchSessions]);
-
-    // Load more sessions - now incrementing page for React Query
-    const loadMoreSessions = useCallback(async () => {
-        if (!userId || !hasMoreSessions) return false;
-
-        console.log("Loading more sessions, current page:", currentPage);
-
-        // Increment the page to trigger React Query to fetch the next page
-        const nextPage = currentPage + 1;
-        setCurrentPage(nextPage);
-
-        // We'll determine if there are more sessions based on the data length
-        const supabase = createClient();
-        // Check if there are more sessions
-        const { count } = await supabase
-            .from("chat_sessions")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("type", "article");
-
-        console.log("Total sessions count:", count, "Next page:", nextPage, "PAGE_SIZE:", PAGE_SIZE);
-
-        // Check if there are more sessions to load
-        const hasMore = count !== null && count > nextPage * PAGE_SIZE;
-        console.log("Has more sessions:", hasMore);
-
-        setHasMoreSessions(hasMore);
-        return hasMore;
-    }, [userId, currentPage, hasMoreSessions]);
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -539,17 +492,14 @@ export default function EbookArticlePage({
 
             {/* Sidebar */}
             <EbookSidebar
-                sessions={sessions}
+                sessions={sessionData || []}
                 currentSession={currentSession}
                 onSessionSelect={switchSession}
                 onNewArticle={startNewArticle}
                 onDeleteSession={deleteSession}
                 theme={theme}
                 onBookmarkSelect={navigateToBookmark}
-                onLoadMoreSessions={loadMoreSessions}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                hasMoreSessions={hasMoreSessions}
+                hasMoreSessions={false}
             />
 
             {/* Loading indicator */}

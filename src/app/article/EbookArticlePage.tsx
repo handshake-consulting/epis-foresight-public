@@ -31,7 +31,6 @@ export default function EbookArticlePage({
     const router = useRouter();
     const searchParams = useSearchParams();
     const inputRef = useRef<HTMLTextAreaElement>(null);
-    console.log('articleData ', articleData);
 
     // State
     const [userId, setUserId] = useState<string | null>(null);
@@ -203,9 +202,10 @@ export default function EbookArticlePage({
                 }
             }
 
-            // If we have article data from the server, use it to initialize the article state
+            // If we have article data from the server, we still need to use loadArticleSession
+            // to properly initialize the article state in the useArticle hook
             if (articleData?.messages && articleData.messages.length > 0) {
-                // Process the messages to build the article
+                // Load the article data using the hook's function
                 await loadArticleSession(specificSession.id, userId);
             }
 
@@ -224,7 +224,7 @@ export default function EbookArticlePage({
         };
 
         initializeFromServerData();
-    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle, articleData]);
+    }, [userId, specificSession, sessionData, isNewArticle, articleData, loadArticleSession]);
 
     // Handle default article loading when no initialSessionId is provided
     useEffect(() => {
@@ -239,7 +239,6 @@ export default function EbookArticlePage({
                 startNewArticle();
             }
         };
-        console.log('loadDefaultArticle');
 
         loadDefaultArticle();
     }, [userId, sessionData, isNewArticle, initialSessionId, router, startNewArticle]);

@@ -166,7 +166,7 @@ export function EbookContent({
                                 <span className={`${theme === "dark"
                                     ? "bg-gray-800 text-gray-300 border-gray-700"
                                     : "bg-white text-gray-700 border-gray-200"
-                                    } px-2 py-1 rounded-full border text-xs`}>
+                                    } px-2 py-1 rounded-full border text-xs hidden sm:block`}>
                                     Version {version.versionNumber}
                                 </span>
                                 {isLatestVersion && (

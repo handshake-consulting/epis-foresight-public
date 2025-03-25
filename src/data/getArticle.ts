@@ -132,12 +132,13 @@ import { unstable_cache } from "next/cache";
 // )
 
 export const getArticle = unstable_cache(
-    async (id: string) => {
+    async (id: string, origin: any) => {
         console.log(id);
 
         // Use fetch directly with cache options
         const response = await fetch(
-            `http://localhost:3001/api/getArticle?id=${id}`,
+            `${origin?.startsWith("localhost") ? "http" : "https"
+            }://${origin}/api/getArticle?id=${id}`,
             {
                 next: { revalidate: 3600 },
             }
@@ -153,17 +154,18 @@ export const getArticle = unstable_cache(
     { revalidate: 3600, tags: ['article'] }
 );
 
-export const preload = (id: string) => {
+export const preload = (id: string, origin: any) => {
     // void evaluates the given expression and returns undefined
     // https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/void
-    void getArticle(id)
+    void getArticle(id, origin)
 
 }
 
-export const getArticleNavigation = unstable_cache(async (id: string) => {
+export const getArticleNavigation = unstable_cache(async (id: string, origin: any) => {
     // Use fetch directly with cache options
     const response = await fetch(
-        `http://localhost:3001/api/getArticleNav?id=${id}`,
+        `${origin?.startsWith("localhost") ? "http" : "https"
+        }://${origin}/api/getArticleNav?id=${id}`,
         {
             next: { revalidate: 3600 },
         }

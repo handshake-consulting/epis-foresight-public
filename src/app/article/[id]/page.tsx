@@ -1,7 +1,7 @@
 import { getArticle, getArticleNavigation, preload } from "@/data/getArticle";
 import { getSessionsList } from "@/data/Sessions";
 import { verifyFirebaseToken } from "@/utils/firebase/edge";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import EbookArticlePage from "../EbookArticlePage";
@@ -58,18 +58,22 @@ const page = async ({ params }: { params: Params }) => {
 
     const cookieList = await cookies();
     const token = cookieList.get('auth-token');
+    const headList = await headers()
+    const origin = headList.get("origin") ?? headList.get("host");
+    console.log(origin);
+
     if (!token) notFound();
 
     const { valid, uid } = await verifyFirebaseToken(token.value);
     if (!valid) notFound();
     const { id } = (await params);
-    const session = await getSessionsList()
+    const session = await getSessionsList(origin)
     //console.log('session', session);
-    const article = await getArticle(id)
-    const articlenav = await getArticleNavigation(id)
+    const article = await getArticle(id, origin)
+    const articlenav = await getArticleNavigation(id, origin)
     // console.log('article', article);
     // console.log('article nav', articlenav);
-    preload(articlenav.nextId || '')
+    preload(articlenav.nextId || '', origin)
     // console.log(session);
 
     // const sessionlist = await getSessionsList({ page: 1, pageSize: 10 })

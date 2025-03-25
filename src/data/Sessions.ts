@@ -28,10 +28,12 @@ import { unstable_cache } from 'next/cache';
 
 
 export const getSessionsList = unstable_cache(
-    async () => {
+    async (origin: any) => {
+
         // Use fetch directly with cache options
         const response = await fetch(
-            `http://localhost:3001/api/getSession`,
+            `${origin?.startsWith("localhost") ? "http" : "https"
+            }://${origin}/api/getSession`,
             {
                 next: { revalidate: 3600 },
             }

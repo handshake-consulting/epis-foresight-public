@@ -1,3 +1,4 @@
+import AutoLoginProvider from "@/components/AutoLoginProvider";
 import Provider from "@/store/Provider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -29,7 +30,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider>
-          {children}
+          <AutoLoginProvider>
+            {children}
+          </AutoLoginProvider>
+
         </Provider>
 
       </body>

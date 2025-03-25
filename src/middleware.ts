@@ -13,7 +13,9 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/api/article-images') ||
         request.nextUrl.pathname.startsWith('/api/generate-image-prompt') ||
         request.nextUrl.pathname.startsWith('/api/generate-loading-text') ||
-        request.nextUrl.pathname.startsWith('/api/getSession')
+        request.nextUrl.pathname.startsWith('/api/getSession') ||
+        request.nextUrl.pathname.startsWith('/api/getArticle') ||
+        request.nextUrl.pathname.startsWith('/api/getArticleNav')
     ) {
         return NextResponse.next();
     }

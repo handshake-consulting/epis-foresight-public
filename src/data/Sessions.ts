@@ -1,17 +1,48 @@
-import { ArticleSession } from '@/app/article/EbookArticlePage';
-import { notFound } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
 
-export const getSessionsList = async (token: string) => {
-    const response = await fetch('http://localhost:3000/api/getSession', {
-        // cache: 'force-cache',
-        headers: {
-            'Authorization': `Bearer ${token}`
-        },
-        next: { revalidate: 60 },
-    })
-    const sessions: ArticleSession[] = await response.json()
-    console.log(getSessionsList);
+// export const getSessionsList = unstable_cache(async (cookies: any) => {
+//     // const cookeList = await cookies()
+//     // const token = cookeList.get('auth-token')
+//     // if (!token)
+//     //     notFound()
+//     // const { valid, uid } = await verifyFirebaseToken(token.value);
 
-    if (!sessions) notFound()
-    return sessions
-}
+//     // Create Supabase client
+//     const supabase = await createClient(cookies);
+
+//     // Query for all sessions or paginated sessions based on fetchAll flag
+//     let query = supabase
+//         .from('chat_sessions')
+//         .select('*', { count: 'exact' })
+//         .eq('user_id', 'xA8vPolZwRfjjIBxirQDeR8BAPr1')
+//         .eq('type', 'article')
+//         .order('updated_at', { ascending: false });
+
+//     const { data: sessions, error } = await query;
+//     if (!sessions) notFound()
+//     return sessions
+// },
+//     ['sessions'],
+//     { revalidate: 3600, tags: ['sessions'] }
+// )
+
+
+export const getSessionsList = unstable_cache(
+    async () => {
+        // Use fetch directly with cache options
+        const response = await fetch(
+            `http://localhost:3001/api/getSession`,
+            {
+                next: { revalidate: 3600 },
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch sessions');
+        }
+
+        return response.json();
+    },
+    ['sessions'],
+    { revalidate: 3600, tags: ['sessions'] }
+);

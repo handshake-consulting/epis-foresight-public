@@ -1,4 +1,3 @@
-import AutoLoginProvider from "@/components/AutoLoginProvider";
 import { getArticle, getArticleNavigation, preload } from "@/data/getArticle";
 import { getSessionsList } from "@/data/Sessions";
 import { verifyFirebaseToken } from "@/utils/firebase/edge";
@@ -64,25 +63,26 @@ const page = async ({ params }: { params: Params }) => {
     const { valid, uid } = await verifyFirebaseToken(token.value);
     if (!valid) notFound();
     const { id } = (await params);
-    const session = await getSessionsList(token.value || '')
-    console.log('session', session);
-    const article = await getArticle(id, '')
+    const session = await getSessionsList()
+    //console.log('session', session);
+    const article = await getArticle(id)
     const articlenav = await getArticleNavigation(id)
-    console.log('article', article);
-    console.log('article nav', articlenav);
-    preload(articlenav.nextId || '', '')
+    // console.log('article', article);
+    // console.log('article nav', articlenav);
+    preload(articlenav.nextId || '')
+    // console.log(session);
 
     // const sessionlist = await getSessionsList({ page: 1, pageSize: 10 })
 
 
 
     return (
-        <AutoLoginProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-                <EbookArticlePage articlenav={articlenav} initialSessionId={id} initialSession={session} initialArticle={article} />
-            </Suspense>
 
-        </AutoLoginProvider>
+        <Suspense fallback={<div>Loading...</div>}>
+            <EbookArticlePage articlenav={articlenav} initialSessionId={id} initialSession={session} initialArticle={article} />
+        </Suspense>
+
+
     );
 };
 

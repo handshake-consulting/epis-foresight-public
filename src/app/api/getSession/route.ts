@@ -10,7 +10,7 @@ export async function GET(
 
     // Your data fetching logic here
     // Query for all sessions or paginated sessions based on fetchAll flag
-    let query = supabase
+    const query = supabase
         .from('chat_sessions')
         .select('*', { count: 'exact' })
         .eq('user_id', 'xA8vPolZwRfjjIBxirQDeR8BAPr1')

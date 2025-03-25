@@ -7,7 +7,6 @@ import SettingsDialog from "@/components/settings/SettingsDialog";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
-import { useSessions } from "@/hook/use-sessions";
 import { useSettingsStore } from "@/store/settingsStore";
 import { createClient } from "@/utils/supabase/clients";
 import { useQuery } from "@tanstack/react-query";
@@ -100,7 +99,6 @@ export default function EbookArticlePage({
     // State
     const [userId, setUserId] = useState<string | null>(null);
     const [theme, setTheme] = useState("light");
-    const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
     const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
@@ -117,27 +115,14 @@ export default function EbookArticlePage({
     // Use the auth check hook to verify authentication on the client side
     useAuthCheck({ refreshInterval: 120000 });
 
-    // Fetch all sessions using React Query
+    // Use the article hook for client-side functionality
     const {
-        data: sessionData,
-        isLoading: isSessionsLoading,
-        refetch: refetchSessions
-    } = useSessions();
-
-    // Fetch specific article session if initialSessionId is provided
-    const {
-        data: specificSession,
-        isLoading: isSpecificSessionLoading
-    } = useArticleSession(initialSessionId, userId);
-
-    // Use the article hook
-    const {
-        article,
-        currentVersion,
+        article: clientArticle,
+        currentVersion: clientCurrentVersion,
         currentVersionNumber,
         isStreaming,
         error,
-        isFirstGeneration,
+        isFirstGeneration: clientIsFirstGeneration,
         isLatestVersion,
         goToPreviousVersion,
         goToNextVersion,
@@ -160,17 +145,34 @@ export default function EbookArticlePage({
         }
     });
 
-    // Initialize theme from settings
+    // Use server-provided data or client-side state
+    const article = clientArticle || initialArticle;
+
+    // Convert server timestamp (string) to Date for compatibility with ArticleVersion
+    const currentVersion = clientCurrentVersion || (initialArticle?.versions.length ? {
+        ...initialArticle.versions[initialArticle.versions.length - 1],
+        timestamp: new Date(initialArticle.versions[initialArticle.versions.length - 1].timestamp),
+        images: initialArticle.versions[initialArticle.versions.length - 1].images?.map(img => ({
+            id: img.id,
+            imageId: img.id, // Add imageId property required by ImageMessage
+            timestamp: new Date(img.timestamp), // Convert string timestamp to Date
+            sender: "assistant" as "assistant", // Force the correct type
+            storageType: img.storageType,
+            imageUrl: img.imageUrl,
+            version: img.version
+        }))
+    } : null);
+
+    const isFirstGeneration = clientIsFirstGeneration && !initialArticle;
+
+    // Initialize theme and welcome modal on client side
     useEffect(() => {
         setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
-    }, [settings.theme]);
 
-    // Check if we should show the welcome modal
-    useEffect(() => {
         if (!settings.hasSeenWelcomeModal) {
             setShowWelcomeModal(true);
         }
-    }, [settings.hasSeenWelcomeModal]);
+    }, [settings.theme, settings.hasSeenWelcomeModal]);
 
     // Handle closing the welcome modal
     const handleCloseWelcomeModal = () => {
@@ -232,118 +234,100 @@ export default function EbookArticlePage({
     //     initializeUser();
     // }, []);
 
-    // Handle new article creation
+    // Handle new article creation and version parameter from URL
     useEffect(() => {
+        // Handle new article creation
         if (userId && isNewArticle) {
             startNewArticle();
         }
-    }, [userId, isNewArticle]);
 
-    // Handle specific session loading when initialSessionId is provided
-    useEffect(() => {
-        const loadSpecificArticle = async () => {
-            if (!userId || !specificSession || isNewArticle) return;
-
-            setIsLoading(true);
-            setCurrentSession(specificSession);
-
-            // Find position in session list for navigation
-            if (sessionData && sessionData.length > 0) {
-                const currentSessionIndex = sessionData.findIndex(s => s.id === specificSession.id);
-
-                if (currentSessionIndex !== -1) {
-                    // Set next and previous articles for navigation
-                    if (currentSessionIndex > 0) {
-                        setPrevArticle(sessionData[currentSessionIndex - 1]);
-                    } else {
-                        setPrevArticle(null);
-                    }
-
-                    if (currentSessionIndex < sessionData.length - 1) {
-                        setNextArticle(sessionData[currentSessionIndex + 1]);
-                    } else {
-                        setNextArticle(null);
-                    }
-                }
-            }
-
-            // Load the article content
-            await loadArticleSession(specificSession.id, userId);
-
-            // Mark this article as last read
-            localStorage.setItem("lastReadArticle", specificSession.id);
-
-            // Check if there are more sessions
-            const supabase = createClient();
-            const { count } = await supabase
-                .from("chat_sessions")
-                .select("*", { count: "exact", head: true })
-                .eq("user_id", userId)
-                .eq("type", "article");
-
-            setSessions(prevSessions => {
-                const existingIds = new Set(prevSessions.map(s => s.id));
-                const newSessions = [specificSession];
-                return [...prevSessions, ...newSessions];
-            });
-
-            setIsLoading(false);
-        };
-        console.log('loadSpecificArticle');
-        loadSpecificArticle();
-    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
-
-    // Handle default article loading when no initialSessionId is provided
-    useEffect(() => {
-        const loadDefaultArticle = async () => {
-            if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
-
-            if (sessionData.length > 0) {
-                // Redirect to the first article
-                router.push(`/article/${sessionData[0].id}`);
-            } else {
-                // No articles yet, start a new one
-                startNewArticle();
-            }
-        };
-        console.log('loadDefaultArticle');
-
-        loadDefaultArticle();
-    }, [userId, sessionData, isSessionsLoading, isNewArticle, initialSessionId, router, startNewArticle]);
-
-    // Handle version parameter from URL
-    useEffect(() => {
+        // Handle version parameter from URL
         if (versionParam && article) {
             const version = parseInt(versionParam, 10);
             if (!isNaN(version) && version >= 1 && version <= article.versions.length) {
                 goToSpecificVersion(version);
             }
         }
-    }, [article, versionParam, goToSpecificVersion]);
+    }, [userId, isNewArticle, article, versionParam, goToSpecificVersion, startNewArticle]);
+
+    // Convert ArticleSession[] to ChatSession[] for type compatibility
+    const convertedSessions = initialSession.map(session => ({
+        ...session,
+        type: session.type as "article" | "chat" | undefined
+    })) as ChatSession[];
+
+    // Set current session from initialSessionId and initialSession
+    useEffect(() => {
+        if (initialSessionId && initialSession && initialSession.length > 0) {
+            const session = initialSession.find(s => s.id === initialSessionId);
+            if (session) {
+                // Convert ArticleSession to ChatSession
+                const chatSession: ChatSession = {
+                    ...session,
+                    type: session.type as "article" | "chat" | undefined
+                };
+
+                setCurrentSession(chatSession);
+
+                // Find position in session list for navigation
+                const currentSessionIndex = initialSession.findIndex(s => s.id === initialSessionId);
+
+                if (currentSessionIndex > 0) {
+                    const prevSession = initialSession[currentSessionIndex - 1];
+                    setPrevArticle({
+                        ...prevSession,
+                        type: prevSession.type as "article" | "chat" | undefined
+                    } as ChatSession);
+                } else {
+                    setPrevArticle(null);
+                }
+
+                if (currentSessionIndex < initialSession.length - 1) {
+                    const nextSession = initialSession[currentSessionIndex + 1];
+                    setNextArticle({
+                        ...nextSession,
+                        type: nextSession.type as "article" | "chat" | undefined
+                    } as ChatSession);
+                } else {
+                    setNextArticle(null);
+                }
+
+                // Mark this article as last read
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem("lastReadArticle", initialSessionId);
+                }
+            }
+        }
+    }, [initialSessionId, initialSession]);
 
     // Refresh sessions list
     const refreshSessions = useCallback(async () => {
         if (!userId) return;
 
-        // Explicitly refetch sessions
-        await refetchSessions();
-
         // Update next and previous articles if we have session data
-        if (sessionData && currentSession) {
-            const currentIndex = sessionData.findIndex(s => s.id === currentSession.id);
+        if (initialSession && currentSession) {
+            const currentIndex = initialSession.findIndex(s => s.id === currentSession.id);
             if (currentIndex > 0) {
-                setPrevArticle(sessionData[currentIndex - 1]);
+                const prevSession = initialSession[currentIndex - 1];
+                setPrevArticle({
+                    ...prevSession,
+                    type: prevSession.type as "article" | "chat" | undefined
+                } as ChatSession);
             } else {
                 setPrevArticle(null);
             }
 
-            if (currentIndex < sessionData.length - 1) {
-                setNextArticle(sessionData[currentIndex + 1]);
+            if (currentIndex < initialSession.length - 1) {
+                const nextSession = initialSession[currentIndex + 1];
+                setNextArticle({
+                    ...nextSession,
+                    type: nextSession.type as "article" | "chat" | undefined
+                } as ChatSession);
             } else {
                 setNextArticle(null);
             }
         }
-    }, [userId, currentSession, sessionData, refetchSessions]);
+    }, [userId, currentSession, initialSession]);
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -377,15 +361,23 @@ export default function EbookArticlePage({
         stopGeneration();
 
         // Update next and previous articles
-        const currentIndex = sessions.findIndex(s => s.id === session.id);
+        const currentIndex = initialSession.findIndex(s => s.id === session.id);
         if (currentIndex > 0) {
-            setPrevArticle(sessions[currentIndex - 1]);
+            const prevSession = initialSession[currentIndex - 1];
+            setPrevArticle({
+                ...prevSession,
+                type: prevSession.type as "article" | "chat" | undefined
+            } as ChatSession);
         } else {
             setPrevArticle(null);
         }
 
-        if (currentIndex < sessions.length - 1) {
-            setNextArticle(sessions[currentIndex + 1]);
+        if (currentIndex < initialSession.length - 1) {
+            const nextSession = initialSession[currentIndex + 1];
+            setNextArticle({
+                ...nextSession,
+                type: nextSession.type as "article" | "chat" | undefined
+            } as ChatSession);
         } else {
             setNextArticle(null);
         }
@@ -399,7 +391,7 @@ export default function EbookArticlePage({
         setIsLoading(false);
 
         // Close sidebar after selection on mobile
-        if (window.innerWidth < 768) {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
             // Use the store's function to close the sidebar
             useSettingsStore.getState().setUIOpenState(null);
         }
@@ -425,65 +417,38 @@ export default function EbookArticlePage({
                 return;
             }
 
-            // Refetch sessions using React Query
-            await refetchSessions();
-
-            // Get the updated sessions
-            if (sessions.length > 0) {
-                // If we deleted current session, switch to the most recent one
-                if (currentSession?.id === sessionId) {
-                    setIsLoading(true);
-                    const newCurrentSession = sessions[0];
-                    setCurrentSession(newCurrentSession);
-                    await loadArticleSession(newCurrentSession.id, userId);
-                    setIsLoading(false);
-
-                    // Update next and previous articles
-                    setPrevArticle(null);
-                    if (sessions.length > 1) {
-                        setNextArticle(sessions[1]);
-                    } else {
-                        setNextArticle(null);
-                    }
-
-                    // Mark this article as last read
-                    localStorage.setItem("lastReadArticle", newCurrentSession.id);
-                } else {
-                    // Update next and previous articles if needed
-                    const currentIndex = sessions.findIndex(s => s.id === currentSession?.id);
-                    if (currentIndex > 0) {
-                        setPrevArticle(sessions[currentIndex - 1]);
-                    } else {
-                        setPrevArticle(null);
-                    }
-
-                    if (currentIndex < sessions.length - 1) {
-                        setNextArticle(sessions[currentIndex + 1]);
-                    } else {
-                        setNextArticle(null);
+            // After deletion, redirect to another article or home
+            if (currentSession?.id === sessionId) {
+                // If we deleted the current session, find another one to navigate to
+                if (initialSession.length > 1) {
+                    // Find the first session that's not the one we just deleted
+                    const newSession = initialSession.find(s => s.id !== sessionId);
+                    if (newSession) {
+                        router.push(`/article/${newSession.id}`);
+                        return;
                     }
                 }
+
+                // If no other sessions or can't find one, go to home
+                router.push('/');
             } else {
-                // No more article sessions
-                setSessions([]);
-                setCurrentSession(null);
-                resetArticle();
-                setNextArticle(null);
-                setPrevArticle(null);
+                // If we deleted a different session, just refresh the page
+                router.refresh();
             }
         } catch (error) {
             console.error("Error in deleteSession:", error);
         }
     };
 
-    // Navigate to next article
+    // Navigate to next article using articlenav
     const goToNextArticle = () => {
-        if (nextArticle) {
-            router.push('/article/' + nextArticle.id)
-            // switchSession(nextArticle);
+        if (articlenav.nextId) {
+            router.push('/article/' + articlenav.nextId);
+        } else if (articlenav.prevId) {
+            // If there's no next article, go to the previous one (circular navigation)
+            router.push('/article/' + articlenav.prevId);
         } else if (initialSession.length > 0) {
-            // If there's no next article (we're at the last one),
-            // navigate to the first document in the sessions array (circular navigation)
+            // Fallback to the first document in the sessions array
             router.push('/article/' + initialSession[0].id);
         }
     };
@@ -494,13 +459,15 @@ export default function EbookArticlePage({
     //     // router.prefetch('/article/' + articlenav.prevId)
     // }, [router])
 
-    // Navigate to previous article
+    // Navigate to previous article using articlenav
     const goToPreviousArticle = () => {
-        if (prevArticle) {
-            router.push('/article/' + prevArticle.id);
+        if (articlenav.prevId) {
+            router.push('/article/' + articlenav.prevId);
+        } else if (articlenav.nextId) {
+            // If there's no previous article, go to the next one (circular navigation)
+            router.push('/article/' + articlenav.nextId);
         } else if (initialSession.length > 0) {
-            // If there's no previous article (we're at the first one), 
-            // navigate to the last document in the sessions array (circular navigation)
+            // Fallback to the last document in the sessions array
             router.push('/article/' + initialSession[initialSession.length - 1].id);
         }
     };
@@ -512,10 +479,14 @@ export default function EbookArticlePage({
         if (!userId) return;
 
         // Find the session for this article
-        const session = sessions.find(s => s.id === articleId);
+        const session = initialSession.find(s => s.id === articleId);
         if (session) {
-            // Switch to the session
-            await switchSession(session);
+            // Convert to ChatSession and switch
+            const chatSession: ChatSession = {
+                ...session,
+                type: session.type as "article" | "chat" | undefined
+            };
+            await switchSession(chatSession);
 
             // Close sidebar
             useSettingsStore.getState().setUIOpenState(null);
@@ -527,9 +498,6 @@ export default function EbookArticlePage({
             }, 500);
         }
     };
-
-    console.log(initialArticle);
-
 
     return (
         <div className={`min-h-screen ${theme === "dark"
@@ -549,7 +517,7 @@ export default function EbookArticlePage({
 
             {/* Sidebar */}
             <EbookSidebar
-                sessions={initialSession || sessionData || []}
+                sessions={convertedSessions}
                 currentSession={currentSession}
                 onSessionSelect={switchSession}
                 onNewArticle={startNewArticle}
@@ -585,7 +553,20 @@ export default function EbookArticlePage({
                     totalVersions={article?.versions.length || 1}
                     articleId={currentSession?.id}
                     articleTitle={initialArticle?.title || currentSession?.title}
-                    images={article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : []}
+                    images={article && article.versions ? article.versions.flatMap(v => {
+                        // Convert images to proper ImageMessage type with filtering
+                        return (v.images || [])
+                            .filter(img => !!img.imageUrl) // Filter before mapping
+                            .map(img => ({
+                                id: img.id || Math.random().toString(),
+                                imageId: img.id, // Use id as imageId
+                                timestamp: img.timestamp instanceof Date ? img.timestamp : new Date(img.timestamp),
+                                sender: "assistant" as "assistant", // Force the correct type
+                                storageType: img.storageType,
+                                imageUrl: img.imageUrl,
+                                version: img.version
+                            }));
+                    }) : []}
                 />
             )}
 
@@ -613,8 +594,20 @@ export default function EbookArticlePage({
                     {/* Desktop version with modal */}
                     <div className="hidden md:block">
                         <ImageSlider
-                            initialImages={(article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : [])}
-
+                            initialImages={(article && article.versions ? article.versions.flatMap(v => {
+                                // Convert images to proper ImageMessage type with filtering
+                                return (v.images || [])
+                                    .filter(img => !!img.imageUrl) // Filter before mapping
+                                    .map(img => ({
+                                        id: img.id || Math.random().toString(),
+                                        imageId: img.id, // Use id as imageId
+                                        timestamp: img.timestamp instanceof Date ? img.timestamp : new Date(img.timestamp),
+                                        sender: "assistant" as "assistant", // Force the correct type
+                                        storageType: img.storageType,
+                                        imageUrl: img.imageUrl,
+                                        version: img.version
+                                    }));
+                            }) : [])}
                         />
                     </div>
                 </>

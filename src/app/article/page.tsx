@@ -27,7 +27,7 @@ const page = async (
 
     return (
         <AutoLoginProvider>
-            <EbookArticlePage />
+            <EbookArticlePage articlenav={{} as any} initialSessionId={''} initialSession={{} as any} initialArticle={{} as any} />
         </AutoLoginProvider>
     );
 };

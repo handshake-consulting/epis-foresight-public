@@ -1,5 +1,9 @@
 import AutoLoginProvider from "@/components/AutoLoginProvider";
+import { getCountryById } from "@/data/getSession";
+import { useSupabaseServer } from "@/utils/supabase-server";
 import { createClient } from "@/utils/supabase/server";
+import { prefetchQuery } from '@supabase-cache-helpers/postgrest-react-query';
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import EbookArticlePage from "../EbookArticlePage";
@@ -35,7 +39,7 @@ export async function generateMetadata({
         .from("chat_sessions")
         .select("*")
         .eq("id", id)
-        .eq("user_id", uidcook?.value)
+        .eq("user_id", uidcook?.value || '')
         .single();
 
     if (specificError) {
@@ -65,14 +69,21 @@ const page = async ({ params }: { params: Params }) => {
     };
     // console.log('Session lIST', sessionlist);
 
+    const queryClient = new QueryClient()
+    const cookieStore = await cookies()
+    const supabase = useSupabaseServer(cookieStore)
+    await prefetchQuery(queryClient, getCountryById(supabase, id));
 
     return (
-        <AutoLoginProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-                <EbookArticlePage initialSessionId={id} />
-            </Suspense>
+        <HydrationBoundary state={dehydrate(queryClient)}>
 
-        </AutoLoginProvider>
+            <AutoLoginProvider>
+                <Suspense fallback={<div>Loading...</div>}>
+                    <EbookArticlePage initialSessionId={id} />
+                </Suspense>
+
+            </AutoLoginProvider>
+        </HydrationBoundary>
     );
 };
 

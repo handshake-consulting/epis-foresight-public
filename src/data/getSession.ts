@@ -1,6 +1,7 @@
 'use server'
 import { verifyFirebaseToken } from "@/utils/firebase/edge";
 import { createClient } from "@/utils/supabase/server";
+import { TypedSupabaseClient } from "@/utils/types";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
@@ -18,7 +19,7 @@ export const getSessionsList = async ({ page = 1, pageSize = 10, fetchAll = fals
     let query = supabase
         .from('chat_sessions')
         .select('*', { count: 'exact' })
-        .eq('user_id', uid)
+        .eq('user_id', uid || '')
         .eq('type', 'article')
         .order('updated_at', { ascending: false });
 
@@ -37,4 +38,30 @@ export const getSessionsList = async ({ page = 1, pageSize = 10, fetchAll = fals
     }
 
     return sessions;
+}
+
+
+export const getSessions = async (client: TypedSupabaseClient) => {
+
+
+    // Query for all sessions or paginated sessions based on fetchAll flag
+    return client
+        .from('chat_sessions')
+        .select('*', { count: 'exact' })
+        .eq('user_id', 'xA8vPolZwRfjjIBxirQDeR8BAPr1')
+        .eq('type', 'article')
+        .order('updated_at', { ascending: false });
+
+}
+
+
+export async function getCountryById(client: TypedSupabaseClient, countryId: string) {
+    return client
+        .from('chat_sessions')
+        .select('*', { count: 'exact' })
+        .eq('user_id', 'xA8vPolZwRfjjIBxirQDeR8BAPr1')
+        .eq('id', countryId)
+        .eq('type', 'article')
+        .throwOnError()
+        .single()
 }

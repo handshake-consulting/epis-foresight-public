@@ -9,7 +9,6 @@ import { useArticle } from "@/hook/use-article";
 import { useAuthCheck } from "@/hook/use-auth-check";
 import { useSessions } from "@/hook/use-sessions";
 import { useSettingsStore } from "@/store/settingsStore";
-import { getCurrentAuthState } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -41,10 +40,57 @@ const useArticleSession = (sessionId: string | undefined, userId: string | null)
     });
 };
 
+export interface ArticleNav {
+    prevId: string | null;
+    currentId: string;
+    nextId: string | null
+};
+
+export interface ArticleSession {
+    id: string;
+    user_id: string;
+    title: string;
+    created_at: string;
+    updated_at: string;
+    is_active: true,
+    type: string;
+    topic: string;
+}
+
+export interface SingleArticle {
+    id: string;
+    title: string;
+    currentVersion: number;
+    topic: string;
+    versions: {
+        versionNumber: number;
+        content: string;
+        timestamp: string;
+        editPrompt?: string | undefined;
+        images?: {
+            id: string;
+            sender: string;
+            storageType: string;
+            imageUrl: string | undefined;
+            timestamp: string;
+            version: number
+        }[]
+    }[];
+    created_at: string;
+    updated_at: string;
+};
+
 export default function EbookArticlePage({
-    initialSessionId
+    initialSessionId,
+    initialSession,
+    initialArticle,
+    articlenav
 }: {
+    articlenav: ArticleNav
     initialSessionId?: string;
+    initialSession: ArticleSession[]
+    initialArticle: SingleArticle
+
 }) {
     const params = useParams();
     const router = useRouter();
@@ -175,16 +221,16 @@ export default function EbookArticlePage({
     };
 
     // Initialize user and handle initial article loading
-    useEffect(() => {
-        const initializeUser = async () => {
-            const { user } = await getCurrentAuthState();
-            if (user) {
-                setUserId(user.uid);
-            }
-        };
+    // useEffect(() => {
+    //     const initializeUser = async () => {
+    //         const { user } = await getCurrentAuthState();
+    //         if (user) {
+    //             setUserId(user.uid);
+    //         }
+    //     };
 
-        initializeUser();
-    }, []);
+    //     initializeUser();
+    // }, []);
 
     // Handle new article creation
     useEffect(() => {
@@ -442,6 +488,12 @@ export default function EbookArticlePage({
         }
     };
 
+    // useEffect(() => {
+    //     // Prefetch the dashboard page
+    //     router.prefetch('/article/' + articlenav.nextId)
+    //     router.prefetch('/article/' + articlenav.prevId)
+    // }, [router])
+
     // Navigate to previous article
     const goToPreviousArticle = () => {
         if (prevArticle) {
@@ -475,6 +527,9 @@ export default function EbookArticlePage({
             }, 500);
         }
     };
+
+    console.log(initialArticle);
+
 
     return (
         <div className={`min-h-screen ${theme === "dark"
@@ -516,7 +571,7 @@ export default function EbookArticlePage({
             )}
 
             {/* Main content */}
-            {!isLoading && isFirstGeneration ? (
+            {isFirstGeneration ? (
                 <EmptyStateContent theme={theme} />
             ) : !isLoading && currentVersion && (
                 <EbookContent
@@ -529,7 +584,7 @@ export default function EbookArticlePage({
                     currentVersionNumber={currentVersionNumber}
                     totalVersions={article?.versions.length || 1}
                     articleId={currentSession?.id}
-                    articleTitle={currentSession?.title}
+                    articleTitle={initialArticle?.title || currentSession?.title}
                     images={article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : []}
                 />
             )}
@@ -549,6 +604,7 @@ export default function EbookArticlePage({
                 onPrevArticle={goToPreviousArticle}
                 onNextArticle={goToNextArticle}
                 theme={theme}
+                articlenav={articlenav}
             />
 
             {/* Desktop Image slider - collect images from all versions */}

@@ -1,5 +1,6 @@
 "use client"
 
+import { ArticleNav } from "@/app/article/EbookArticlePage";
 import { ChatSession } from "@/components/chat/types";
 import { Button } from "@/components/ui/button";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -19,9 +20,11 @@ interface EbookFooterProps {
     onNextArticle: () => void;
     theme: string;
     allArticles?: ChatSession[];
+    articlenav: ArticleNav
 }
 
 export function EbookFooter({
+    articlenav,
     inputRef,
     isStreaming,
     isFirstGeneration,
@@ -79,6 +82,7 @@ export function EbookFooter({
                         type="button"
                         variant="ghost"
                         size="sm"
+                        // disabled={articlenav.prevId === null}
                         onClick={onPrevArticle}
                         title={!prevArticle ? "Go to last document" : "Go to previous document"}
                         className={`rounded-md ${theme === "dark"
@@ -93,6 +97,7 @@ export function EbookFooter({
                         type="button"
                         variant="ghost"
                         size="sm"
+                        // disabled={articlenav.nextId === null}
                         onClick={onNextArticle}
                         title={!nextArticle ? "Go to first document" : "Go to next document"}
                         className={`rounded-md ${theme === "dark"

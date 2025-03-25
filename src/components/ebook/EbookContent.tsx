@@ -78,6 +78,7 @@ export function EbookContent({
 
     return (
         <div className={`flex flex-col h-full pt-16 ${extraPadding}`}>
+            {articleTitle}
             {/* Main content area */}
             <div
                 ref={contentRef}

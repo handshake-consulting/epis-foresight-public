@@ -8,7 +8,13 @@ const nextConfig: NextConfig = {
         hostname: "twneftabwsebtktuyyni.supabase.co",
       }
     ]
-  }
+  },
+  logging: {
+    fetches: {
+      fullUrl: true,
+      hmrRefreshes: true,
+    },
+  },
 };
 
 export default nextConfig;

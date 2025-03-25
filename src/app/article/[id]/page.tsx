@@ -1,8 +1,6 @@
 import { getArticle, getArticleNavigation, preload } from "@/data/getArticle";
 import { getSessionsList } from "@/data/Sessions";
-import { verifyFirebaseToken } from "@/utils/firebase/edge";
-import { cookies, headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 import EbookArticlePage from "../EbookArticlePage";
 
@@ -56,16 +54,16 @@ type Params = Promise<{ id: string }>
 
 const page = async ({ params }: { params: Params }) => {
 
-    const cookieList = await cookies();
-    const token = cookieList.get('auth-token');
+    // const cookieList = await cookies();
+    // const token = cookieList.get('auth-token');
     const headList = await headers()
     const origin = headList.get("origin") ?? headList.get("host");
     console.log(origin);
 
-    if (!token) notFound();
+    // if (!token) notFound();
 
-    const { valid, uid } = await verifyFirebaseToken(token.value);
-    if (!valid) notFound();
+    // const { valid, uid } = await verifyFirebaseToken(token.value);
+    // if (!valid) notFound();
     const { id } = (await params);
     const session = await getSessionsList(origin)
     //console.log('session', session);
@@ -74,7 +72,7 @@ const page = async ({ params }: { params: Params }) => {
     // console.log('article', article);
     // console.log('article nav', articlenav);
     preload(articlenav.nextId || '', origin)
-    // console.log(session);
+    console.log(session);
 
     // const sessionlist = await getSessionsList({ page: 1, pageSize: 10 })
 

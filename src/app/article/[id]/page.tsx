@@ -1,8 +1,10 @@
-import AutoLoginProvider from "@/components/AutoLoginProvider";
-import { getProfile } from "@/utils/profile";
+import { getArticle, getArticleNavigation, preload } from "@/data/getArticle";
+import { getSessionsList } from "@/data/Sessions";
+import { verifyFirebaseToken } from "@/utils/firebase/edge";
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import ArticlePage from "../articlePage";
+import EbookArticlePage from "../EbookArticlePage";
 
 // Define the UserProfile interface locally to avoid import issues
 interface UserProfile {
@@ -15,48 +17,72 @@ interface UserProfile {
 
 type Params = Promise<{ id: string }>
 
+// export const dynamic = "force-dynamic";
+
+// Dynamic metadata
+// export async function generateMetadata({
+//     params,
+// }: {
+//     params: Params
+// }) {
+
+//     const { id } = (await params);
+//     const cookieslist = await cookies()
+//     const uidcook = cookieslist.get('auth-uid')
+//     const supabase = await createClient();
+
+
+//     //   const finalTitle = exists ? initialTitle : await changeTitle({ title: initialTitle });
+//     const { data: specificSession, error: specificError } = await supabase
+//         .from("chat_sessions")
+//         .select("*")
+//         .eq("id", id)
+//         .eq("user_id", uidcook?.value)
+//         .single();
+
+//     if (specificError) {
+//         console.error("Error fetching session for metadata:", specificError);
+//         return {
+//             title: "Article",
+//         };
+//     }
+
+//     return {
+//         title: specificSession?.title || "Article",
+//     };
+// }
+
+
+
 const page = async ({ params }: { params: Params }) => {
+
+    const cookieList = await cookies();
+    const token = cookieList.get('auth-token');
+    if (!token) notFound();
+
+    const { valid, uid } = await verifyFirebaseToken(token.value);
+    if (!valid) notFound();
     const { id } = (await params);
+    const session = await getSessionsList()
+    //console.log('session', session);
+    const article = await getArticle(id)
+    const articlenav = await getArticleNavigation(id)
+    // console.log('article', article);
+    // console.log('article nav', articlenav);
+    preload(articlenav.nextId || '')
+    // console.log(session);
 
-    // Default profile to use if we can't get a real one
-    const defaultProfile: UserProfile = {
-        email: "ekemboy@gmail.com",
-        display_name: "Guest User",
-        photo_url: "",
-        email_verified: true,
-        new_user: false
-    };
+    // const sessionlist = await getSessionsList({ page: 1, pageSize: 10 })
 
-    // Try to get the profile with existing token
-    let profile: UserProfile = defaultProfile;
-    try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('auth-token');
 
-        if (token) {
-            try {
-                const fetchedProfile = await getProfile();
-                if (fetchedProfile) {
-                    profile = fetchedProfile;
-                }
-            } catch (error) {
-                console.error("Error getting profile:", error);
-                // Continue with default profile
-            }
-        }
-    } catch (error) {
-        console.error("Error checking token:", error);
-        // Continue with default profile
-    }
-    console.log("profile", profile);
 
     return (
-        <AutoLoginProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-                <ArticlePage profile={profile} initialSessionId={id} />
-            </Suspense>
 
-        </AutoLoginProvider>
+        <Suspense fallback={<div>Loading...</div>}>
+            <EbookArticlePage articlenav={articlenav} initialSessionId={id} initialSession={session} initialArticle={article} />
+        </Suspense>
+
+
     );
 };
 

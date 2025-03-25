@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { ChatHeader, ChatInput, ChatMessage, ChatMessages, ChatSession, SessionSidebar } from "@/components/chat"
+import SettingsDialog from "@/components/settings/SettingsDialog"
+import SettingsToggler from "@/components/settings/SettingsToggler"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { useAuthCheck } from "@/hook/use-auth-check"
 import { useChatStream } from "@/hook/use-chat"
@@ -346,6 +348,11 @@ export default function ChatPage({ profile }: { profile: UserProfile }) {
                     onToggleCollapse={toggleSidebar}
                 />
 
+                {/* Add Settings toggler next to the header */}
+                <div className="absolute top-3 right-4 z-10">
+                    <SettingsToggler />
+                </div>
+
                 {messages.length === 0 ? (
                     <>
                         {/* Empty state with centered welcome message and input */}
@@ -404,6 +411,9 @@ export default function ChatPage({ profile }: { profile: UserProfile }) {
                     </>
                 )}
             </Card>
+
+            {/* Settings dialog */}
+            <SettingsDialog />
         </div>
     )
 }

@@ -5,6 +5,7 @@ import { userAuth } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from "firebase/auth";
 import { useEffect, useState } from "react";
+import { saveToken } from "./action";
 
 interface AutoLoginProviderProps {
     children: React.ReactNode;
@@ -51,7 +52,7 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
                 // Perform automatic login with predefined credentials
                 const auth = userAuth;
                 const email = "denis@gmail.com";
-                const password = "denis@gmail.com"; // Use a secure password
+                const password = "denis@gmail.com1"; // Use a secure password
 
                 try {
                     // Try to sign in first
@@ -61,8 +62,10 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
                     // Get the ID token
                     const idToken = await user.getIdToken();
 
+                    await saveToken(idToken)
                     // Store the token in a cookie
                     document.cookie = `auth-token=${idToken}; path=/; max-age=3600; secure; samesite=strict`;
+                    document.cookie = `auth-uid=${user.uid}; path=/; max-age=3600; secure; samesite=strict`;
 
                     // Call the userLogin server action to complete the login process
                     const { status, message } = await userLogin(idToken);

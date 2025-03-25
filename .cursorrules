@@ -1,0 +1,75 @@
+NEVER edit the database. NEVER edit Supabase.
+
+# EPI-Foresight Public
+
+A Next.js application for collaborative knowledge sharing and content generation, featuring an AI-powered chat interface and an article creation system.
+
+## Overview
+
+Leaders Make the Future: Collaborative Platform
+A public collaborative platform for exploring and expanding on "Leaders Make the Future" concepts through an interactive book-like interface. This platform allows anyone to generate new content, contribute ideas, and build upon existing material—creating a living, evolving document based on the original book.
+![Platform Screenshot Placeholder]
+Features
+Book-Like Experience
+
+Content presented as pages within a book rather than traditional chat responses
+Clean, professional layout inspired by modern digital reading platforms
+
+Content Generation
+
+Generate comprehensive articles (300+ words) on any topic related to "Leaders Make the Future"
+Visual feedback during the 15-30 second generation process
+Each generation creates a full "page" of content
+
+Public Collaboration
+
+All generated content is publicly visible to all users
+No user accounts or management required
+Anyone can contribute to the growing collection of pages
+
+Version History
+
+Each page maintains its version history
+Navigate between different versions using previous/next controls
+Compare how content evolves through successive iterations
+
+How It Works
+Creating New Pages
+
+Enter a primary topic in the main input field at the top of the interface
+The system will generate a comprehensive page on the requested topic
+
+Refining Content
+
+To refine an existing page, use the input field at the bottom of the page
+Describe how you'd like to improve or modify the content
+The system generates a new version while preserving the original
+Navigate between versions using the version history controls
+
+Starting New Topics
+
+Use the "Add a New Page" button to start a completely new topic
+Previous topics remain accessible through the navigation panel
+
+Visual Design
+The platform features a clean, book-inspired interface with:
+
+Elegant typography and spacing for optimal readability
+Subtle page transitions to enhance the book-like experience
+Responsive design that works across desktop and mobile devices
+Collapsible navigation panel for distraction-free reading
+
+Inspiration
+The design and functionality draw inspiration from:
+
+Readest for the aesthetic and reading experience
+
+This collaborative platform reimagines how we interact with and expand upon published content, creating a space where the original ideas from "Leaders Make the Future" can grow through community contribution.
+
+## Technology Stack
+
+- **Frontend**: Next.js 15 with React 19, TypeScript, Tailwind CSS
+- **Authentication**: Firebase Authentication
+- **Database**: Supabase (PostgreSQL)
+- **AI Integration**: External API service (via chat_stream endpoint) for content generation; Anthropic's Claude Haiku used directly only for generating chat titles
+- **Styling**: Tailwind CSS with custom components

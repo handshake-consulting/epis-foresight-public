@@ -6,14 +6,23 @@ export async function middleware(request: NextRequest) {
     if (
         // request.nextUrl.pathname.startsWith('/auth') ||
         request.nextUrl.pathname.startsWith('/home') ||
-        request.nextUrl.pathname.startsWith('/article')
+        request.nextUrl.pathname.startsWith('/article') ||
+        request.nextUrl.pathname.startsWith('/settings-demo') ||
+        request.nextUrl.pathname.startsWith('/api/generate-title') ||
+        request.nextUrl.pathname.startsWith('/api/generate-image') ||
+        request.nextUrl.pathname.startsWith('/api/article-images') ||
+        request.nextUrl.pathname.startsWith('/api/generate-image-prompt') ||
+        request.nextUrl.pathname.startsWith('/api/generate-loading-text') ||
+        request.nextUrl.pathname.startsWith('/api/getSession') ||
+        request.nextUrl.pathname.startsWith('/api/getArticle') ||
+        request.nextUrl.pathname.startsWith('/api/getArticleNav')
     ) {
         return NextResponse.next();
     }
 
     // For all other paths, redirect to /chat
     const url = request.nextUrl.clone();
-    url.pathname = '/home';
+    url.pathname = '/article';
     return NextResponse.redirect(url);
 }
 

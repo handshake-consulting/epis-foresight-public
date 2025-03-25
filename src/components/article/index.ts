@@ -5,6 +5,7 @@ export { EditInput } from "./EditInput";
 export { ImageSlider } from "./ImageSlider";
 export { SimpleSidebar } from "./SimpleSidebar";
 export { VersionNavigation } from "./VersionNavigation";
+export { default as WelcomeModal } from "./WelcomeModal";
 
 // Re-export types from chat
 export type {

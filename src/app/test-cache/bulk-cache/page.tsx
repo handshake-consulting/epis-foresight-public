@@ -13,6 +13,7 @@ export default function BulkCachePage() {
     const [searchResults, setSearchResults] = useState<(Article & { cachedAt: number })[]>([]);
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(0);
+    const [currentArticleIndex, setCurrentArticleIndex] = useState<number>(-1);
 
     // Initialize articles cache hook
     const {
@@ -103,7 +104,7 @@ export default function BulkCachePage() {
     };
 
     // Find article by ID
-    const handleFindArticleById = async (id: string) => {
+    const handleFindArticleById = async (id: string, index?: number) => {
         setLoading(true);
         setMessage(`Finding article with ID: ${id}...`);
 
@@ -113,10 +114,19 @@ export default function BulkCachePage() {
                 setSelectedArticle(article);
                 // Set to the latest version by default
                 setCurrentVersionIndex(article.versions.length - 1);
+                // Update current article index if provided
+                if (index !== undefined) {
+                    setCurrentArticleIndex(index);
+                } else {
+                    // Find index in search results
+                    const foundIndex = searchResults.findIndex(a => a.id === id);
+                    setCurrentArticleIndex(foundIndex);
+                }
                 setMessage(`Found article: ${article.title}`);
             } else {
                 setSelectedArticle(null);
                 setCurrentVersionIndex(0);
+                setCurrentArticleIndex(-1);
                 setMessage(`No article found with ID: ${id}`);
             }
         } catch (error) {
@@ -147,6 +157,24 @@ export default function BulkCachePage() {
             return null;
         }
         return selectedArticle.versions[currentVersionIndex];
+    };
+
+    // Navigate to previous article
+    const handlePreviousArticle = () => {
+        if (currentArticleIndex > 0 && searchResults.length > 0) {
+            const prevIndex = currentArticleIndex - 1;
+            const prevArticle = searchResults[prevIndex];
+            handleFindArticleById(prevArticle.id, prevIndex);
+        }
+    };
+
+    // Navigate to next article
+    const handleNextArticle = () => {
+        if (currentArticleIndex < searchResults.length - 1 && searchResults.length > 0) {
+            const nextIndex = currentArticleIndex + 1;
+            const nextArticle = searchResults[nextIndex];
+            handleFindArticleById(nextArticle.id, nextIndex);
+        }
     };
 
     // Current version
@@ -221,7 +249,7 @@ export default function BulkCachePage() {
                                 {searchResults.map(article => (
                                     <li
                                         key={article.id}
-                                        className="p-2 hover:bg-gray-100 cursor-pointer"
+                                        className={`p-2 hover:bg-gray-100 cursor-pointer ${article.id === selectedArticle?.id ? 'bg-blue-50' : ''}`}
                                         onClick={() => handleFindArticleById(article.id)}
                                     >
                                         <p className="font-semibold">{article.title}</p>
@@ -237,7 +265,30 @@ export default function BulkCachePage() {
                 </div>
 
                 <div className="col-span-1 md:col-span-2">
-                    <h2 className="text-xl font-bold mb-2">Selected Article</h2>
+                    <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-xl font-bold">Selected Article</h2>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handlePreviousArticle}
+                                disabled={currentArticleIndex <= 0 || searchResults.length === 0}
+                                className="px-2 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
+                            >
+                                Previous Article
+                            </button>
+                            {searchResults.length > 0 && (
+                                <span className="px-2 py-1">
+                                    {currentArticleIndex + 1} / {searchResults.length}
+                                </span>
+                            )}
+                            <button
+                                onClick={handleNextArticle}
+                                disabled={currentArticleIndex >= searchResults.length - 1 || searchResults.length === 0}
+                                className="px-2 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
+                            >
+                                Next Article
+                            </button>
+                        </div>
+                    </div>
                     <div className="border rounded p-4 min-h-96">
                         {selectedArticle ? (
                             <div>

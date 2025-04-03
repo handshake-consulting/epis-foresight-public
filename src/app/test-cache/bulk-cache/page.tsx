@@ -143,7 +143,7 @@ export default function BulkCachePage() {
         setMessage(`Generating article for prompt: "${prompt}"...`);
 
         try {
-            await generateArticle(prompt, userId, undefined, true);
+            await generateArticle(prompt, userId, selectedArticle?.id, selectedArticle?.id ? false : true);
         } catch (error) {
             console.error('Error generating article:', error);
             setMessage(`Error generating article: ${error instanceof Error ? error.message : String(error)}`);

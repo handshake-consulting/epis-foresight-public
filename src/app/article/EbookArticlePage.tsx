@@ -277,16 +277,20 @@ export default function EbookArticlePage({
         localStorage.setItem("lastReadArticle", session.id);
 
         setIsLoading(false);
+        // Ensure we're updating the URL correctly by constructing the proper path
+        // Extract the base path without any existing session ID
+        const basePath = pathname.split('/').slice(0, -1).join('/') || '/article';
+        useSettingsStore.getState().setUIOpenState(null);
         window.history.pushState(
             null,
             '',
-            `${pathname}/${session.id}`
+            `${basePath}/${session.id}`
         )
         // Close sidebar after selection on mobile
-        if (window.innerWidth < 768) {
-            // Use the store's function to close the sidebar
-            useSettingsStore.getState().setUIOpenState(null);
-        }
+        // if (window.innerWidth < 768) {
+        //     // Use the store's function to close the sidebar
+        //     useSettingsStore.getState().setUIOpenState(null);
+        // }
     };
     console.log(article, 'article');
 

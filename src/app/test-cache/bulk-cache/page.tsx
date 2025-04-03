@@ -1,5 +1,6 @@
 'use client'
 
+import { Article, ImageMessage } from "@/components/chat/types";
 import { useArticlesCache } from "@/hook/use-articles-cache";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { useEffect, useState } from "react";
@@ -9,8 +10,9 @@ export default function BulkCachePage() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
+    const [searchResults, setSearchResults] = useState<(Article & { cachedAt: number })[]>([]);
+    const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+    const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(0);
 
     // Initialize articles cache hook
     const {
@@ -109,9 +111,12 @@ export default function BulkCachePage() {
             const article = await findArticleById(id);
             if (article) {
                 setSelectedArticle(article);
+                // Set to the latest version by default
+                setCurrentVersionIndex(article.versions.length - 1);
                 setMessage(`Found article: ${article.title}`);
             } else {
                 setSelectedArticle(null);
+                setCurrentVersionIndex(0);
                 setMessage(`No article found with ID: ${id}`);
             }
         } catch (error) {
@@ -121,6 +126,31 @@ export default function BulkCachePage() {
             setLoading(false);
         }
     };
+
+    // Navigate to previous version
+    const handlePreviousVersion = () => {
+        if (selectedArticle && currentVersionIndex > 0) {
+            setCurrentVersionIndex(currentVersionIndex - 1);
+        }
+    };
+
+    // Navigate to next version
+    const handleNextVersion = () => {
+        if (selectedArticle && currentVersionIndex < selectedArticle.versions.length - 1) {
+            setCurrentVersionIndex(currentVersionIndex + 1);
+        }
+    };
+
+    // Get current version
+    const getCurrentVersion = () => {
+        if (!selectedArticle || selectedArticle.versions.length === 0) {
+            return null;
+        }
+        return selectedArticle.versions[currentVersionIndex];
+    };
+
+    // Current version
+    const currentVersion = getCurrentVersion();
 
     return (
         <div className="container mx-auto p-4">
@@ -222,12 +252,63 @@ export default function BulkCachePage() {
                                 </div>
 
                                 <div>
-                                    <h4 className="font-bold">Latest Version Content:</h4>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="font-bold">
+                                            Version {currentVersion?.versionNumber || 0} Content:
+                                        </h4>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handlePreviousVersion}
+                                                disabled={!selectedArticle || currentVersionIndex <= 0}
+                                                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+                                            >
+                                                Previous
+                                            </button>
+                                            <span className="px-2 py-1">
+                                                {currentVersionIndex + 1} / {selectedArticle.versions.length}
+                                            </span>
+                                            <button
+                                                onClick={handleNextVersion}
+                                                disabled={!selectedArticle || currentVersionIndex >= selectedArticle.versions.length - 1}
+                                                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {currentVersion?.editPrompt && (
+                                        <div className="mb-2 p-2 bg-blue-50 rounded">
+                                            <p className="text-sm font-semibold">Edit Prompt:</p>
+                                            <p className="text-sm">{currentVersion.editPrompt}</p>
+                                        </div>
+                                    )}
+
                                     <div className="mt-2 p-2 bg-gray-100 rounded max-h-64 overflow-auto">
                                         <pre className="whitespace-pre-wrap">
-                                            {selectedArticle.versions[selectedArticle.versions.length - 1]?.content || 'No content'}
+                                            {currentVersion?.content || 'No content'}
                                         </pre>
                                     </div>
+
+                                    {currentVersion?.images && currentVersion.images.length > 0 && (
+                                        <div className="mt-2">
+                                            <p className="text-sm font-semibold">Images ({currentVersion.images.length}):</p>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {currentVersion.images.map((img: ImageMessage, index: number) => (
+                                                    <div key={img.id} className="border rounded p-1">
+                                                        <p className="text-xs text-center">Image {index + 1}</p>
+                                                        {img.imageUrl && (
+                                                            <img
+                                                                src={img.imageUrl}
+                                                                alt={`Version ${currentVersion.versionNumber} Image ${index + 1}`}
+                                                                className="max-w-[100px] max-h-[100px] object-contain"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (

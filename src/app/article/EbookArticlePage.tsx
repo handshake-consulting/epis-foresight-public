@@ -177,9 +177,40 @@ export default function EbookArticlePage({
     // Initialize user and handle initial article loading
     useEffect(() => {
         const initializeUser = async () => {
+            // Initialize IndexedDB
+            try {
+                // Check if we need to reset the database (for debugging)
+                const needsReset = localStorage.getItem('reset_indexeddb') === 'true';
+
+                if (needsReset) {
+                    console.log('Resetting IndexedDB database...');
+                    await import('@/utils/indexedDB/clearDatabase').then(module => module.resetDatabase());
+                    localStorage.removeItem('reset_indexeddb');
+                    console.log('IndexedDB database reset complete');
+                } else {
+                    await import('@/utils/indexedDB').then(module => module.initDB());
+                    console.log('IndexedDB initialized successfully');
+                }
+            } catch (error) {
+                console.error('Error initializing IndexedDB:', error);
+            }
+
+            // Get current user
             const { user } = await getCurrentAuthState();
             if (user) {
                 setUserId(user.uid);
+
+                // Preload all articles in the background
+                try {
+                    console.log('Starting background preload of all articles');
+                    import('@/utils/indexedDB/articleCache').then(module => {
+                        module.preloadAllArticles(user.uid)
+                            .then(() => console.log('Background preload complete'))
+                            .catch(err => console.error('Error in background preload:', err));
+                    });
+                } catch (error) {
+                    console.error('Error starting preload:', error);
+                }
             }
         };
 
@@ -198,7 +229,24 @@ export default function EbookArticlePage({
         const loadSpecificArticle = async () => {
             if (!userId || !specificSession || isNewArticle) return;
 
-            setIsLoading(true);
+            // First check if we have this article in cache
+            let isCached = false;
+            try {
+                const cachedArticle = await import('@/utils/indexedDB/articleCache').then(
+                    module => module.getCachedArticle(specificSession.id)
+                ).catch(() => null);
+                console.log(cachedArticle);
+
+                isCached = !!cachedArticle;
+            } catch (error) {
+                console.error('Error checking cache:', error);
+            }
+
+            // Only show loading if not cached
+            if (!isCached) {
+                setIsLoading(true);
+            }
+
             setCurrentSession(specificSession);
 
             // Find position in session list for navigation
@@ -241,9 +289,10 @@ export default function EbookArticlePage({
                 return [...prevSessions, ...newSessions];
             });
 
+            // Turn off loading state if it was on
             setIsLoading(false);
         };
-        console.log('loadSpecificArticle');
+
         loadSpecificArticle();
     }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
 
@@ -326,7 +375,23 @@ export default function EbookArticlePage({
     const switchSession = async (session: ChatSession) => {
         if (!userId) return;
 
-        setIsLoading(true);
+        // First check if we have this article in cache
+        let isCached = false;
+        try {
+            const cachedArticle = await import('@/utils/indexedDB/articleCache').then(
+                module => module.getCachedArticle(session.id)
+            ).catch(() => null);
+
+            isCached = !!cachedArticle;
+        } catch (error) {
+            console.error('Error checking cache:', error);
+        }
+
+        // Only show loading if not cached
+        if (!isCached) {
+            setIsLoading(true);
+        }
+
         setCurrentSession(session);
         stopGeneration();
 
@@ -350,6 +415,7 @@ export default function EbookArticlePage({
         // Mark this article as last read
         localStorage.setItem("lastReadArticle", session.id);
 
+        // Turn off loading state if it was on
         setIsLoading(false);
 
         // Close sidebar after selection on mobile

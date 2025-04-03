@@ -612,6 +612,21 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     // Load an existing article session
     const loadArticleSession = useCallback(async (sessionId: string, userId: string) => {
         try {
+            // First try to get from IndexedDB cache
+            const cachedArticle = await import('@/utils/indexedDB/articleCache').then(
+                module => module.getCachedArticle(sessionId)
+            ).catch(() => null);
+
+            if (cachedArticle) {
+                console.log('Using cached article data');
+                // Set article state from cache
+                setArticle(cachedArticle);
+                // Set to latest version
+                setCurrentVersionNumber(cachedArticle.versions.length);
+                return sessionId;
+            }
+
+            // If not in cache, fetch from server
             const supabase = createClient();
 
             // Get session details
@@ -715,8 +730,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 }
             }
 
-            // Set article state
-            setArticle({
+            // Create the article object
+            const articleData = {
                 id: session.id,
                 title: session.title,
                 topic: topic || session.topic || '',
@@ -724,10 +739,18 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 versions,
                 created_at: session.created_at,
                 updated_at: session.updated_at
-            });
+            };
+
+            // Set article state
+            setArticle(articleData);
 
             // Set to latest version
             setCurrentVersionNumber(versions.length);
+
+            // Cache the article data
+            import('@/utils/indexedDB/articleCache').then(
+                module => module.cacheArticle(articleData)
+            ).catch(err => console.error('Error caching article:', err));
 
             return session.id;
         } catch (error) {

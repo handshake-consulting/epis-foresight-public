@@ -233,9 +233,8 @@ export default function EbookArticlePage({
             let isCached = false;
             try {
                 const cachedArticle = await import('@/utils/indexedDB/articleCache').then(
-                    module => module.getCachedArticle(specificSession.id)
+                    module => module.getCachedArticle(specificSession.id, userId)
                 ).catch(() => null);
-                console.log(cachedArticle);
 
                 isCached = !!cachedArticle;
             } catch (error) {
@@ -379,7 +378,7 @@ export default function EbookArticlePage({
         let isCached = false;
         try {
             const cachedArticle = await import('@/utils/indexedDB/articleCache').then(
-                module => module.getCachedArticle(session.id)
+                module => module.getCachedArticle(session.id, userId)
             ).catch(() => null);
 
             isCached = !!cachedArticle;

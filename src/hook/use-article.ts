@@ -614,7 +614,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         try {
             // First try to get from IndexedDB cache
             const cachedArticle = await import('@/utils/indexedDB/articleCache').then(
-                module => module.getCachedArticle(sessionId)
+                module => module.getCachedArticle(sessionId, userId)
             ).catch(() => null);
 
             if (cachedArticle) {
@@ -624,6 +624,20 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Set to latest version
                 setCurrentVersionNumber(cachedArticle.versions.length);
                 return sessionId;
+            } else {
+                console.log('Article not found in cache, checking if preload is needed');
+                // Try to ensure articles are preloaded for next time
+                import('@/utils/indexedDB/articleCache').then(module => {
+                    // Check if we have any cached articles
+                    module.hasCachedData().then(hasData => {
+                        if (!hasData) {
+                            console.log('No cached data found, triggering preload');
+                            module.preloadAllArticles(userId)
+                                .then(() => console.log('Preload complete'))
+                                .catch(err => console.error('Error in preload:', err));
+                        }
+                    });
+                });
             }
 
             // If not in cache, fetch from server

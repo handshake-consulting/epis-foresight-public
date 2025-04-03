@@ -60,7 +60,7 @@ export const cacheArticle = async (article: Article): Promise<void> => {
 };
 
 // Get a cached article by ID
-export const getCachedArticle = async (articleId: string): Promise<Article | null> => {
+export const getCachedArticle = async (articleId: string, userId?: string): Promise<Article | null> => {
     try {
         // Get article metadata
         const articleMeta = await getItem<Omit<Article, 'versions'>>(STORES.ARTICLES, articleId);
@@ -72,13 +72,41 @@ export const getCachedArticle = async (articleId: string): Promise<Article | nul
         console.log('Found article metadata in cache:', articleMeta);
 
         // Get all versions for this article
-        const versions = await getItemsByIndex<ArticleVersion & { article_id: string }>(
-            STORES.ARTICLE_VERSIONS,
-            'article_id',
-            articleId
-        );
+        console.log('About to fetch versions for article ID:', articleId);
+        let versions: (ArticleVersion & { article_id: string })[] = [];
 
-        console.log('Found versions in cache:', versions.length);
+        try {
+            versions = await getItemsByIndex<ArticleVersion & { article_id: string }>(
+                STORES.ARTICLE_VERSIONS,
+                'article_id',
+                articleId
+            );
+            console.log('Found versions in cache:', versions.length);
+        } catch (indexError) {
+            console.error('Error fetching versions by index:', indexError);
+
+            // Try to get all versions and filter manually as a fallback
+            console.log('Attempting fallback: getting all versions and filtering');
+            const db = await (await import('.')).initDB();
+            const allVersions: (ArticleVersion & { article_id: string })[] = await new Promise((resolve) => {
+                const transaction = db.transaction(STORES.ARTICLE_VERSIONS, 'readonly');
+                const store = transaction.objectStore(STORES.ARTICLE_VERSIONS);
+                const request = store.getAll();
+
+                request.onsuccess = () => {
+                    console.log('Got all versions:', request.result?.length || 0);
+                    resolve(request.result || []);
+                };
+
+                request.onerror = () => {
+                    console.error('Error in fallback getAll');
+                    resolve([]);
+                };
+            });
+
+            versions = allVersions.filter(v => v.article_id === articleId);
+            console.log('Filtered versions by article_id:', versions.length);
+        }
 
         if (versions.length === 0) {
             console.log('No versions found for article ID:', articleId);
@@ -95,6 +123,10 @@ export const getCachedArticle = async (articleId: string): Promise<Article | nul
                 images: v.images || []
             }))
             .sort((a, b) => a.versionNumber - b.versionNumber);
+        console.log({
+            ...articleMeta,
+            versions: sortedVersions
+        });
 
         // Reconstruct the full article
         return {

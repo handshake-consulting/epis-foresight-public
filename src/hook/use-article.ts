@@ -1,10 +1,11 @@
 "use client"
 
 import { Article, ArticleVersion, ImageMessage } from "@/components/chat/types";
+import { useArticleCache } from "@/hook/use-article-cache";
 import { useSettingsStore } from "@/store/settingsStore";
 import { getIdToken } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { EventType, LoreNodeOutputTypes, StreamEvent } from "./use-chat";
 
@@ -609,9 +610,35 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, []);
 
+    // Initialize article cache
+    const {
+        isInitialized: isCacheInitialized,
+        cacheArticle,
+        getCachedArticle,
+        deleteCachedArticle
+    } = useArticleCache();
+
     // Load an existing article session
     const loadArticleSession = useCallback(async (sessionId: string, userId: string) => {
         try {
+            // First try to get the article from cache
+            if (isCacheInitialized) {
+                const cachedArticle = await getCachedArticle(sessionId);
+
+                if (cachedArticle) {
+                    console.log('Article loaded from cache:', sessionId);
+
+                    // Set article state from cache
+                    setArticle(cachedArticle);
+
+                    // Set to latest version
+                    setCurrentVersionNumber(cachedArticle.versions.length);
+
+                    return sessionId;
+                }
+            }
+
+            // If not in cache or cache not initialized, load from database
             const supabase = createClient();
 
             // Get session details
@@ -715,8 +742,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 }
             }
 
-            // Set article state
-            setArticle({
+            // Create article object
+            const articleData = {
                 id: session.id,
                 title: session.title,
                 topic: topic || session.topic || '',
@@ -724,17 +751,37 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 versions,
                 created_at: session.created_at,
                 updated_at: session.updated_at
-            });
+            };
+
+            // Set article state
+            setArticle(articleData);
 
             // Set to latest version
             setCurrentVersionNumber(versions.length);
+
+            // Cache the article
+            if (isCacheInitialized) {
+                await cacheArticle(articleData);
+                console.log('Article cached:', sessionId);
+            }
 
             return session.id;
         } catch (error) {
             console.error('Error loading article session:', error);
             throw error;
         }
-    }, []);
+    }, [isCacheInitialized, cacheArticle, getCachedArticle]);
+
+    // Update cache when article changes
+    useEffect(() => {
+        const updateCache = async () => {
+            if (isCacheInitialized && article && !isStreaming) {
+                await cacheArticle(article);
+            }
+        };
+
+        updateCache();
+    }, [article, isCacheInitialized, cacheArticle, isStreaming]);
 
     // Generate or update article
     const generateArticle = useCallback(async (
@@ -899,7 +946,12 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         setError(null);
         setIsStreaming(false);
         stopGeneration();
-    }, [stopGeneration]);
+
+        // If we have a current session ID, remove it from cache
+        if (currentSessionIdRef.current && isCacheInitialized) {
+            deleteCachedArticle(currentSessionIdRef.current);
+        }
+    }, [stopGeneration, isCacheInitialized, deleteCachedArticle]);
 
     return {
         article,

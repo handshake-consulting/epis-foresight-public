@@ -9,7 +9,6 @@ import {
     FileText,
     Trash2
 } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 interface EbookSidebarProps {
@@ -200,9 +199,11 @@ export function EbookSidebar({
                         filteredSessions.length > 0 ? (
                             <div className="space-y-2 max-h-full overflow-y-auto">
                                 {filteredSessions.map((session, index) => (
-                                    <Link
-                                        href={`/article/${session.id}`}
+                                    <button
+                                        // href={`/article/${session.id}`}
                                         key={session.id}
+                                        // prefetch={false}
+                                        onClick={() => onSessionSelect(session)}
                                         className="block"
                                     >
                                         <div
@@ -222,7 +223,7 @@ export function EbookSidebar({
                                                 </span>
                                             </div>
                                         </div>
-                                    </Link>
+                                    </button>
                                 ))}
                             </div>
                         ) : (

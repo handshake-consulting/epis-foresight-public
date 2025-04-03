@@ -12,7 +12,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // Custom hook to fetch a specific article session
@@ -47,6 +47,7 @@ export default function EbookArticlePage({
     initialSessionId?: string;
 }) {
     const params = useParams();
+    const pathname = usePathname()
     const router = useRouter();
     const searchParams = useSearchParams();
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -247,13 +248,57 @@ export default function EbookArticlePage({
         loadSpecificArticle();
     }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
 
+    // Switch to a different article session
+    const switchSession = async (session: ChatSession) => {
+        if (!userId) return;
+
+        // setIsLoading(true);
+        setCurrentSession(session);
+        stopGeneration();
+
+        // Update next and previous articles
+        const currentIndex = sessions.findIndex(s => s.id === session.id);
+        if (currentIndex > 0) {
+            setPrevArticle(sessions[currentIndex - 1]);
+        } else {
+            setPrevArticle(null);
+        }
+
+        if (currentIndex < sessions.length - 1) {
+            setNextArticle(sessions[currentIndex + 1]);
+        } else {
+            setNextArticle(null);
+        }
+
+        // Load the article data
+        await loadArticleSession(session.id, userId);
+
+        // Mark this article as last read
+        localStorage.setItem("lastReadArticle", session.id);
+
+        setIsLoading(false);
+        window.history.pushState(
+            null,
+            '',
+            `${pathname}/${session.id}`
+        )
+        // Close sidebar after selection on mobile
+        if (window.innerWidth < 768) {
+            // Use the store's function to close the sidebar
+            useSettingsStore.getState().setUIOpenState(null);
+        }
+    };
+    console.log(article, 'article');
+
     // Handle default article loading when no initialSessionId is provided
     useEffect(() => {
         const loadDefaultArticle = async () => {
             if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
 
             if (sessionData.length > 0) {
-                // Redirect to the first article
+                // If no initialSessionId, use switchSession directly instead of router.push
+                // await switchSession(sessionData[0]);
+                // Update URL without full navigation
                 router.push(`/article/${sessionData[0].id}`);
             } else {
                 // No articles yet, start a new one
@@ -320,43 +365,6 @@ export default function EbookArticlePage({
 
         // Refresh sessions list after generation
         refreshSessions();
-    };
-
-    // Switch to a different article session
-    const switchSession = async (session: ChatSession) => {
-        if (!userId) return;
-
-        setIsLoading(true);
-        setCurrentSession(session);
-        stopGeneration();
-
-        // Update next and previous articles
-        const currentIndex = sessions.findIndex(s => s.id === session.id);
-        if (currentIndex > 0) {
-            setPrevArticle(sessions[currentIndex - 1]);
-        } else {
-            setPrevArticle(null);
-        }
-
-        if (currentIndex < sessions.length - 1) {
-            setNextArticle(sessions[currentIndex + 1]);
-        } else {
-            setNextArticle(null);
-        }
-
-        // Load the article data
-        await loadArticleSession(session.id, userId);
-
-        // Mark this article as last read
-        localStorage.setItem("lastReadArticle", session.id);
-
-        setIsLoading(false);
-
-        // Close sidebar after selection on mobile
-        if (window.innerWidth < 768) {
-            // Use the store's function to close the sidebar
-            useSettingsStore.getState().setUIOpenState(null);
-        }
     };
 
     // Delete an article session
@@ -433,23 +441,29 @@ export default function EbookArticlePage({
     // Navigate to next article
     const goToNextArticle = () => {
         if (nextArticle) {
-            router.push('/article/' + nextArticle.id)
-            // switchSession(nextArticle);
+            // Use switchSession first, then update URL
+            switchSession(nextArticle);
+            //  router.push('/article/' + nextArticle.id);
         } else if (sessions.length > 0) {
             // If there's no next article (we're at the last one),
             // navigate to the first document in the sessions array (circular navigation)
-            router.push('/article/' + sessions[0].id);
+            switchSession(sessions[0]);
+            //  router.push('/article/' + sessions[0].id);
         }
     };
 
     // Navigate to previous article
     const goToPreviousArticle = () => {
         if (prevArticle) {
-            router.push('/article/' + prevArticle.id);
+            // Use switchSession first, then update URL
+            switchSession(prevArticle);
+            //    router.push('/article/' + prevArticle.id);
         } else if (sessions.length > 0) {
             // If there's no previous article (we're at the first one), 
             // navigate to the last document in the sessions array (circular navigation)
-            router.push('/article/' + sessions[sessions.length - 1].id);
+            const lastSession = sessions[sessions.length - 1];
+            switchSession(lastSession);
+            // router.push('/article/' + lastSession.id);
         }
     };
 

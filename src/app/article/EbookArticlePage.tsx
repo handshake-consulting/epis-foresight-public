@@ -12,8 +12,9 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { getCurrentAuthState } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import LoadingBar, { LoadingBarRef } from "react-top-loading-bar";
 
 // Custom hook to fetch a specific article session
 const useArticleSession = (sessionId: string | undefined, userId: string | null) => {
@@ -46,7 +47,9 @@ export default function EbookArticlePage({
 }: {
     initialSessionId?: string;
 }) {
-    const params = useParams();
+    const ref = useRef<LoadingBarRef>(null);
+
+    const pathname = usePathname()
     const router = useRouter();
     const searchParams = useSearchParams();
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -56,8 +59,6 @@ export default function EbookArticlePage({
     const [theme, setTheme] = useState("light");
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-    const [nextArticle, setNextArticle] = useState<ChatSession | null>(null);
-    const [prevArticle, setPrevArticle] = useState<ChatSession | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
@@ -201,25 +202,8 @@ export default function EbookArticlePage({
             setIsLoading(true);
             setCurrentSession(specificSession);
 
-            // Find position in session list for navigation
-            if (sessionData && sessionData.length > 0) {
-                const currentSessionIndex = sessionData.findIndex(s => s.id === specificSession.id);
-
-                if (currentSessionIndex !== -1) {
-                    // Set next and previous articles for navigation
-                    if (currentSessionIndex > 0) {
-                        setPrevArticle(sessionData[currentSessionIndex - 1]);
-                    } else {
-                        setPrevArticle(null);
-                    }
-
-                    if (currentSessionIndex < sessionData.length - 1) {
-                        setNextArticle(sessionData[currentSessionIndex + 1]);
-                    } else {
-                        setNextArticle(null);
-                    }
-                }
-            }
+            // No need to update nextArticle and prevArticle state variables
+            // as we're now calculating them directly in the navigation functions
 
             // Load the article content
             await loadArticleSession(specificSession.id, userId);
@@ -247,20 +231,52 @@ export default function EbookArticlePage({
         loadSpecificArticle();
     }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
 
+    // Switch to a different article session
+    const switchSession = async (session: ChatSession) => {
+        if (!userId) return;
+        ref.current?.continuousStart()
+        // setIsLoading(true);
+        setCurrentSession(session);
+        stopGeneration();
+
+        // No need to update nextArticle and prevArticle state variables
+        // as we're now calculating them directly in the navigation functions
+
+        // Load the article data
+        await loadArticleSession(session.id, userId);
+
+        // Mark this article as last read
+        localStorage.setItem("lastReadArticle", session.id);
+        ref.current?.complete()
+        setIsLoading(false);
+        // Ensure we're updating the URL correctly by constructing the proper path
+        // Extract the base path without any existing session ID
+        const basePath = pathname.split('/').slice(0, -1).join('/') || '/article';
+        useSettingsStore.getState().setUIOpenState(null);
+        window.history.pushState(
+            null,
+            '',
+            `${basePath}/${session.id}`
+        )
+    };
+    // console.log(article, 'article');
+
     // Handle default article loading when no initialSessionId is provided
     useEffect(() => {
         const loadDefaultArticle = async () => {
             if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
 
             if (sessionData.length > 0) {
-                // Redirect to the first article
+                // If no initialSessionId, use switchSession directly instead of router.push
+                // await switchSession(sessionData[0]);
+                // Update URL without full navigation
                 router.push(`/article/${sessionData[0].id}`);
             } else {
                 // No articles yet, start a new one
                 startNewArticle();
             }
         };
-        console.log('loadDefaultArticle');
+        //  console.log('loadDefaultArticle');
 
         loadDefaultArticle();
     }, [userId, sessionData, isSessionsLoading, isNewArticle, initialSessionId, router, startNewArticle]);
@@ -282,22 +298,9 @@ export default function EbookArticlePage({
         // Explicitly refetch sessions
         await refetchSessions();
 
-        // Update next and previous articles if we have session data
-        if (sessionData && currentSession) {
-            const currentIndex = sessionData.findIndex(s => s.id === currentSession.id);
-            if (currentIndex > 0) {
-                setPrevArticle(sessionData[currentIndex - 1]);
-            } else {
-                setPrevArticle(null);
-            }
-
-            if (currentIndex < sessionData.length - 1) {
-                setNextArticle(sessionData[currentIndex + 1]);
-            } else {
-                setNextArticle(null);
-            }
-        }
-    }, [userId, currentSession, sessionData, refetchSessions]);
+        // No need to update nextArticle and prevArticle state variables
+        // as we're now calculating them directly in the navigation functions
+    }, [userId, refetchSessions]);
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -320,43 +323,6 @@ export default function EbookArticlePage({
 
         // Refresh sessions list after generation
         refreshSessions();
-    };
-
-    // Switch to a different article session
-    const switchSession = async (session: ChatSession) => {
-        if (!userId) return;
-
-        setIsLoading(true);
-        setCurrentSession(session);
-        stopGeneration();
-
-        // Update next and previous articles
-        const currentIndex = sessions.findIndex(s => s.id === session.id);
-        if (currentIndex > 0) {
-            setPrevArticle(sessions[currentIndex - 1]);
-        } else {
-            setPrevArticle(null);
-        }
-
-        if (currentIndex < sessions.length - 1) {
-            setNextArticle(sessions[currentIndex + 1]);
-        } else {
-            setNextArticle(null);
-        }
-
-        // Load the article data
-        await loadArticleSession(session.id, userId);
-
-        // Mark this article as last read
-        localStorage.setItem("lastReadArticle", session.id);
-
-        setIsLoading(false);
-
-        // Close sidebar after selection on mobile
-        if (window.innerWidth < 768) {
-            // Use the store's function to close the sidebar
-            useSettingsStore.getState().setUIOpenState(null);
-        }
     };
 
     // Delete an article session
@@ -392,38 +358,14 @@ export default function EbookArticlePage({
                     await loadArticleSession(newCurrentSession.id, userId);
                     setIsLoading(false);
 
-                    // Update next and previous articles
-                    setPrevArticle(null);
-                    if (sessions.length > 1) {
-                        setNextArticle(sessions[1]);
-                    } else {
-                        setNextArticle(null);
-                    }
-
                     // Mark this article as last read
                     localStorage.setItem("lastReadArticle", newCurrentSession.id);
-                } else {
-                    // Update next and previous articles if needed
-                    const currentIndex = sessions.findIndex(s => s.id === currentSession?.id);
-                    if (currentIndex > 0) {
-                        setPrevArticle(sessions[currentIndex - 1]);
-                    } else {
-                        setPrevArticle(null);
-                    }
-
-                    if (currentIndex < sessions.length - 1) {
-                        setNextArticle(sessions[currentIndex + 1]);
-                    } else {
-                        setNextArticle(null);
-                    }
                 }
             } else {
                 // No more article sessions
                 setSessions([]);
                 setCurrentSession(null);
                 resetArticle();
-                setNextArticle(null);
-                setPrevArticle(null);
             }
         } catch (error) {
             console.error("Error in deleteSession:", error);
@@ -432,24 +374,43 @@ export default function EbookArticlePage({
 
     // Navigate to next article
     const goToNextArticle = () => {
-        if (nextArticle) {
-            router.push('/article/' + nextArticle.id)
-            // switchSession(nextArticle);
-        } else if (sessions.length > 0) {
-            // If there's no next article (we're at the last one),
-            // navigate to the first document in the sessions array (circular navigation)
-            router.push('/article/' + sessions[0].id);
+        // Use sessionData instead of nextArticle state
+        if (!currentSession || !sessionData || sessionData.length === 0) return;
+
+        const currentIndex = sessionData.findIndex(s => s.id === currentSession.id);
+
+        if (currentIndex !== -1) {
+            // If not the last session, go to next
+            if (currentIndex < sessionData.length - 1) {
+                switchSession(sessionData[currentIndex + 1]);
+            } else {
+                // If last session, go to first (circular navigation)
+                switchSession(sessionData[0]);
+            }
+        } else if (sessionData.length > 0) {
+            // Fallback if current session not found
+            switchSession(sessionData[0]);
         }
     };
 
     // Navigate to previous article
     const goToPreviousArticle = () => {
-        if (prevArticle) {
-            router.push('/article/' + prevArticle.id);
-        } else if (sessions.length > 0) {
-            // If there's no previous article (we're at the first one), 
-            // navigate to the last document in the sessions array (circular navigation)
-            router.push('/article/' + sessions[sessions.length - 1].id);
+        // Use sessionData instead of prevArticle state
+        if (!currentSession || !sessionData || sessionData.length === 0) return;
+
+        const currentIndex = sessionData.findIndex(s => s.id === currentSession.id);
+
+        if (currentIndex !== -1) {
+            // If not the first session, go to previous
+            if (currentIndex > 0) {
+                switchSession(sessionData[currentIndex - 1]);
+            } else {
+                // If first session, go to last (circular navigation)
+                switchSession(sessionData[sessionData.length - 1]);
+            }
+        } else if (sessionData.length > 0) {
+            // Fallback if current session not found
+            switchSession(sessionData[sessionData.length - 1]);
         }
     };
 
@@ -483,6 +444,10 @@ export default function EbookArticlePage({
                 ? "bg-amber-50 text-amber-900"
                 : "bg-gray-50 text-gray-800"
             }`}>
+            <LoadingBar color="#f11946" ref={ref} shadow={true} />
+            {/* <button onClick={() => ref.current?.continuousStart()}>
+                Start Continuous Loading Bar
+            </button> */}
             {/* Header */}
             <EbookHeader
                 title={currentSession?.title || article?.title || "New Document"}
@@ -544,8 +509,8 @@ export default function EbookArticlePage({
                 onSubmit={handleSubmit}
                 onStop={stopGeneration}
                 onNewArticle={startNewArticle}
-                prevArticle={prevArticle}
-                nextArticle={nextArticle}
+                prevArticle={null} // No longer using state variables for navigation
+                nextArticle={null} // No longer using state variables for navigation
                 onPrevArticle={goToPreviousArticle}
                 onNextArticle={goToNextArticle}
                 theme={theme}

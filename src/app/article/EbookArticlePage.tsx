@@ -419,10 +419,14 @@ export default function EbookArticlePage({
     // Navigate to bookmarked content
     const navigateToBookmark = async (articleId: string, versionNumber: number) => {
         if (!userId) return;
+        console.log(articleId, versionNumber, 'navigateToBookmark');
 
         // Find the session for this article
-        const session = sessions.find(s => s.id === articleId);
+        const session = sessionData && sessionData.find(s => s.id === articleId);
         if (session) {
+            console.log(session, 'session');
+            // Set the current session
+
             // Switch to the session
             await switchSession(session);
 

@@ -11,6 +11,70 @@ interface ArticleMarkdownRenderProps {
     text: string;
 }
 
+// Create a proper React component for images
+const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) => {
+    const [isHovering, setIsHovering] = useState(false);
+
+    const handleDownload = async () => {
+        if (!src) return;
+
+        try {
+            // Fetch the image as a blob
+            const response = await fetch(src);
+            if (!response.ok) throw new Error('Failed to download image');
+
+            const blob = await response.blob();
+
+            // Create a blob URL and trigger download
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `image-${Date.now()}.jpg`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+            }, 100);
+        } catch (error) {
+            console.error('Error downloading image:', error);
+        }
+    };
+
+    const handleFullscreen = () => {
+        if (!src) return;
+
+        // Open the image in a new tab for fullscreen viewing
+        window.open(src, '_blank');
+    };
+
+    // Use a span instead of div to avoid invalid nesting
+    if (!src) return null;
+
+    return (
+        <Image
+            src={src}
+            alt={alt || ''}
+            width={300}
+            height={200}
+            className="hidden md:inline-block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px] rounded-md shadow-md hover:shadow-lg"
+            style={{ position: 'relative', objectFit: 'cover' }}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            onClick={(e) => {
+                e.stopPropagation();
+            }}
+            data-controls-visible={isHovering ? 'true' : 'false'}
+            data-testid="article-image"
+            quality={80}
+            sizes="(max-width: 768px) 0px, 300px"
+        />
+    );
+};
+
 export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
     const { settings } = useSettingsStore();
 
@@ -146,7 +210,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                     thead: ({ children }) => (
                         <thead
-                            className="bg-[#f5f1e6]"
+                            className="bg-[#f5f1d6]"
                             style={baseStyles}
                         >
                             {children}
@@ -181,69 +245,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                             {children}
                         </td>
                     ),
-                    img: ({ src, alt }) => {
-                        const [isHovering, setIsHovering] = useState(false);
-
-                        const handleDownload = async () => {
-                            if (!src) return;
-
-                            try {
-                                // Fetch the image as a blob
-                                const response = await fetch(src);
-                                if (!response.ok) throw new Error('Failed to download image');
-
-                                const blob = await response.blob();
-
-                                // Create a blob URL and trigger download
-                                const blobUrl = URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = blobUrl;
-                                link.download = `image-${Date.now()}.jpg`;
-                                link.style.display = 'none';
-                                document.body.appendChild(link);
-                                link.click();
-
-                                // Clean up
-                                setTimeout(() => {
-                                    document.body.removeChild(link);
-                                    URL.revokeObjectURL(blobUrl);
-                                }, 100);
-                            } catch (error) {
-                                console.error('Error downloading image:', error);
-                            }
-                        };
-
-                        const handleFullscreen = () => {
-                            if (!src) return;
-
-                            // Open the image in a new tab for fullscreen viewing
-                            window.open(src, '_blank');
-                        };
-
-                        // Use Next.js Image component for optimized image loading
-                        if (!src) return null;
-
-                        // Use a span instead of div to avoid invalid nesting
-                        return (
-                            <Image
-                                src={src}
-                                alt={alt || ''}
-                                width={300}
-                                height={200}
-                                className="hidden md:inline-block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px] rounded-md shadow-md hover:shadow-lg"
-                                style={{ position: 'relative', objectFit: 'cover' }}
-                                onMouseEnter={() => setIsHovering(true)}
-                                onMouseLeave={() => setIsHovering(false)}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                }}
-                                data-controls-visible={isHovering ? 'true' : 'false'}
-                                data-testid="article-image"
-                                quality={80}
-                                sizes="(max-width: 768px) 0px, 300px"
-                            />
-                        );
-                    },
+                    img: ({ src, alt }) => <ImageRenderer src={src} alt={alt || ''} />,
                     hr: () => (
                         <hr className="my-8 border-t border-[#e8e1d1]" />
                     ),

@@ -88,6 +88,9 @@ export function EbookContent({
 
     // Prepare content with image if available
     const prepareContent = () => {
+        if (version.versionNumber > 1 && isStreaming) {
+            return version.content;
+        }
         // Check if there are images available
         if (images && images.length > 0 && images[0].imageUrl) {
             // Get the first image

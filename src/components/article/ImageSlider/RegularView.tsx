@@ -158,7 +158,7 @@ export function RegularView({
                                     lineHeight: settings?.lineHeight,
                                 }}
                             >
-                                If you find this app interesting, you'll love the original book.
+                                If you find this app interesting, you&apos;ll love the original book.
                                 <a
                                     href="https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/"
                                     target="_blank"

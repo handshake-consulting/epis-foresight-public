@@ -51,7 +51,6 @@ export default function ClientWrapper({ initialSessionId }: ClientWrapperProps) 
             <div className={isLoading ? "opacity-0" : "opacity-100"}>
                 <EbookArticlePage
                     initialSessionId={sessionId}
-                    skipLoadingState={!isLoading}
                 />
             </div>
         </>

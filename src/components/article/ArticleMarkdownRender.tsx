@@ -180,14 +180,15 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                         </td>
                     ),
                     img: ({ src, alt }) => (
-                        <div className="my-6">
-                            <img
-                                src={src || ''}
-                                alt={alt || ''}
-                                className="mx-auto rounded-md shadow-md max-w-full"
-                            />
-                            {alt && <p className="text-center text-sm text-gray-600 mt-2 italic font-serif" style={baseStyles}>{alt}</p>}
-                        </div>
+                        <>
+                            <span className="hidden md:block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px]">
+                                <img
+                                    src={src || ''}
+                                    alt={alt || ''}
+                                    className="rounded-md shadow-md w-full"
+                                />
+                            </span>
+                        </>
                     ),
                     hr: () => (
                         <hr className="my-8 border-t border-[#e8e1d1]" />

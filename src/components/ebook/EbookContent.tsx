@@ -73,6 +73,25 @@ export function EbookContent({
         padding: `${settings.pageMargin}px`,
     };
 
+    // Prepare content with image if available
+    const prepareContent = () => {
+        // Check if there are images available
+        if (images && images.length > 0 && images[0].imageUrl) {
+            // Get the first image
+            const firstImage = images[0];
+
+            // Create markdown for the image to be displayed on desktop
+            // The image component in ArticleMarkdownRender will handle hiding on mobile
+            const imageMarkdown = `![Article illustration](${firstImage.imageUrl})\n\n`;
+
+            // Prepend the image markdown to the article content
+            return imageMarkdown + version.content;
+        }
+
+        // Return original content if no images
+        return version.content;
+    };
+
     // Calculate extra padding for the footer when it's expanded
     const extraPadding = isFooterOpen ? "pb-[320px]" : "pb-12";
 
@@ -254,7 +273,7 @@ export function EbookContent({
 
                         {/* Article content with book-like styling */}
                         <div className="prose prose-lg max-w-none" style={contentStyle}>
-                            <ArticleMarkdownRender text={version.content} />
+                            <ArticleMarkdownRender text={prepareContent()} />
                         </div>
                     </div>
                 </div>

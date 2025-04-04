@@ -1,10 +1,12 @@
+"use client";
+
 import { useEffect, useState } from 'react';
 
 const BookLoadingAnimation = () => {
-    const [visibleLines, setVisibleLines] = useState([]);
+    const [visibleLines, setVisibleLines] = useState<number[]>([]);
     const [isFlipping, setIsFlipping] = useState(false);
     const [currentPhrase, setCurrentPhrase] = useState(0);
-    const [phraseOpacity, setPhraseOpacity] = useState(0);
+    const [phraseOpacity, setPhraseOpacity] = useState(1); // Start fully visible
     const totalLines = 10;
 
     const loadingPhrases = [
@@ -32,31 +34,34 @@ const BookLoadingAnimation = () => {
             setTimeout(() => setIsFlipping(false), 300);
         }, 3000);
 
-        // Animation for cycling phrases
-        let fadeDirection = true; // true = fade in, false = fade out
+        // Animation for cycling phrases - improved for continuous transitions
+        let isFadingOut = true;
         const phraseFadeInterval = setInterval(() => {
             setPhraseOpacity(prev => {
-                // Fading in
-                if (fadeDirection && prev < 1) {
-                    return prev + 0.1;
-                }
-                // Fully faded in, start fading out
-                else if (fadeDirection && prev >= 1) {
-                    fadeDirection = false;
-                    return 1;
-                }
                 // Fading out
-                else if (!fadeDirection && prev > 0) {
-                    return prev - 0.1;
+                if (isFadingOut) {
+                    const newOpacity = prev - 0.05;
+                    if (newOpacity <= 0) {
+                        isFadingOut = false;
+                        // Change to next phrase immediately when fully faded out
+                        setCurrentPhrase(current => (current + 1) % loadingPhrases.length);
+                        return 0;
+                    }
+                    return newOpacity;
                 }
-                // Fully faded out, change phrase and start fading in
+                // Fading in
                 else {
-                    fadeDirection = true;
-                    setCurrentPhrase(prev => (prev + 1) % loadingPhrases.length);
-                    return 0;
+                    const newOpacity = prev + 0.05;
+                    if (newOpacity >= 1) {
+                        isFadingOut = true;
+                        // Hold at full opacity for a moment before fading out
+                        setTimeout(() => { }, 800);
+                        return 1;
+                    }
+                    return newOpacity;
                 }
             });
-        }, 100);
+        }, 50); // Faster interval for smoother transitions
 
         return () => {
             clearInterval(linesInterval);
@@ -66,11 +71,11 @@ const BookLoadingAnimation = () => {
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-amber-50">
+        <div className="flex flex-col items-center justify-center h-screen bg-[#f0e6d2]">
             <div className="relative w-64 h-80">
                 {/* Book cover */}
-                <div className="absolute w-full h-full bg-amber-800 rounded shadow-lg flex items-center justify-center">
-                    <div className="text-amber-100 text-lg font-serif">Generating Content</div>
+                <div className="absolute w-full h-full bg-[#8a7e66] rounded shadow-lg flex items-center justify-center">
+                    {/* Empty book cover - text removed */}
                 </div>
 
                 {/* Pages */}
@@ -78,7 +83,7 @@ const BookLoadingAnimation = () => {
                     {Array.from({ length: 5 }).map((_, index) => (
                         <div
                             key={index}
-                            className="absolute w-full h-full bg-white rounded shadow-sm"
+                            className="absolute w-full h-full bg-amber-100 rounded shadow-sm"
                             style={{
                                 transform: `translateX(${index * 2}px)`,
                                 zIndex: 5 - index
@@ -91,19 +96,19 @@ const BookLoadingAnimation = () => {
 
                 {/* Active page with appearing lines */}
                 <div
-                    className={`absolute w-full h-full bg-white rounded shadow transition-transform duration-300 origin-left transform ${isFlipping ? 'rotate-y-180' : ''
-                        }`}
+                    className={`absolute w-full h-full bg-amber-100 rounded shadow transition-transform duration-300 origin-left`}
                     style={{
                         transformStyle: 'preserve-3d',
                         backfaceVisibility: 'hidden',
-                        zIndex: 10
+                        zIndex: 10,
+                        transform: isFlipping ? 'rotateY(180deg)' : 'rotateY(0deg)'
                     }}
                 >
                     <div className="p-6">
                         {Array.from({ length: totalLines }).map((_, i) => (
                             <div
                                 key={i}
-                                className={`h-2 bg-amber-200 rounded mb-3 transition-all duration-300 ease-out ${visibleLines.includes(i) ? 'opacity-100' : 'opacity-0'
+                                className={`h-2 bg-[#d3c7a7] rounded mb-3 transition-all duration-300 ease-out ${visibleLines.includes(i) ? 'opacity-100' : 'opacity-0'
                                     }`}
                                 style={{
                                     width: `${70 + (i % 3) * 10}%`,
@@ -118,7 +123,7 @@ const BookLoadingAnimation = () => {
 
             {/* Loading text with cycling phrases */}
             <div
-                className="mt-8 text-amber-900 font-serif h-6 text-center"
+                className="mt-8 text-[#5d5545] font-sans h-6 text-center text-lg"
                 style={{
                     opacity: phraseOpacity,
                     transition: 'opacity 0.3s ease-in-out',

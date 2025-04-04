@@ -161,14 +161,39 @@ export function ImageSlider({
         setTimeout(() => setIsTransitioning(false), 300);
     }, [currentIndex, isTransitioning]);
 
-    const handleDownload = useCallback(() => {
+    const handleDownload = useCallback(async () => {
         if (images.length === 0) return;
-        const link = document.createElement('a');
-        link.href = images[currentIndex].imageUrl || '';
-        link.download = `image-${currentIndex + 1}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+
+        try {
+            setIsLoading(true);
+            const imageUrl = images[currentIndex].imageUrl || '';
+
+            // Fetch the image as a blob
+            const response = await fetch(imageUrl);
+            if (!response.ok) throw new Error('Failed to download image');
+
+            const blob = await response.blob();
+
+            // Create a blob URL and trigger download
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `image-${currentIndex + 1}.jpg`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+            }, 100);
+        } catch (error) {
+            console.error('Error downloading image:', error);
+            setError('Failed to download image');
+        } finally {
+            setIsLoading(false);
+        }
     }, [images, currentIndex]);
 
     const toggleFullscreen = useCallback(() => {

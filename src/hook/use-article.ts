@@ -28,6 +28,12 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     const currentUserIdRef = useRef<string | null>(null);
     const currentSessionIdRef = useRef<string | null>(null);
 
+    // Add an article cache to prevent redundant loading
+    const articleCacheRef = useRef<Map<string, { article: Article, timestamp: number }>>(new Map());
+
+    // Cache expiration time (10 minutes)
+    const CACHE_EXPIRATION = 10 * 60 * 1000;
+
     // Get the current version
     const currentVersion = article?.versions.find(v => v.versionNumber === currentVersionNumber) || null;
 
@@ -610,8 +616,21 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     }, []);
 
     // Load an existing article session
-    const loadArticleSession = useCallback(async (sessionId: string, userId: string) => {
+    const loadArticleSession = useCallback(async (sessionId: string, userId: string, preloadOnly: boolean = false) => {
         try {
+            // Check if we have a valid cached version
+            const cachedEntry = articleCacheRef.current.get(sessionId);
+            const now = Date.now();
+
+            if (cachedEntry && (now - cachedEntry.timestamp < CACHE_EXPIRATION)) {
+                // Use cached article data
+                if (!preloadOnly) {
+                    setArticle(cachedEntry.article);
+                    setCurrentVersionNumber(cachedEntry.article.currentVersion || cachedEntry.article.versions.length);
+                }
+                return sessionId;
+            }
+
             const supabase = createClient();
 
             // Get session details
@@ -715,8 +734,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 }
             }
 
-            // Set article state
-            setArticle({
+            // Create article data object
+            const articleData = {
                 id: session.id,
                 title: session.title,
                 topic: topic || session.topic || '',
@@ -724,10 +743,22 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 versions,
                 created_at: session.created_at,
                 updated_at: session.updated_at
+            };
+
+            // Cache the article data
+            articleCacheRef.current.set(sessionId, {
+                article: articleData,
+                timestamp: Date.now()
             });
 
-            // Set to latest version
-            setCurrentVersionNumber(versions.length);
+            // If this is just preloading, don't update UI state
+            if (!preloadOnly) {
+                // Set article state
+                setArticle(articleData);
+
+                // Set to latest version
+                setCurrentVersionNumber(versions.length);
+            }
 
             return session.id;
         } catch (error) {

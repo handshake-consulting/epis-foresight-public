@@ -39,9 +39,22 @@ export function EbookContent({
     const contentRef = useRef<HTMLDivElement>(null);
     const { settings, toggleBookmark, isBookmarked, isFooterOpen } = useSettingsStore();
     const [readingProgress, setReadingProgress] = useState(0);
+    const [isVisible, setIsVisible] = useState(false);
 
     // Check if current version is bookmarked
     const bookmarked = isBookmarked(articleId, version.versionNumber);
+
+    // Fade in content when it changes
+    useEffect(() => {
+        setIsVisible(false); // Reset visibility
+
+        // Slight delay to allow previous content to fade out
+        const timer = setTimeout(() => {
+            setIsVisible(true);
+        }, 150);
+
+        return () => clearTimeout(timer);
+    }, [version.versionNumber, articleId]);
 
     // Scroll to top when version changes
     useEffect(() => {
@@ -108,7 +121,10 @@ export function EbookContent({
                     }`}
                 onScroll={handleScroll}
             >
-                <div className="max-w-3xl mx-auto" style={pageStyle}>
+                <div
+                    className={`max-w-3xl mx-auto transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+                    style={pageStyle}
+                >
                     {/* Version indicator */}
                     <div className="mb-4 text-sm flex items-center justify-between">
                         <div className={`flex items-center gap-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"

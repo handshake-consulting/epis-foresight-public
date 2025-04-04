@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { MessageSquare, User } from "lucide-react";
+import Image from 'next/image';
 import { useEffect, useState } from "react";
 import { ChatSession } from "./types";
 
@@ -207,7 +208,14 @@ export function SessionSidebar({
                             <div className="flex justify-center">
                                 <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-blue-300 transition-all">
                                     {userImage ? (
-                                        <img src={userImage} alt="Profile" className="w-full h-full object-cover" />
+                                        <Image
+                                            src={userImage}
+                                            alt="Profile"
+                                            width={32}
+                                            height={32}
+                                            className="object-cover"
+                                            priority={true}
+                                        />
                                     ) : (
                                         <User className="h-4 w-4 text-gray-600" />
                                     )}
@@ -237,7 +245,14 @@ export function SessionSidebar({
                             <div className="flex items-center gap-3 p-2">
                                 <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
                                     {userImage ? (
-                                        <img src={userImage} alt="Profile" className="w-full h-full object-cover" />
+                                        <Image
+                                            src={userImage}
+                                            alt="Profile"
+                                            width={32}
+                                            height={32}
+                                            className="object-cover"
+                                            priority={true}
+                                        />
                                     ) : (
                                         <User className="h-4 w-4 text-gray-600" />
                                     )}

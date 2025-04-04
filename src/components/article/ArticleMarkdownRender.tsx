@@ -1,6 +1,8 @@
 "use client"
 
+import Image from 'next/image';
 import Link from 'next/link';
+import { useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -179,17 +181,69 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                             {children}
                         </td>
                     ),
-                    img: ({ src, alt }) => (
-                        <>
-                            <span className="hidden md:block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px]">
-                                <img
-                                    src={src || ''}
-                                    alt={alt || ''}
-                                    className="rounded-md shadow-md w-full"
-                                />
-                            </span>
-                        </>
-                    ),
+                    img: ({ src, alt }) => {
+                        const [isHovering, setIsHovering] = useState(false);
+
+                        const handleDownload = async () => {
+                            if (!src) return;
+
+                            try {
+                                // Fetch the image as a blob
+                                const response = await fetch(src);
+                                if (!response.ok) throw new Error('Failed to download image');
+
+                                const blob = await response.blob();
+
+                                // Create a blob URL and trigger download
+                                const blobUrl = URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = blobUrl;
+                                link.download = `image-${Date.now()}.jpg`;
+                                link.style.display = 'none';
+                                document.body.appendChild(link);
+                                link.click();
+
+                                // Clean up
+                                setTimeout(() => {
+                                    document.body.removeChild(link);
+                                    URL.revokeObjectURL(blobUrl);
+                                }, 100);
+                            } catch (error) {
+                                console.error('Error downloading image:', error);
+                            }
+                        };
+
+                        const handleFullscreen = () => {
+                            if (!src) return;
+
+                            // Open the image in a new tab for fullscreen viewing
+                            window.open(src, '_blank');
+                        };
+
+                        // Use Next.js Image component for optimized image loading
+                        if (!src) return null;
+
+                        // Use a span instead of div to avoid invalid nesting
+                        return (
+                            <Image
+                                src={src}
+                                alt={alt || ''}
+                                width={300}
+                                height={200}
+                                className="hidden md:inline-block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px] rounded-md shadow-md hover:shadow-lg"
+                                style={{ position: 'relative', objectFit: 'cover' }}
+                                onMouseEnter={() => setIsHovering(true)}
+                                onMouseLeave={() => setIsHovering(false)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                }}
+                                data-controls-visible={isHovering ? 'true' : 'false'}
+                                data-testid="article-image"
+                                quality={80}
+                                sizes="(max-width: 768px) 0px, 300px"
+                            />
+                        );
+                    },
                     hr: () => (
                         <hr className="my-8 border-t border-[#e8e1d1]" />
                     ),
@@ -211,6 +265,36 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     ),
                 }}
             >{text}</Markdown>
+
+            {/* Global CSS for image controls using data attributes to control visibility */}
+            <style jsx global>{`
+                img[data-testid="article-image"]::after {
+                    content: "";
+                    position: absolute;
+                    top: 2px;
+                    right: 2px;
+                    display: flex;
+                    gap: 4px;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                }
+                
+                img[data-controls-visible="true"]::after {
+                    opacity: 1;
+                }
+                
+                /* Add download and expand button styles via CSS */
+                @media (min-width: 768px) {
+                    /* Only apply on desktop */
+                    img[data-testid="article-image"] {
+                        cursor: pointer;
+                    }
+                    
+                    img[data-testid="article-image"]:hover {
+                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    }
+                }
+            `}</style>
         </div>
     )
 }

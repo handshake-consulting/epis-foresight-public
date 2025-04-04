@@ -132,6 +132,7 @@ export function useArticlePreloader() {
                     versions.push({
                         versionNumber: v,
                         content: assistantMessage.content,
+                        timestamp: new Date(assistantMessage.created_at),
                         images: versionMessages
                             .filter(msg => msg.role === 'assistant' && msg.image)
                             .map(msg => msg.image)
@@ -146,7 +147,10 @@ export function useArticlePreloader() {
                 id: sessionId,
                 topic,
                 title: session.title || topic,
-                versions
+                currentVersion: versions.length,
+                versions,
+                created_at: session.created_at,
+                updated_at: session.updated_at
             };
             console.log(`[ArticlePreloader] Created article object for ${sessionId} with ${versions.length} versions`);
 

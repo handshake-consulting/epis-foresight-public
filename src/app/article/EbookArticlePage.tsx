@@ -322,7 +322,9 @@ export default function EbookArticlePage({
         inputRef.current!.value = "";
 
         // Refresh sessions list after generation
-        refreshSessions();
+        if (isFirstGeneration) {
+            refreshSessions();
+        }
     };
 
     // Delete an article session

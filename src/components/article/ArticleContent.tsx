@@ -8,7 +8,7 @@ import { ArticleMarkdownRender } from "./ArticleMarkdownRender";
 
 interface ArticleContentProps {
     version: ArticleVersion;
-    isLatestVersion: boolean;
+    isLatestVersion?: boolean;
     isStreaming?: boolean;
 }
 
@@ -34,6 +34,25 @@ export function ArticleContent({
         lineHeight: settings.lineHeight,
     };
 
+    // Prepare content with image if available
+    const prepareContent = () => {
+        // Check if there are images for this version
+        if (version.images && version.images.length > 0 && version.images[0].imageUrl) {
+            // Get the first image
+            const firstImage = version.images[0];
+
+            // Create markdown for the image to be displayed on desktop
+            // The image component in ArticleMarkdownRender will handle hiding on mobile
+            const imageMarkdown = `![Article illustration](${firstImage.imageUrl})\n\n`;
+
+            // Prepend the image markdown to the article content
+            return imageMarkdown + version.content;
+        }
+
+        // Return original content if no images
+        return version.content;
+    };
+
     return (
         <div
             ref={contentRef}
@@ -44,39 +63,18 @@ export function ArticleContent({
                 {/* Version indicator */}
                 <div className="mb-4 text-sm flex items-center justify-end">
                     <div className="flex items-center gap-2 text-[#8a7e66] italic font-serif">
-                        <span className="text-xs">
-                            {new Date(version.timestamp).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}
-                        </span>
-                        <span>•</span>
-                        <span className="bg-[#f5f1e6] px-2 py-1 rounded-full border border-[#e8e1d1] text-xs">
-                            Version {version.versionNumber}
-                        </span>
-                        {isLatestVersion && (
-                            <span className="bg-[#f5f1e6] text-[#8a7e66] px-2 py-1 rounded-full border border-[#e8e1d1] text-xs">
-                                Latest
-                            </span>
+                        {isLatestVersion ? (
+                            <span>Latest version</span>
+                        ) : (
+                            <span>Version {version.versionNumber}</span>
                         )}
                     </div>
                 </div>
 
-                {/* Edit prompt if available */}
-                {version.editPrompt && version.versionNumber > 1 && (
-                    <div className="mb-6 bg-[#f5f1e6] p-4 rounded-lg border border-[#e8e1d1] italic font-serif">
-                        <div className="text-sm font-medium text-[#5d5545] mb-1">Edit prompt:</div>
-                        <div className="text-[#5d5545]">{version.editPrompt}</div>
-                    </div>
-                )}
-
-                {/* Progress bar for generation */}
+                {/* Streaming indicator */}
                 {isStreaming && (
-                    <div className="mb-6 bg-[#f5f1e6] p-4 rounded-lg border border-[#e8e1d1]">
-                        <div className="text-sm font-medium text-[#5d5545] mb-2">Generating article...</div>
+                    <div className="mb-8">
                         <ProgressBar
-                            isLoading={true}
                             className="mb-2"
                             label="This may take 15-30 seconds"
                         />
@@ -96,7 +94,7 @@ export function ArticleContent({
 
                     {/* Article content with book-like styling */}
                     <div className="prose prose-lg max-w-none" style={contentStyle}>
-                        <ArticleMarkdownRender text={version.content} />
+                        <ArticleMarkdownRender text={prepareContent()} />
                     </div>
                 </div>
             </div>

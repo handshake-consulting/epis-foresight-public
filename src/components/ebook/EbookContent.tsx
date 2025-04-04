@@ -39,9 +39,22 @@ export function EbookContent({
     const contentRef = useRef<HTMLDivElement>(null);
     const { settings, toggleBookmark, isBookmarked, isFooterOpen } = useSettingsStore();
     const [readingProgress, setReadingProgress] = useState(0);
+    const [isVisible, setIsVisible] = useState(false);
 
     // Check if current version is bookmarked
     const bookmarked = isBookmarked(articleId, version.versionNumber);
+
+    // Fade in content when it changes
+    useEffect(() => {
+        setIsVisible(false); // Reset visibility
+
+        // Slight delay to allow previous content to fade out
+        const timer = setTimeout(() => {
+            setIsVisible(true);
+        }, 150);
+
+        return () => clearTimeout(timer);
+    }, [version.versionNumber, articleId]);
 
     // Scroll to top when version changes
     useEffect(() => {
@@ -73,6 +86,25 @@ export function EbookContent({
         padding: `${settings.pageMargin}px`,
     };
 
+    // Prepare content with image if available
+    const prepareContent = () => {
+        // Check if there are images available
+        if (images && images.length > 0 && images[0].imageUrl) {
+            // Get the first image
+            const firstImage = images[0];
+
+            // Create markdown for the image to be displayed on desktop
+            // The image component in ArticleMarkdownRender will handle hiding on mobile
+            const imageMarkdown = `![Article illustration](${firstImage.imageUrl})\n\n`;
+
+            // Prepend the image markdown to the article content
+            return imageMarkdown + version.content;
+        }
+
+        // Return original content if no images
+        return version.content;
+    };
+
     // Calculate extra padding for the footer when it's expanded
     const extraPadding = isFooterOpen ? "pb-[320px]" : "pb-12";
 
@@ -89,7 +121,10 @@ export function EbookContent({
                     }`}
                 onScroll={handleScroll}
             >
-                <div className="max-w-3xl mx-auto" style={pageStyle}>
+                <div
+                    className={`max-w-3xl mx-auto transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+                    style={pageStyle}
+                >
                     {/* Version indicator */}
                     <div className="mb-4 text-sm flex items-center justify-between">
                         <div className={`flex items-center gap-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
@@ -254,7 +289,7 @@ export function EbookContent({
 
                         {/* Article content with book-like styling */}
                         <div className="prose prose-lg max-w-none" style={contentStyle}>
-                            <ArticleMarkdownRender text={version.content} />
+                            <ArticleMarkdownRender text={prepareContent()} />
                         </div>
                     </div>
                 </div>

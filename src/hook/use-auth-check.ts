@@ -37,7 +37,7 @@ export function useAuthCheck(options: UseAuthCheckOptions = {}) {
     const verifyAuth = useCallback(async () => {
         // First check if the cookie exists at all
         if (!checkAuthCookie()) {
-            console.log('Auth token cookie not found, redirecting to login')
+            //  console.log('Auth token cookie not found, redirecting to login')
             router.push(redirectTo)
             return false
         }
@@ -47,7 +47,7 @@ export function useAuthCheck(options: UseAuthCheckOptions = {}) {
             const { user, token } = await getCurrentAuthState()
 
             if (!user || !token) {
-                console.log('Firebase auth state invalid, redirecting to login')
+                //    console.log('Firebase auth state invalid, redirecting to login')
                 // Clear the invalid cookie
                 document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
                 router.push(redirectTo)

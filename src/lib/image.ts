@@ -24,7 +24,7 @@ export async function genCloudflareImage(prompt: string): Promise<Blob | null> {
         return null;
     }
     const testres = await resp.json();
-    console.log("resp", testres);
+    // console.log("resp", testres);
 
     // Extract image data from JSON response
     if (testres.success && testres.result?.image) {
@@ -49,7 +49,7 @@ export async function genAndUploadImage(prompt: string) {
     const filename = `images/${key}.jpg`;
 
     const blob = await genImageBlob(prompt);
-    console.log(blob);
+    //  console.log(blob);
 
     if (!blob) {
         return null;

@@ -23,7 +23,7 @@ async function setupDatabase() {
             return;
         }
 
-        console.log('Users table created successfully');
+        //  console.log('Users table created successfully');
     } catch (error) {
         console.error('Error setting up database:', error);
     }

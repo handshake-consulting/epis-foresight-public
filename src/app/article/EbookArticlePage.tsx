@@ -227,7 +227,7 @@ export default function EbookArticlePage({
 
             setIsLoading(false);
         };
-        console.log('loadSpecificArticle');
+        // console.log('loadSpecificArticle');
         loadSpecificArticle();
     }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
 
@@ -419,7 +419,7 @@ export default function EbookArticlePage({
     // Navigate to bookmarked content
     const navigateToBookmark = async (articleId: string, versionNumber: number) => {
         if (!userId) return;
-        console.log(articleId, versionNumber, 'navigateToBookmark');
+        //  console.log(articleId, versionNumber, 'navigateToBookmark');
 
         // Find the session for this article
         const session = sessionData && sessionData.find(s => s.id === articleId);
@@ -459,6 +459,7 @@ export default function EbookArticlePage({
                 toggleTheme={toggleTheme}
                 toggleSidebar={toggleSidebar}
                 currentSession={currentSession}
+                onArticleSelect={navigateToBookmark}
             />
 
             {/* Sidebar */}

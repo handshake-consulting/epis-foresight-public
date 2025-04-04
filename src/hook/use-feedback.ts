@@ -63,7 +63,7 @@ export const useFeedBackChat = ({ graphId }: { graphId?: string | undefined }) =
 
             try {
                 const { clientId, firebaseIdToken } = await getAuthDetails();
-                console.log(clientId, firebaseIdToken, body, graphId);
+                // console.log(clientId, firebaseIdToken, body, graphId);
 
                 return await feedbackChat(clientId, firebaseIdToken, body, graphId);
             } catch (err) {

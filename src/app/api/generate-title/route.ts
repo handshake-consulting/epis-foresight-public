@@ -9,7 +9,7 @@ Respond with ONLY the title, nothing else - no quotes, no explanations, just the
 
 export async function POST(request: NextRequest) {
     try {
-        console.log('Request to generate-title API:', request);
+        //    console.log('Request to generate-title API:', request);
 
         // Get the authorization token from the request
         const authHeader = request.headers.get('authorization');

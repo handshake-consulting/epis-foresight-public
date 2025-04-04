@@ -357,7 +357,7 @@ export function ImageSlider({
             onToggle={toggleImageSlider}
             onImageLoadStart={() => setImageLoading(true)}
             onImageLoad={() => setImageLoading(false)}
-
+            settings={settings}
         />
     );
 }

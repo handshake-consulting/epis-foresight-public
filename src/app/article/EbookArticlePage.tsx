@@ -161,6 +161,38 @@ export default function EbookArticlePage({
         [searchParams]
     );
 
+    // Preload adjacent articles (next and previous)
+    const preloadAdjacentArticles = useCallback(async (currentId: string) => {
+        if (!userId || !sessionData || sessionData.length <= 1) return;
+
+        // Find the current index in the session list
+        const currentIndex = sessionData.findIndex(s => s.id === currentId);
+        if (currentIndex === -1) return;
+
+        // Determine prev and next article indices (with circular navigation)
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : sessionData.length - 1;
+        const nextIndex = currentIndex < sessionData.length - 1 ? currentIndex + 1 : 0;
+
+        // Load articles in the background without blocking
+        const preloadArticles = async () => {
+            try {
+                // Load next article first (since it's more likely to be accessed)
+                await loadArticleSession(sessionData[nextIndex].id, userId, true);
+                console.log(`Preloaded next article: ${sessionData[nextIndex].title}`);
+
+                // Then load previous article
+                await loadArticleSession(sessionData[prevIndex].id, userId, true);
+                console.log(`Preloaded previous article: ${sessionData[prevIndex].title}`);
+            } catch (error) {
+                // Silent failure for preloading - non-critical operation
+                console.log("Background preloading error (non-critical):", error);
+            }
+        };
+
+        // Start preloading but don't await it - let it run in the background
+        preloadArticles();
+    }, [userId, sessionData, loadArticleSession]);
+
     // Start new article
     const startNewArticle = async () => {
         if (!userId) return;
@@ -226,60 +258,62 @@ export default function EbookArticlePage({
             });
 
             setIsLoading(false);
+
+            // Preload adjacent articles in the background after loading the current one
+            if (sessionData && sessionData.length > 1) {
+                preloadAdjacentArticles(specificSession.id);
+            }
         };
         // console.log('loadSpecificArticle');
         loadSpecificArticle();
-    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle]);
+    }, [userId, specificSession, sessionData, loadArticleSession, isNewArticle, preloadAdjacentArticles]);
 
     // Switch to a different article session
     const switchSession = async (session: ChatSession) => {
         if (!userId) return;
-        ref.current?.continuousStart()
-        // setIsLoading(true);
-        setCurrentSession(session);
+
+        // Start loading indicator
+        ref.current?.continuousStart();
+
+        // Explicitly set loading state to true
+        setIsLoading(true);
+
+        // Store the current session ID for comparison
+        const prevSessionId = currentSession?.id;
+
+        // Stop any ongoing generation
         stopGeneration();
 
-        // No need to update nextArticle and prevArticle state variables
-        // as we're now calculating them directly in the navigation functions
+        try {
+            // Load the article data BEFORE changing the current session
+            await loadArticleSession(session.id, userId);
 
-        // Load the article data
-        await loadArticleSession(session.id, userId);
+            // Mark this article as last read
+            localStorage.setItem("lastReadArticle", session.id);
 
-        // Mark this article as last read
-        localStorage.setItem("lastReadArticle", session.id);
-        ref.current?.complete()
-        setIsLoading(false);
-        // Ensure we're updating the URL correctly by constructing the proper path
-        // Extract the base path without any existing session ID
-        const basePath = pathname.split('/').slice(0, -1).join('/') || '/article';
-        useSettingsStore.getState().setUIOpenState(null);
-        window.history.pushState(
-            null,
-            '',
-            `${basePath}/${session.id}`
-        )
+            // Only after data is loaded, update the current session
+            setCurrentSession(session);
+
+            // Update URL without navigating
+            const basePath = pathname.split('/').slice(0, -1).join('/') || '/article';
+            useSettingsStore.getState().setUIOpenState(null);
+            window.history.pushState(
+                null,
+                '',
+                `${basePath}/${session.id}`
+            );
+
+            // Preload adjacent articles in the background
+            preloadAdjacentArticles(session.id);
+        } catch (error) {
+            console.error("Error switching session:", error);
+            // Don't change current session if loading failed
+        } finally {
+            // Complete loading indicators
+            ref.current?.complete();
+            setIsLoading(false);
+        }
     };
-    // console.log(article, 'article');
-
-    // Handle default article loading when no initialSessionId is provided
-    useEffect(() => {
-        const loadDefaultArticle = async () => {
-            if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
-
-            if (sessionData.length > 0) {
-                // If no initialSessionId, use switchSession directly instead of router.push
-                // await switchSession(sessionData[0]);
-                // Update URL without full navigation
-                router.push(`/article/${sessionData[0].id}`);
-            } else {
-                // No articles yet, start a new one
-                startNewArticle();
-            }
-        };
-        //  console.log('loadDefaultArticle');
-
-        loadDefaultArticle();
-    }, [userId, sessionData, isSessionsLoading, isNewArticle, initialSessionId, router, startNewArticle]);
 
     // Handle version parameter from URL
     useEffect(() => {
@@ -416,8 +450,6 @@ export default function EbookArticlePage({
         }
     };
 
-
-
     // Navigate to bookmarked content
     const navigateToBookmark = async (articleId: string, versionNumber: number) => {
         if (!userId) return;
@@ -442,6 +474,26 @@ export default function EbookArticlePage({
             }, 500);
         }
     };
+
+    // Handle default article loading when no initialSessionId is provided
+    useEffect(() => {
+        const loadDefaultArticle = async () => {
+            if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
+
+            if (sessionData.length > 0) {
+                // If no initialSessionId, use switchSession directly instead of router.push
+                // await switchSession(sessionData[0]);
+                // Update URL without full navigation
+                router.push(`/article/${sessionData[0].id}`);
+            } else {
+                // No articles yet, start a new one
+                startNewArticle();
+            }
+        };
+        //  console.log('loadDefaultArticle');
+
+        loadDefaultArticle();
+    }, [userId, sessionData, isSessionsLoading, isNewArticle, initialSessionId, router, startNewArticle]);
 
     return (
         <div className={`min-h-screen ${theme === "dark"
@@ -478,35 +530,39 @@ export default function EbookArticlePage({
 
             {/* Loading indicator */}
             {isLoading && (
-                <div className={`w-full max-w-4xl mx-auto px-4 py-8 ${theme === "dark" ? "text-gray-100" :
-                    theme === "sepia" ? "text-amber-900" :
-                        "text-gray-800"
-                    }`}>
-                    <div className="text-center mb-4">Loading article...</div>
-                    <ProgressBar isLoading={true} className="mb-8" />
+                <div className={`fixed top-0 left-0 w-full h-1 z-50`}>
+                    <div className="w-full h-full bg-blue-500 animate-pulse"></div>
                 </div>
             )}
 
             {/* Main content */}
-            {!isLoading && isFirstGeneration ? (
+            {!isFirstGeneration ? (
+                currentVersion ? (
+                    <EbookContent
+                        version={currentVersion}
+                        isLatestVersion={isLatestVersion}
+                        isStreaming={isStreaming}
+                        theme={theme}
+                        onPreviousVersion={goToPreviousVersion}
+                        onNextVersion={goToNextVersion}
+                        currentVersionNumber={currentVersionNumber}
+                        totalVersions={article?.versions.length || 1}
+                        articleId={currentSession?.id}
+                        articleTitle={currentSession?.title}
+                        images={article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : []}
+                    />
+                ) : (
+                    <div className={`w-full max-w-4xl mx-auto px-4 py-8 ${theme === "dark" ? "text-gray-100" :
+                        theme === "sepia" ? "text-amber-900" :
+                            "text-gray-800"
+                        }`}>
+                        <div className="text-center mb-4">Loading article content...</div>
+                        <ProgressBar isLoading={true} className="mb-8" />
+                    </div>
+                )
+            ) : (
                 <EmptyStateContent theme={theme} />
-            ) : !isLoading && currentVersion && (
-                <EbookContent
-                    version={currentVersion}
-                    isLatestVersion={isLatestVersion}
-                    isStreaming={isStreaming}
-                    theme={theme}
-                    onPreviousVersion={goToPreviousVersion}
-                    onNextVersion={goToNextVersion}
-                    currentVersionNumber={currentVersionNumber}
-                    totalVersions={article?.versions.length || 1}
-                    articleId={currentSession?.id}
-                    articleTitle={currentSession?.title}
-                    images={article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : []}
-                />
             )}
-
-
 
             {/* Footer with input */}
             <EbookFooter
@@ -530,7 +586,6 @@ export default function EbookArticlePage({
                     <div className="hidden md:block">
                         <ImageSlider
                             initialImages={(article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : [])}
-
                         />
                     </div>
                 </>

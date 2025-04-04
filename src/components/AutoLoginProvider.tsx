@@ -73,12 +73,12 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
                     }
                     // Store/update user data in Supabase
                     await upsertUserInSupabase(user);
-                    console.log("Auto login successful");
+                    //  console.log("Auto login successful");
                 } catch (signInError: any) {
                     // If sign in fails, try to create the user
                     if (signInError.code === 'auth/user-not-found') {
                         try {
-                            console.log("User not found, creating new user");
+                            //   console.log("User not found, creating new user");
                             // Create a new user
                             const result = await createUserWithEmailAndPassword(auth, email, password);
                             const user = result.user;
@@ -96,7 +96,7 @@ export default function AutoLoginProvider({ children }: AutoLoginProviderProps) 
                                 throw new Error(message || "Authentication failed");
                             }
 
-                            console.log("User created and auto login successful");
+                            //    console.log("User created and auto login successful");
                         } catch (createError: any) {
                             console.error("Error creating user:", createError);
                             throw createError;

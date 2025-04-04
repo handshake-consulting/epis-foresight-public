@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 export async function streamResponse(formData: FormData) {
     const cookieStore = await cookies();
     const token = cookieStore.get('auth-token');
-    console.log(token);
+    //  console.log(token);
 
     if (!token?.value) {
         throw new Error('User not authenticated')

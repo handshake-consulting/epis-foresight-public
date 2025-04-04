@@ -86,13 +86,13 @@ export default function LoginForm() {
             let user;
 
             if (isRegistering) {
-                console.log('here');
+                //   console.log('here');
 
                 // Register new user
                 const result = await createUserWithEmailAndPassword(auth, email, password)
                 user = result.user
             } else {
-                console.log('there');
+                //   console.log('there');
 
                 // Sign in existing user
                 const result = await signInWithEmailAndPassword(auth, email, password)

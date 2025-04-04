@@ -187,7 +187,7 @@ const storeMessageInSupabase = async (
                     if (response.ok) {
                         const data = await response.json();
                         title = data.title;
-                        console.log('Generated title:', title);
+                        //    console.log('Generated title:', title);
 
                         // Update the session title with the generated title
                         await supabase
@@ -354,7 +354,7 @@ export function useChatStream(options: ChatStreamOptions = {}) {
     // Process QueryNode data to extract image and file information
     const processQueryNodeData = useCallback((data: any) => {
         if (data.node_type === LoreNodeOutputTypes.QUERY) {
-            console.log("Processing QueryNode data:", data);
+            // console.log("Processing QueryNode data:", data);
 
             // Handle image data
             const imageData = Object.entries(
@@ -418,7 +418,7 @@ export function useChatStream(options: ChatStreamOptions = {}) {
                     if (buffer.trim()) {
                         try {
                             const event = JSON.parse(buffer.trim()) as StreamEvent
-                            console.log('event', event)
+                            //      console.log('event', event)
                             if (event.event_data?.text) {
                                 accumulatedContent += event.event_data.text
                                 updateLastMessage(accumulatedContent)

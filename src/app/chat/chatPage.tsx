@@ -58,12 +58,12 @@ export default function ChatPage({ profile }: { profile: UserProfile }) {
             onData: (data) => {
                 // console.log("Stream data:", data)
                 if (data.status === "error") {
-                    console.error("Stream error:", data.error)
+                    //   console.error("Stream error:", data.error)
                 }
             },
             onError: (error) => console.error("Hook error:", error),
             onFinish: () => {
-                console.log("Stream finished");
+                //  console.log("Stream finished");
             },
         }
     });

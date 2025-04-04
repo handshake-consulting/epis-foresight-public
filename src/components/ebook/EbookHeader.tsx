@@ -15,6 +15,7 @@ interface EbookHeaderProps {
     toggleTheme: () => void;
     toggleSidebar: () => void;
     currentSession: ChatSession | null;
+    onArticleSelect: (articleId: string, versionNumber: number) => void;
 }
 
 interface SearchResult {
@@ -30,7 +31,8 @@ export function EbookHeader({
     theme,
     toggleTheme,
     toggleSidebar,
-    currentSession
+    currentSession,
+    onArticleSelect
 }: EbookHeaderProps) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -168,10 +170,12 @@ export function EbookHeader({
         // Navigate to the article
         if (result.version) {
             // If we have a version, navigate to that specific version
-            router.push(`/article/${result.id}?version=${result.version}`);
+            onArticleSelect(result.id, result.version);
+            //  router.push(`/article/${result.id}?version=${result.version}`);
         } else {
+            onArticleSelect(result.id, 1);
             // Otherwise just navigate to the article
-            router.push(`/article/${result.id}`);
+            //router.push(`/article/${result.id}`);
         }
     };
     return (

@@ -67,7 +67,7 @@ Respond with ONLY the image prompt, nothing else - no explanations, just the pro
 
 export async function POST(request: NextRequest) {
     try {
-        console.log('Request to generate-image-prompt API:', request);
+        //  console.log('Request to generate-image-prompt API:', request);
 
         // Get the authorization token from the request
         const authHeader = request.headers.get('authorization');

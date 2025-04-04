@@ -43,7 +43,7 @@ const page = async () => {
         console.error("Error checking token:", error);
         // Continue with default profile
     }
-    console.log("profile", profile);
+    // console.log("profile", profile);
 
 
     return (

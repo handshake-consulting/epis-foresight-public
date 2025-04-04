@@ -42,7 +42,7 @@ export const userLogin = async (idToken: string) => {
             throw new Error("You don't have permission to access this website");
         }
         const isNewUser = await newuser.json();
-        console.log('isNewUser', isNewUser);
+        //  console.log('isNewUser', isNewUser);
         if (isNewUser)
             return { status: true, message: null, isNewUser };
 
@@ -58,7 +58,7 @@ export const userLogin = async (idToken: string) => {
 
         const responseData: UserLoginResponse | any = await response.json();
 
-        console.log('Response ', responseData);
+        //  console.log('Response ', responseData);
 
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
@@ -83,7 +83,7 @@ export const userLogin = async (idToken: string) => {
 
         return { status: true, message: null, isNewUser }
     } catch (e: any) {
-        console.log('Error ', e);
+        //   console.log('Error ', e);
 
         return { status: false, message: e.message || "Authentication failed" };
     }

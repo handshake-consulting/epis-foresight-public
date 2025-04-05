@@ -2,9 +2,10 @@
 
 import { ChatSession } from "@/components/chat/types";
 import SettingsToggler from "@/components/settings/SettingsToggler";
+import { useSettingsStore } from "@/store/settingsStore";
 import { createClient } from "@/utils/supabase/clients";
-import { Book, Home, Loader2, Menu, Moon, Search, Sun, X } from "lucide-react";
-import Link from "next/link";
+import { Book, HelpCircle, Loader2, Menu, Moon, Search, Sun, X } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useOnClickOutside } from "usehooks-ts";
@@ -16,6 +17,12 @@ interface EbookHeaderProps {
     toggleSidebar: () => void;
     currentSession: ChatSession | null;
     onArticleSelect: (articleId: string, versionNumber: number) => void;
+    settings?: {
+        fontFamily?: string;
+        fontSize?: number;
+        lineHeight?: number;
+        textAlign?: string;
+    };
 }
 
 interface SearchResult {
@@ -28,16 +35,19 @@ interface SearchResult {
 
 export function EbookHeader({
     title,
-    theme,
+    theme: headerTheme,
     toggleTheme,
     toggleSidebar,
     currentSession,
-    onArticleSelect
+    onArticleSelect,
+    settings
 }: EbookHeaderProps) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+    const { settings: globalSettings } = useSettingsStore();
     const searchRef = useRef<any>(null);
     const router = useRouter();
 
@@ -179,9 +189,9 @@ export function EbookHeader({
         }
     };
     return (
-        <header className={`fixed top-0 left-0 right-0 z-10 ${theme === 'dark'
+        <header className={`fixed top-0 left-0 right-0 z-10 ${headerTheme === 'dark'
             ? 'bg-gray-800 border-gray-700 text-gray-100'
-            : theme === 'sepia'
+            : headerTheme === 'sepia'
                 ? 'bg-amber-100 border-amber-200 text-amber-900'
                 : 'bg-white border-gray-200 text-gray-800'
             } 
@@ -191,45 +201,49 @@ export function EbookHeader({
                 <div className="flex items-center space-x-3">
                     <button
                         onClick={toggleSidebar}
-                        className={`p-2 rounded-md ${theme === 'dark'
+                        className={`p-2 rounded-md ${headerTheme === 'dark'
                             ? 'hover:bg-gray-700'
                             : 'hover:bg-gray-100'} transition-colors`}
                         aria-label="Toggle sidebar"
                     >
-                        <Menu className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+                        <Menu className={`h-5 w-5 ${headerTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
                     </button>
-                    <Link
-                        href="/"
-                        className={`flex items-center gap-2 ${theme === 'dark'
-                            ? 'text-gray-300 hover:text-white'
-                            : 'text-gray-600 hover:text-gray-900'} font-medium transition-colors`}
+                    {/* Mobile-only search button */}
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className={`md:hidden p-2 rounded-md ${headerTheme === 'dark'
+                            ? 'hover:bg-gray-700'
+                            : 'hover:bg-gray-100'} transition-colors`}
+                        aria-label="Search"
                     >
-                        <Home className="h-4 w-4" />
-                        <span className="hidden sm:inline">Library</span>
-                    </Link>
+                        <Search className={`h-5 w-5 ${headerTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+                    </button>
+                    <span className={`hidden md:inline font-medium ${headerTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Table of Contents
+                    </span>
                 </div>
 
                 {/* Center section - Title */}
                 <div className="text-center flex-1 px-4">
-                    <h1 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'} break-words hyphens-auto leading-tight`}>
+                    <h1 className={`text-lg font-bold ${headerTheme === 'dark' ? 'text-white' : 'text-gray-800'} break-words hyphens-auto leading-tight`}>
                         {title || 'New Document'}
                     </h1>
                 </div>
 
                 {/* Right section - Actions */}
                 <div className="flex items-center space-x-2">
-                    {/* Search section */}
-                    <div className="relative" ref={searchRef}>
+                    {/* Search section - Desktop only */}
+                    <div className="relative hidden md:block" ref={searchRef}>
                         {isSearchOpen ? (
-                            <div className={`absolute right-0 top-0 flex items-center rounded-md overflow-hidden ${theme === 'dark' ? 'bg-gray-700' : theme === 'sepia' ? 'bg-amber-200' : 'bg-gray-100'
+                            <div className={`absolute right-0 top-0 flex items-center rounded-md overflow-hidden ${headerTheme === 'dark' ? 'bg-gray-700' : headerTheme === 'sepia' ? 'bg-amber-200' : 'bg-gray-100'
                                 }`}>
                                 <input
                                     type="text"
                                     placeholder="Search articles..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className={`py-2 px-3 w-64 outline-none ${theme === 'dark' ? 'bg-gray-700 text-white placeholder-gray-400' :
-                                        theme === 'sepia' ? 'bg-amber-200 text-amber-900 placeholder-amber-700' :
+                                    className={`py-2 px-3 w-64 outline-none ${headerTheme === 'dark' ? 'bg-gray-700 text-white placeholder-gray-400' :
+                                        headerTheme === 'sepia' ? 'bg-amber-200 text-amber-900 placeholder-amber-700' :
                                             'bg-gray-100 text-gray-800 placeholder-gray-500'
                                         }`}
                                     autoFocus
@@ -239,8 +253,8 @@ export function EbookHeader({
                                         setIsSearchOpen(false);
                                         setSearchQuery("");
                                     }}
-                                    className={`p-2 ${theme === 'dark' ? 'text-gray-300 hover:text-white' :
-                                        theme === 'sepia' ? 'text-amber-800 hover:text-amber-900' :
+                                    className={`p-2 ${headerTheme === 'dark' ? 'text-gray-300 hover:text-white' :
+                                        headerTheme === 'sepia' ? 'text-amber-800 hover:text-amber-900' :
                                             'text-gray-600 hover:text-gray-800'
                                         }`}
                                 >
@@ -250,26 +264,26 @@ export function EbookHeader({
                         ) : (
                             <button
                                 onClick={() => setIsSearchOpen(true)}
-                                className={`p-2 rounded-md ${theme === 'dark'
+                                className={`p-2 rounded-md ${headerTheme === 'dark'
                                     ? 'hover:bg-gray-700'
-                                    : theme === 'sepia'
+                                    : headerTheme === 'sepia'
                                         ? 'hover:bg-amber-200'
                                         : 'hover:bg-gray-100'} transition-colors`}
                                 aria-label="Search"
                             >
-                                <Search className={`h-5 w-5 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+                                <Search className={`h-5 w-5 ${headerTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
                             </button>
                         )}
 
                         {/* Search results dropdown */}
                         {isSearchOpen && (searchResults.length > 0 || isSearching) && (
-                            <div className={`absolute right-0 top-10 w-80 mt-1 rounded-md shadow-lg overflow-hidden z-50 ${theme === 'dark' ? 'bg-gray-800 border border-gray-700' :
-                                theme === 'sepia' ? 'bg-amber-50 border border-amber-200' :
+                            <div className={`absolute right-0 top-10 w-80 mt-1 rounded-md shadow-lg overflow-hidden z-50 ${headerTheme === 'dark' ? 'bg-gray-800 border border-gray-700' :
+                                headerTheme === 'sepia' ? 'bg-amber-50 border border-amber-200' :
                                     'bg-white border border-gray-200'
                                 }`}>
                                 {isSearching ? (
-                                    <div className={`p-4 flex items-center justify-center ${theme === 'dark' ? 'text-gray-300' :
-                                        theme === 'sepia' ? 'text-amber-800' :
+                                    <div className={`p-4 flex items-center justify-center ${headerTheme === 'dark' ? 'text-gray-300' :
+                                        headerTheme === 'sepia' ? 'text-amber-800' :
                                             'text-gray-600'
                                         }`}>
                                         <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -281,34 +295,34 @@ export function EbookHeader({
                                             <div
                                                 key={`${result.id}-${index}`}
                                                 onClick={() => handleResultClick(result)}
-                                                className={`p-3 cursor-pointer ${theme === 'dark' ? 'hover:bg-gray-700 border-b border-gray-700' :
-                                                    theme === 'sepia' ? 'hover:bg-amber-100 border-b border-amber-200' :
+                                                className={`p-3 cursor-pointer ${headerTheme === 'dark' ? 'hover:bg-gray-700 border-b border-gray-700' :
+                                                    headerTheme === 'sepia' ? 'hover:bg-amber-100 border-b border-amber-200' :
                                                         'hover:bg-gray-100 border-b border-gray-200'
                                                     } ${index === searchResults.length - 1 ? 'border-b-0' : ''}`}
                                             >
                                                 <div className="flex items-start">
-                                                    <Book className={`h-4 w-4 mt-1 mr-2 flex-shrink-0 ${theme === 'dark' ? 'text-gray-400' :
-                                                        theme === 'sepia' ? 'text-amber-700' :
+                                                    <Book className={`h-4 w-4 mt-1 mr-2 flex-shrink-0 ${headerTheme === 'dark' ? 'text-gray-400' :
+                                                        headerTheme === 'sepia' ? 'text-amber-700' :
                                                             'text-gray-500'
                                                         }`} />
                                                     <div>
-                                                        <h4 className={`font-medium ${theme === 'dark' ? 'text-white' :
-                                                            theme === 'sepia' ? 'text-amber-900' :
+                                                        <h4 className={`font-medium ${headerTheme === 'dark' ? 'text-white' :
+                                                            headerTheme === 'sepia' ? 'text-amber-900' :
                                                                 'text-gray-800'
                                                             }`}>
                                                             {result.title}
                                                         </h4>
                                                         {result.content && (
-                                                            <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' :
-                                                                theme === 'sepia' ? 'text-amber-700' :
+                                                            <p className={`text-sm mt-1 ${headerTheme === 'dark' ? 'text-gray-400' :
+                                                                headerTheme === 'sepia' ? 'text-amber-700' :
                                                                     'text-gray-600'
                                                                 }`}>
                                                                 {result.content}
                                                             </p>
                                                         )}
                                                         {result.version && (
-                                                            <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' :
-                                                                theme === 'sepia' ? 'text-amber-600' :
+                                                            <p className={`text-xs mt-1 ${headerTheme === 'dark' ? 'text-gray-500' :
+                                                                headerTheme === 'sepia' ? 'text-amber-600' :
                                                                     'text-gray-500'
                                                                 }`}>
                                                                 Version: {result.version}
@@ -324,20 +338,34 @@ export function EbookHeader({
                         )}
                     </div>
 
+                    {/* Mobile-only Help icon */}
+                    <button
+                        onClick={() => setIsHelpModalOpen(true)}
+                        className={`md:hidden p-2 rounded-md ${headerTheme === 'dark'
+                            ? 'hover:bg-gray-700'
+                            : headerTheme === 'sepia'
+                                ? 'hover:bg-amber-200'
+                                : 'hover:bg-gray-100'
+                            } transition-colors`}
+                        aria-label="About"
+                    >
+                        <HelpCircle className={`h-5 w-5 ${headerTheme === 'dark' ? 'text-gray-300' : headerTheme === 'sepia' ? 'text-amber-800' : 'text-gray-600'}`} />
+                    </button>
+
                     {/* Theme toggle */}
                     <button
                         onClick={toggleTheme}
-                        className={`p-2 rounded-md ${theme === 'dark'
+                        className={`p-2 rounded-md ${headerTheme === 'dark'
                             ? 'hover:bg-gray-700'
-                            : theme === 'sepia'
+                            : headerTheme === 'sepia'
                                 ? 'hover:bg-amber-200'
                                 : 'hover:bg-gray-100'
                             } transition-colors`}
                         aria-label="Toggle theme"
                     >
-                        {theme === 'dark' ? (
+                        {headerTheme === 'dark' ? (
                             <Sun className="h-5 w-5 text-gray-300" />
-                        ) : theme === 'sepia' ? (
+                        ) : headerTheme === 'sepia' ? (
                             <Moon className="h-5 w-5 text-amber-800" />
                         ) : (
                             <Moon className="h-5 w-5 text-gray-600" />
@@ -348,6 +376,82 @@ export function EbookHeader({
                     <SettingsToggler />
                 </div>
             </div>
+
+            {/* Help Modal (mobile only) */}
+            {isHelpModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className={`relative w-[90%] max-w-md max-h-[90vh] overflow-y-auto rounded-lg p-6 ${headerTheme === 'dark'
+                        ? 'bg-gray-800 text-white'
+                        : headerTheme === 'sepia'
+                            ? 'bg-amber-50 text-amber-900'
+                            : 'bg-white text-gray-800'
+                        }`}>
+                        {/* Close button */}
+                        <button
+                            onClick={() => setIsHelpModalOpen(false)}
+                            className={`absolute top-2 right-2 p-2 rounded-full ${headerTheme === 'dark'
+                                ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                                : headerTheme === 'sepia'
+                                    ? 'text-amber-800 hover:text-amber-900 hover:bg-amber-200'
+                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                }`}
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+
+                        {/* About content (same as RegularView) */}
+                        <div className="flex flex-col items-center justify-center text-center gap-6 pt-4">
+                            <p
+                                className="mb-4"
+                                style={{
+                                    fontFamily: (settings || globalSettings)?.fontFamily,
+                                    fontSize: (settings || globalSettings)?.fontSize ? `${(settings || globalSettings).fontSize}px` : undefined,
+                                    lineHeight: (settings || globalSettings)?.lineHeight,
+                                }}
+                            >
+                                This generative e-book prototype app is based on:
+                            </p>
+
+                            <div className="relative w-[230px] h-[307px] mb-4">
+                                <Image
+                                    src="/LeadersMaketheFuture_Cover Final.jpg"
+                                    alt="Leaders Make the Future Book Cover"
+                                    fill
+                                    sizes="(max-width: 768px) 230px, 230px"
+                                    style={{ objectFit: 'contain' }}
+                                    priority
+                                />
+                            </div>
+
+                            <p
+                                style={{
+                                    fontFamily: (settings || globalSettings)?.fontFamily,
+                                    fontSize: (settings || globalSettings)?.fontSize ? `${(settings || globalSettings).fontSize}px` : undefined,
+                                    lineHeight: (settings || globalSettings)?.lineHeight,
+                                }}
+                            >
+                                If you find this app interesting, you&apos;ll love the original book.
+                                <a
+                                    href="https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`block mt-2 ${headerTheme === 'dark'
+                                        ? 'text-blue-400 hover:text-blue-300'
+                                        : 'text-blue-600 hover:underline'
+                                        }`}
+                                    style={{
+                                        fontFamily: (settings || globalSettings)?.fontFamily,
+                                        fontSize: (settings || globalSettings)?.fontSize ? `${(settings || globalSettings).fontSize}px` : undefined,
+                                        lineHeight: (settings || globalSettings)?.lineHeight,
+                                    }}
+                                >
+                                    Buy it here
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </header>
     );
 }

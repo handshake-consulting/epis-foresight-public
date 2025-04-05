@@ -3,7 +3,7 @@
 import { ChatSession } from "@/components/chat/types";
 import { Button } from "@/components/ui/button";
 import { useSettingsStore } from "@/store/settingsStore";
-import { ArrowLeft, ArrowRight, BookPlus, ChevronDown, ChevronUp, Feather, StopCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookPlus, Feather, StopCircle } from "lucide-react";
 import { FormEvent, RefObject, useEffect } from "react";
 
 interface EbookFooterProps {
@@ -52,26 +52,6 @@ export function EbookFooter({
                 ? "bg-amber-100 border-t border-amber-200"
                 : "bg-white border-t border-gray-200"
             } shadow-md transition-all duration-300`}>
-            {/* Toggle button */}
-            <div className="absolute -top-10 right-4">
-                <button
-                    onClick={toggleFooter}
-                    className={`p-2 rounded-t-lg ${theme === "dark"
-                        ? "bg-gray-800 text-gray-300 border-t border-l border-r border-gray-700"
-                        : theme === "sepia"
-                            ? "bg-amber-100 text-amber-900 border-t border-l border-r border-amber-200"
-                            : "bg-white text-gray-700 border-t border-l border-r border-gray-200"
-                        } shadow-md transition-colors duration-200`}
-                    aria-label={isFooterOpen ? "Hide editor" : "Show editor"}
-                >
-                    {isFooterOpen ? (
-                        <ChevronDown className="h-5 w-5" />
-                    ) : (
-                        <ChevronUp className="h-5 w-5" />
-                    )}
-                </button>
-            </div>
-
             {/* Document navigation bar - always visible */}
             <div className="container mx-auto px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center space-x-2">
@@ -105,21 +85,37 @@ export function EbookFooter({
                     </Button>
                 </div>
 
-                {!isFirstGeneration && (
+                <div className="flex items-center space-x-2">
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={onNewArticle}
+                        onClick={toggleFooter}
                         className={`rounded-md ${theme === "dark"
                             ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
                             : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-300"
                             } transition-colors duration-200`}
                     >
-                        <BookPlus className="h-4 w-4 mr-1" />
-                        <span>New Document</span>
+                        <Feather className="h-4 w-4 mr-1" />
+                        <span>Revise Page</span>
                     </Button>
-                )}
+
+                    {!isFirstGeneration && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onNewArticle}
+                            className={`rounded-md ${theme === "dark"
+                                ? "bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600"
+                                : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-300"
+                                } transition-colors duration-200`}
+                        >
+                            <BookPlus className="h-4 w-4 mr-1" />
+                            <span>New Document</span>
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Input area - collapsible */}

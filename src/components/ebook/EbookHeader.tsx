@@ -340,7 +340,10 @@ export function EbookHeader({
 
                     {/* Mobile-only Help icon */}
                     <button
-                        onClick={() => setIsHelpModalOpen(true)}
+                        onClick={() => {
+                            setIsHelpModalOpen(true)
+                            useSettingsStore.getState().setUIOpenState(null);
+                        }}
                         className={`md:hidden p-2 rounded-md ${headerTheme === 'dark'
                             ? 'hover:bg-gray-700'
                             : headerTheme === 'sepia'

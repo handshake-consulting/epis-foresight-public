@@ -23,31 +23,57 @@ export async function generateMetadata({
 }: {
     params: Params
 }) {
+    try {
+        const { id } = (await params);
+        // Skip database query during build time to avoid errors
+        if (process.env.NEXT_PHASE === 'phase-production-build') {
+            return {
+                title: "Article",
+            };
+        }
 
-    const { id } = (await params);
-    const cookieslist = await cookies()
-    const uidcook = cookieslist.get('auth-uid')
-    const supabase = await createClient();
+        const cookieslist = await cookies();
+        const uidcook = cookieslist.get('auth-uid');
 
+        // If no user ID cookie, return default metadata
+        if (!uidcook?.value) {
+            return {
+                title: "Article",
+            };
+        }
 
-    //   const finalTitle = exists ? initialTitle : await changeTitle({ title: initialTitle });
-    const { data: specificSession, error: specificError } = await supabase
-        .from("chat_sessions")
-        .select("*")
-        .eq("id", id)
-        .eq("user_id", uidcook?.value)
-        .single();
+        const supabase = await createClient();
 
-    if (specificError) {
-        console.error("Error fetching session for metadata:", specificError);
+        // Query with error handling
+        try {
+            const { data: specificSession, error: specificError } = await supabase
+                .from("chat_sessions")
+                .select("*")
+                .eq("id", id)
+                .eq("user_id", uidcook.value)
+                .single();
+
+            if (specificError || !specificSession) {
+                return {
+                    title: "Article",
+                };
+            }
+
+            return {
+                title: specificSession.title || "Article",
+            };
+        } catch (dbError) {
+            console.error("Database error fetching session for metadata:", dbError);
+            return {
+                title: "Article",
+            };
+        }
+    } catch (error) {
+        console.error("Error in generateMetadata:", error);
         return {
             title: "Article",
         };
     }
-
-    return {
-        title: specificSession?.title || "Article",
-    };
 }
 
 

@@ -55,23 +55,59 @@ const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) =
     if (!src) return null;
 
     return (
-        <Image
-            src={src}
-            alt={alt || ''}
-            width={300}
-            height={200}
-            className="hidden md:inline-block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px] rounded-md shadow-md hover:shadow-lg"
-            style={{ position: 'relative', objectFit: 'cover' }}
+        <span
+            className="relative inline-block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px] md:block hidden"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
-            onClick={(e) => {
-                e.stopPropagation();
-            }}
-            data-controls-visible={isHovering ? 'true' : 'false'}
-            data-testid="article-image"
-            quality={80}
-            sizes="(max-width: 768px) 0px, 300px"
-        />
+        >
+            <Image
+                src={src}
+                alt={alt || ''}
+                width={300}
+                height={200}
+                className="rounded-md shadow-md hover:shadow-lg w-full h-auto"
+                style={{ objectFit: 'cover' }}
+                quality={80}
+                sizes="(max-width: 768px) 0px, 300px"
+                data-testid="article-image"
+            />
+
+            {isHovering && (
+                <span className="absolute top-2 right-2 flex gap-1">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleDownload();
+                        }}
+                        className="bg-white/80 hover:bg-white p-1 rounded shadow text-gray-800 transition-colors"
+                        aria-label="Download image"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleFullscreen();
+                        }}
+                        className="bg-white/80 hover:bg-white p-1 rounded shadow text-gray-800 transition-colors"
+                        aria-label="View fullscreen"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </button>
+                </span>
+            )}
+        </span>
     );
 };
 
@@ -270,22 +306,6 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
 
             {/* Global CSS for image controls using data attributes to control visibility */}
             <style jsx global>{`
-                img[data-testid="article-image"]::after {
-                    content: "";
-                    position: absolute;
-                    top: 2px;
-                    right: 2px;
-                    display: flex;
-                    gap: 4px;
-                    opacity: 0;
-                    transition: opacity 0.2s;
-                }
-                
-                img[data-controls-visible="true"]::after {
-                    opacity: 1;
-                }
-                
-                /* Add download and expand button styles via CSS */
                 @media (min-width: 768px) {
                     /* Only apply on desktop */
                     img[data-testid="article-image"] {

@@ -97,7 +97,7 @@ export function EbookFooter({
                             } transition-colors duration-200`}
                     >
                         <Feather className="h-4 w-4 mr-1" />
-                        <span>Revise Page</span>
+                        <span className="hidden sm:inline">Revise Page</span>
                     </Button>
 
                     {!isFirstGeneration && (

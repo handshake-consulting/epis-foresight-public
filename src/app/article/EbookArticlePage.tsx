@@ -512,7 +512,7 @@ export default function EbookArticlePage({
         //  console.log('loadDefaultArticle');
 
         loadDefaultArticle();
-    }, [sessionData]);
+    }, [sessionData, loadingdefault, userId, isNewArticle, initialSessionId, isSessionsLoading]);
 
     if (loadingdefault) {
         return <BookLoadingAnimation />;

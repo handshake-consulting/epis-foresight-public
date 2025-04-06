@@ -1,6 +1,7 @@
 "use client"
 
 import { ImageSlider, WelcomeModal } from "@/components/article";
+import BookLoadingAnimation from "@/components/BookLoadingAnimation";
 import { ChatSession } from "@/components/chat/types";
 import { EbookContent, EbookFooter, EbookHeader, EbookSidebar, EmptyStateContent } from "@/components/ebook";
 import SettingsDialog from "@/components/settings/SettingsDialog";
@@ -54,6 +55,7 @@ export default function EbookArticlePage({
     const searchParams = useSearchParams();
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
+    const [loadingdefault, setLoadingDefault] = useState(true)
     // State
     const [userId, setUserId] = useState<string | null>(null);
     const [theme, setTheme] = useState("light");
@@ -112,6 +114,15 @@ export default function EbookArticlePage({
             onFinish: () => {
                 createQueryString('new', 'false');
             },
+            onTitleGenerated: async (generatedTitle, sessionid) => {
+                document.title = generatedTitle;
+
+                const supabase = createClient();
+                await supabase
+                    .from('chat_sessions')
+                    .update({ title: generatedTitle })
+                    .eq('id', sessionid);
+            }
         }
     });
 
@@ -225,6 +236,7 @@ export default function EbookArticlePage({
             startNewArticle();
         }
     }, [userId, isNewArticle]);
+    console.log(sessionData);
 
     // Handle specific session loading when initialSessionId is provided
     useEffect(() => {
@@ -258,7 +270,7 @@ export default function EbookArticlePage({
             });
 
             setIsLoading(false);
-
+            setLoadingDefault(false)
             // Preload adjacent articles in the background after loading the current one
             if (sessionData && sessionData.length > 1) {
                 preloadAdjacentArticles(specificSession.id);
@@ -408,12 +420,13 @@ export default function EbookArticlePage({
         }
     };
 
+
     // Navigate to next article
     const goToNextArticle = () => {
         // Use sessionData instead of nextArticle state
-        if (!currentSession || !sessionData || sessionData.length === 0) return;
+        if (!sessionData || sessionData.length === 0) return;
 
-        const currentIndex = sessionData.findIndex(s => s.id === currentSession.id);
+        const currentIndex = sessionData.findIndex(s => s.id === currentSession?.id);
 
         if (currentIndex !== -1) {
             // If not the last session, go to next
@@ -427,14 +440,16 @@ export default function EbookArticlePage({
             // Fallback if current session not found
             switchSession(sessionData[0]);
         }
+
+
     };
 
     // Navigate to previous article
     const goToPreviousArticle = () => {
         // Use sessionData instead of prevArticle state
-        if (!currentSession || !sessionData || sessionData.length === 0) return;
+        if (!sessionData || sessionData.length === 0) return;
 
-        const currentIndex = sessionData.findIndex(s => s.id === currentSession.id);
+        const currentIndex = sessionData.findIndex(s => s.id === currentSession?.id);
 
         if (currentIndex !== -1) {
             // If not the first session, go to previous
@@ -478,13 +493,17 @@ export default function EbookArticlePage({
     // Handle default article loading when no initialSessionId is provided
     useEffect(() => {
         const loadDefaultArticle = async () => {
-            if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
+            //   console.log('trigger e', sessionData && sessionData[0]);
+            if (!userId || !loadingdefault || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
 
             if (sessionData.length > 0) {
+                // console.log('trigger me');
+
                 // If no initialSessionId, use switchSession directly instead of router.push
-                // await switchSession(sessionData[0]);
+                await switchSession(sessionData[0]);
+                setLoadingDefault(false)
                 // Update URL without full navigation
-                router.push(`/article/${sessionData[0].id}`);
+                // router.push(`/article/${sessionData[0].id}`);
             } else {
                 // No articles yet, start a new one
                 startNewArticle();
@@ -493,7 +512,11 @@ export default function EbookArticlePage({
         //  console.log('loadDefaultArticle');
 
         loadDefaultArticle();
-    }, [userId, sessionData, isSessionsLoading, isNewArticle, initialSessionId, router, startNewArticle]);
+    }, [sessionData]);
+
+    if (loadingdefault) {
+        return <BookLoadingAnimation />;
+    }
 
     return (
         <div className={`min-h-screen ${theme === "dark"

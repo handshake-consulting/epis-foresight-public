@@ -13,7 +13,7 @@ interface ArticleStreamOptions {
         onData?: (data: any) => void;
         onError?: (error: Error) => void;
         onFinish?: () => void;
-        onTitleGenerated?: (title: string) => void;
+        onTitleGenerated?: (title: string, sessionid: string) => void;
     };
 }
 
@@ -265,8 +265,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                     title: title
                                 };
                             });
-                            if (callbacks?.onTitleGenerated) {
-                                callbacks.onTitleGenerated(title);
+                            if (callbacks?.onTitleGenerated && currentSessionIdRef.current) {
+                                callbacks.onTitleGenerated(title, currentSessionIdRef.current);
                             }
                         }
                     } else {

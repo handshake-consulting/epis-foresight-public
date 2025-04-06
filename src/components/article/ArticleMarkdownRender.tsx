@@ -68,7 +68,7 @@ const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) =
                 className="rounded-md shadow-md hover:shadow-lg w-full h-auto"
                 style={{ objectFit: 'cover' }}
                 quality={80}
-                sizes="(max-width: 768px) 0px, 300px"
+                // sizes="(max-width: 768px) 0px, 300px"
                 data-testid="article-image"
             />
 

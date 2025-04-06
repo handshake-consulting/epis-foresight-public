@@ -1,55 +1,61 @@
-
-
 import { createClient } from '@/utils/supabase/server';
+import Replicate from "replicate";
 
-export async function genCloudflareImage(prompt: string): Promise<Blob | null> {
-    const options = {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "image/jpeg",
-            Authorization: `Bearer ${process.env.CLOUDFLARE_TOKEN}`,
-        },
-        body: JSON.stringify({ prompt }),
-    };
-
-    const resp = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
-        options
-    );
-
-    if (!resp.ok) {
-        console.error("Error generating image", await resp.text());
-        console.error("resp", resp);
-        return null;
-    }
-    const testres = await resp.json();
-    // console.log("resp", testres);
-
-    // Extract image data from JSON response
-    if (testres.success && testres.result?.image) {
-        // Convert base64 image to blob
-        const base64Data = testres.result.image;
-        const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
-        const byteArrays = [];
-
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteArrays.push(byteCharacters.charCodeAt(i));
+export async function genReplicateImage(prompt: string): Promise<Blob | null> {
+    try {
+        // Prevent execution during Static Site Generation or metadata generation
+        // This environment check helps avoid issues during RSC metadata processing
+        if (typeof window === 'undefined' && process.env.NEXT_PHASE === 'phase-production-build') {
+            console.warn("Skipping image generation during build time");
+            return null;
         }
 
-        const byteArray = new Uint8Array(byteArrays);
-        return new Blob([byteArray], { type: 'image/jpeg' });
-    }
+        const replicate = new Replicate({
+            auth: process.env.REPLICATE_API_TOKEN,
+            useFileOutput: false // Get URL instead of ReadableStream
+        });
 
-    return null;
+        const input = {
+            raw: true,
+            prompt: prompt,
+            aspect_ratio: "1:1",
+            output_format: "jpg",
+            safety_tolerance: 6,
+            image_prompt_strength: 0.1
+        };
+
+        const output = await replicate.run("black-forest-labs/flux-1.1-pro-ultra", { input });
+
+        // Check if we have a valid output
+        if (!output || typeof output !== 'string') {
+            console.error("Invalid output from Replicate API:", output);
+            return null;
+        }
+
+        // Fetch the image from the URL returned by Replicate
+        const imageResponse = await fetch(output);
+        if (!imageResponse.ok) {
+            console.error("Failed to fetch image from Replicate URL:", imageResponse.statusText);
+            return null;
+        }
+
+        // Convert the response to a Blob
+        const imageBlob = await imageResponse.blob();
+        return imageBlob;
+    } catch (error) {
+        console.error("Error generating image with Replicate:", error);
+        return null;
+    }
 }
-const genImageBlob = genCloudflareImage;
+
+// Replace Cloudflare with Replicate
+const genImageBlob = genReplicateImage;
+
 export async function genAndUploadImage(prompt: string) {
     const key = crypto.randomUUID();
     const filename = `images/${key}.jpg`;
 
     const blob = await genImageBlob(prompt);
-    //  console.log(blob);
 
     if (!blob) {
         return null;
@@ -61,8 +67,6 @@ export async function genAndUploadImage(prompt: string) {
 }
 
 export async function put(path: string, blob: Blob) {
-
-
     // Use Supabase storage for production
     const supabase = await createClient();
 

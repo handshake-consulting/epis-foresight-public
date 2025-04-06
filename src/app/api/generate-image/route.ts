@@ -29,6 +29,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Check for required environment variable
+        if (!process.env.REPLICATE_API_TOKEN) {
+            return NextResponse.json(
+                { error: "Replicate API token is not configured" },
+                { status: 500 }
+            );
+        }
+
         // Generate and upload image
         const imageUrl = await genAndUploadImage(prompt);
 
@@ -39,10 +47,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const uuid = imageUrl.split('/').pop()?.split('.')[0] || "";
+
         // Return the image URL
         return NextResponse.json({
             imageUrl,
-            uuid: imageUrl.split('/').pop()?.split('.')[0] || "",
+            uuid,
             storage_type: "supabase"
         });
     } catch (error) {

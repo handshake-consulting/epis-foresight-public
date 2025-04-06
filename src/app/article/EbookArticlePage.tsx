@@ -114,6 +114,15 @@ export default function EbookArticlePage({
             onFinish: () => {
                 createQueryString('new', 'false');
             },
+            onTitleGenerated: async (generatedTitle, sessionid) => {
+                document.title = generatedTitle;
+
+                const supabase = createClient();
+                await supabase
+                    .from('chat_sessions')
+                    .update({ title: generatedTitle })
+                    .eq('id', sessionid);
+            }
         }
     });
 
@@ -227,6 +236,7 @@ export default function EbookArticlePage({
             startNewArticle();
         }
     }, [userId, isNewArticle]);
+    console.log(sessionData);
 
     // Handle specific session loading when initialSessionId is provided
     useEffect(() => {
@@ -260,7 +270,7 @@ export default function EbookArticlePage({
             });
 
             setIsLoading(false);
-
+            setLoadingDefault(false)
             // Preload adjacent articles in the background after loading the current one
             if (sessionData && sessionData.length > 1) {
                 preloadAdjacentArticles(specificSession.id);
@@ -484,7 +494,7 @@ export default function EbookArticlePage({
     useEffect(() => {
         const loadDefaultArticle = async () => {
             //   console.log('trigger e', sessionData && sessionData[0]);
-            if (!userId || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
+            if (!userId || !loadingdefault || isNewArticle || initialSessionId || !sessionData || isSessionsLoading) return;
 
             if (sessionData.length > 0) {
                 // console.log('trigger me');

@@ -13,6 +13,7 @@ interface ArticleStreamOptions {
         onData?: (data: any) => void;
         onError?: (error: Error) => void;
         onFinish?: () => void;
+        onTitleGenerated?: (title: string) => void;
     };
 }
 
@@ -207,13 +208,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         let capturedImageUrl = '';
 
         if (data.node_type === LoreNodeOutputTypes.PROMPT && data.node_id === "first-draft") {
-
-            // console.log("Processing PromptNode data for article:", data);
             try {
                 // Extract content from the data
                 const content = data?.node_result?.llm_output || "";
-
-                //  console.log("Content ", content);
 
                 // Get Firebase ID token for authentication
                 const token = await getIdToken();
@@ -244,43 +241,34 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     // Start handleUiChanges in parallel with other API calls
                     const uiChangesPromise = handleUiChanges(content, versionNumber);
 
-                    // Wait for title and image prompt API calls to resolve
+                    // Wait for all promises to resolve
                     const [titleResponse, imagePromptResponse] = await Promise.all([
                         titlePromise,
                         imagePromptPromise
                     ]);
 
-                    // Don't wait for UI changes to complete - let it run in parallel
-                    uiChangesPromise.catch(error => {
-                        console.error("Error in parallel UI changes:", error);
-                    });
+                    // Handle UI changes separately
+                    await uiChangesPromise;
 
                     // Process title response
-                    let generatedTitle = '';
                     if (titleResponse.ok) {
                         const titleData = await titleResponse.json();
-                        generatedTitle = titleData.title;
+                        const title = titleData.title;
 
-                        // Update article title
-                        setArticle(prev => {
-                            if (!prev) return prev;
+                        // Update the title
+                        if (title) {
+                            setArticle(prev => {
+                                if (!prev) return prev;
 
-                            return {
-                                ...prev,
-                                title: generatedTitle
-                            };
-                        });
-
-                        // Update title in database if we have session ID
-                        if (currentUserIdRef.current && currentSessionIdRef.current) {
-                            const supabase = createClient();
-                            await supabase
-                                .from('chat_sessions')
-                                .update({ title: generatedTitle })
-                                .eq('id', currentSessionIdRef.current);
+                                return {
+                                    ...prev,
+                                    title: title
+                                };
+                            });
+                            if (callbacks?.onTitleGenerated) {
+                                callbacks.onTitleGenerated(title);
+                            }
                         }
-
-                        //  console.log("Generated title:", generatedTitle);
                     } else {
                         console.error(`Failed to generate title: ${titleResponse.status} ${titleResponse.statusText}`);
                         if (titleResponse.status === 307) {
@@ -294,7 +282,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     if (imagePromptResponse.ok) {
                         const imagePromptData = await imagePromptResponse.json();
                         imagePrompt = imagePromptData.prompt;
-                        // console.log("Generated image prompt:", imagePrompt);
                     } else {
                         console.error(`Failed to generate image prompt: ${imagePromptResponse.status} ${imagePromptResponse.statusText}`);
                         if (imagePromptResponse.status === 307) {
@@ -324,7 +311,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         }
 
                         const imageData = await response.json();
-                        //console.log("Generated image data:", imageData);
 
                         // Store the image URL for later use
                         capturedImageUrl = imageData.imageUrl || '';

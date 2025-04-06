@@ -213,7 +213,7 @@ export default function EbookArticlePage({
 
         // Clear any existing session
         setCurrentSession(null);
-
+        setLoadingDefault(false);
         // Navigate to /article?new=true to ensure we get a fresh article
         router.push("/article?new=true");
     };

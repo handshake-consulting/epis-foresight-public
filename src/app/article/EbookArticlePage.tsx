@@ -236,7 +236,7 @@ export default function EbookArticlePage({
             startNewArticle();
         }
     }, [userId, isNewArticle]);
-    console.log(sessionData);
+    //  console.log(sessionData);
 
     // Handle specific session loading when initialSessionId is provided
     useEffect(() => {

@@ -19,6 +19,7 @@ interface EbookFooterProps {
     onNextArticle: () => void;
     theme: string;
     allArticles?: ChatSession[];
+    isNewArticle: boolean;
 }
 
 export function EbookFooter({
@@ -33,6 +34,7 @@ export function EbookFooter({
     onPrevArticle,
     onNextArticle,
     theme,
+    isNewArticle,
     allArticles = []
 }: EbookFooterProps) {
     // Use the store for footer open state
@@ -110,7 +112,8 @@ export function EbookFooter({
                     </div>
 
                     <div className="flex items-center space-x-2">
-                        <Button
+
+                        {isNewArticle && isFooterOpen ? null : <Button
                             type="button"
                             variant="outline"
                             size="sm"
@@ -122,7 +125,7 @@ export function EbookFooter({
                         >
                             <Feather className="h-4 w-4 mr-1" />
                             <span className="hidden sm:inline">Revise Page</span>
-                        </Button>
+                        </Button>}
 
                         {!isFirstGeneration && (
                             <Button

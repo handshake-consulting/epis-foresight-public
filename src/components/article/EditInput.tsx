@@ -21,6 +21,29 @@ export function EditInput({
     onStop,
     onNewArticle
 }: EditInputProps) {
+    // Add a keyboard handler that correctly processes Enter vs Shift+Enter
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Only process if not currently streaming content
+        if (isStreaming) return;
+
+        // Check for Enter key (cross-browser compatible check)
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Prevent the default newline behavior
+
+            // Create a new form event to pass to onSubmit
+            // This avoids any timing issues with the Enter character
+            const formEvent = new Event('submit', { bubbles: true, cancelable: true }) as unknown as FormEvent;
+
+            // Call onSubmit with the form event
+            // Using setTimeout ensures that this runs after the current event cycle,
+            // which prevents any timing issues with the DOM update
+            setTimeout(() => {
+                onSubmit(formEvent);
+            }, 0);
+        }
+        // Shift+Enter will work normally to insert a newline
+    };
+
     return (
         <div className="border-t border-[#e8e1d1] py-4 px-6 w-full bg-[#fcf9f2]">
             <form onSubmit={onSubmit} className="w-full max-w-3xl mx-auto">
@@ -40,6 +63,7 @@ export function EditInput({
                                 : "Provide instructions for revising this page..."}
                             className="w-full bg-transparent border-none focus:outline-none py-4 px-5 text-sm sm:text-base resize-none min-h-[100px] font-serif text-[#2d2d2d]"
                             disabled={isStreaming}
+                            onKeyDown={handleKeyDown}
                         />
                         <div className="absolute bottom-3 right-3">
                             {isStreaming ? (

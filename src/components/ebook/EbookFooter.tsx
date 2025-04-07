@@ -38,6 +38,29 @@ export function EbookFooter({
     // Use the store for footer open state
     const { isFooterOpen, toggleFooter } = useSettingsStore();
 
+    // Add a keyboard handler that correctly processes Enter vs Shift+Enter
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Only process if not currently streaming content
+        if (isStreaming) return;
+
+        // Check for Enter key (cross-browser compatible check)
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Prevent the default newline behavior
+
+            // Create a new form event to pass to onSubmit
+            // This avoids any timing issues with the Enter character
+            const formEvent = new Event('submit', { bubbles: true, cancelable: true }) as unknown as FormEvent;
+
+            // Call onSubmit with the form event
+            // Using setTimeout ensures that this runs after the current event cycle,
+            // which prevents any timing issues with the DOM update
+            setTimeout(() => {
+                onSubmit(formEvent);
+            }, 0);
+        }
+        // Shift+Enter will work normally to insert a newline
+    };
+
     // Auto-expand the input area when it's a new document
     useEffect(() => {
         if (isFirstGeneration && !isFooterOpen) {
@@ -147,6 +170,7 @@ export function EbookFooter({
                                     className={`w-full bg-transparent border-none focus:outline-none py-3 px-4 text-sm sm:text-base resize-none min-h-[80px] ${theme === "dark" ? "text-gray-100" : "text-gray-800"
                                         } transition-colors duration-200`}
                                     disabled={isStreaming}
+                                    onKeyDown={handleKeyDown}
                                 />
                                 <div className="absolute bottom-3 right-3">
                                     {isStreaming ? (

@@ -38,7 +38,7 @@ export function EbookSidebar({
     const [activeTab, setActiveTab] = useState<"toc" | "bookmarks">("toc");
     const { bookmarks, removeBookmark } = useSettingsStore();
     const [searchQuery, setSearchQuery] = useState("");
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isSearchOpen, _] = useState(true);
 
     // Filter sessions based on search query
     const filteredSessions = sessions.filter(session =>
@@ -80,7 +80,7 @@ export function EbookSidebar({
                             Document Library
                         </h2>
                         <div className="flex items-center">
-                            <button
+                            {/* <button
                                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                                 className={`p-1 rounded-md mr-2 ${theme === "dark"
                                     ? "hover:bg-gray-700"
@@ -90,7 +90,7 @@ export function EbookSidebar({
                             >
                                 <Search className={`h-5 w-5 ${theme === "dark" ? "text-gray-300" : "text-gray-600"
                                     }`} />
-                            </button>
+                            </button> */}
                             <button
                                 onClick={toggleSidebar}
                                 className={`p-1 rounded-md ${theme === "dark"
@@ -105,42 +105,7 @@ export function EbookSidebar({
                         </div>
                     </div>
 
-                    {/* Search input */}
-                    {isSearchOpen && (
-                        <div className="mb-4">
-                            <div className={`flex items-center p-2 rounded-md ${theme === "dark"
-                                ? "bg-gray-700"
-                                : theme === "sepia"
-                                    ? "bg-amber-100"
-                                    : "bg-gray-100"
-                                }`}>
-                                <Search className={`h-4 w-4 mr-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                                    }`} />
-                                <input
-                                    type="text"
-                                    placeholder="Search documents..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className={`w-full bg-transparent border-none focus:outline-none ${theme === "dark"
-                                        ? "text-white placeholder-gray-400"
-                                        : "text-gray-800 placeholder-gray-500"
-                                        }`}
-                                    autoFocus
-                                />
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery("")}
-                                        className={`p-1 rounded-full ${theme === "dark"
-                                            ? "hover:bg-gray-600 text-gray-400"
-                                            : "hover:bg-gray-200 text-gray-500"
-                                            }`}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* Tabs */}
                     <div className="flex border-b mb-4 pb-1">
@@ -201,6 +166,42 @@ export function EbookSidebar({
                     {activeTab === "toc" ? (
                         filteredSessions.length > 0 ? (
                             <div className="space-y-2 max-h-full overflow-y-auto">
+                                {/* Search input */}
+                                {isSearchOpen && (
+                                    <div className="mb-4">
+                                        <div className={`flex items-center p-2 rounded-md ${theme === "dark"
+                                            ? "bg-gray-700"
+                                            : theme === "sepia"
+                                                ? "bg-amber-100"
+                                                : "bg-gray-100"
+                                            }`}>
+                                            <Search className={`h-4 w-4 mr-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                                }`} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search documents..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className={`w-full bg-transparent border-none focus:outline-none ${theme === "dark"
+                                                    ? "text-white placeholder-gray-400"
+                                                    : "text-gray-800 placeholder-gray-500"
+                                                    }`}
+                                                autoFocus
+                                            />
+                                            {searchQuery && (
+                                                <button
+                                                    onClick={() => setSearchQuery("")}
+                                                    className={`p-1 rounded-full ${theme === "dark"
+                                                        ? "hover:bg-gray-600 text-gray-400"
+                                                        : "hover:bg-gray-200 text-gray-500"
+                                                        }`}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                                 {filteredSessions.map((session, index) => (
                                     <button
                                         // href={`/article/${session.id}`}

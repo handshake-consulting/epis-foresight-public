@@ -514,6 +514,33 @@ export default function EbookArticlePage({
         loadDefaultArticle();
     }, [sessionData, loadingdefault, userId, isNewArticle, initialSessionId, isSessionsLoading]);
 
+    // Add keyboard navigation for left/right arrow keys
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Skip if streaming is active or user is typing in a text field
+            if (
+                isStreaming ||
+                document.activeElement instanceof HTMLInputElement ||
+                document.activeElement instanceof HTMLTextAreaElement ||
+                (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable)
+            ) {
+                return;
+            }
+
+            switch (e.key) {
+                case "ArrowLeft":
+                    goToPreviousArticle();
+                    break;
+                case "ArrowRight":
+                    goToNextArticle();
+                    break;
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isStreaming, goToPreviousArticle, goToNextArticle]);
+
     if (loadingdefault) {
         return <BookLoadingAnimation />;
     }

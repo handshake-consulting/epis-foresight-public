@@ -7,7 +7,9 @@ import {
     BookPlus,
     ChevronLeft,
     FileText,
-    Trash2
+    Search,
+    Trash2,
+    X
 } from "lucide-react";
 import { useState } from "react";
 
@@ -78,7 +80,7 @@ export function EbookSidebar({
                             Document Library
                         </h2>
                         <div className="flex items-center">
-                            {/* <button
+                            <button
                                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                                 className={`p-1 rounded-md mr-2 ${theme === "dark"
                                     ? "hover:bg-gray-700"
@@ -88,7 +90,7 @@ export function EbookSidebar({
                             >
                                 <Search className={`h-5 w-5 ${theme === "dark" ? "text-gray-300" : "text-gray-600"
                                     }`} />
-                            </button> */}
+                            </button>
                             <button
                                 onClick={toggleSidebar}
                                 className={`p-1 rounded-md ${theme === "dark"
@@ -104,7 +106,7 @@ export function EbookSidebar({
                     </div>
 
                     {/* Search input */}
-                    {/* {isSearchOpen && (
+                    {isSearchOpen && (
                         <div className="mb-4">
                             <div className={`flex items-center p-2 rounded-md ${theme === "dark"
                                 ? "bg-gray-700"
@@ -123,6 +125,7 @@ export function EbookSidebar({
                                         ? "text-white placeholder-gray-400"
                                         : "text-gray-800 placeholder-gray-500"
                                         }`}
+                                    autoFocus
                                 />
                                 {searchQuery && (
                                     <button
@@ -132,12 +135,12 @@ export function EbookSidebar({
                                             : "hover:bg-gray-200 text-gray-500"
                                             }`}
                                     >
-                                        <ChevronUp className="h-4 w-4" />
+                                        <X className="h-4 w-4" />
                                     </button>
                                 )}
                             </div>
                         </div>
-                    )} */}
+                    )}
 
                     {/* Tabs */}
                     <div className="flex border-b mb-4 pb-1">

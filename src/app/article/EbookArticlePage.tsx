@@ -563,7 +563,6 @@ export default function EbookArticlePage({
                 toggleTheme={toggleTheme}
                 toggleSidebar={toggleSidebar}
                 currentSession={currentSession}
-                onArticleSelect={navigateToBookmark}
             />
 
             {/* Sidebar */}

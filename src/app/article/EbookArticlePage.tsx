@@ -563,7 +563,6 @@ export default function EbookArticlePage({
                 toggleTheme={toggleTheme}
                 toggleSidebar={toggleSidebar}
                 currentSession={currentSession}
-                onArticleSelect={navigateToBookmark}
             />
 
             {/* Sidebar */}
@@ -627,6 +626,7 @@ export default function EbookArticlePage({
                 onPrevArticle={goToPreviousArticle}
                 onNextArticle={goToNextArticle}
                 theme={theme}
+                isNewArticle={isNewArticle}
             />
 
             {/* Desktop Image slider - collect images from all versions */}

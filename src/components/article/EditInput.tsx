@@ -59,7 +59,7 @@ export function EditInput({
                             id="edit-input"
                             ref={inputRef}
                             placeholder={isFirstGeneration
-                                ? "Enter a topic or question for your new book..."
+                                ? "Enter a topic or question for your new page..."
                                 : "Provide instructions for revising this page..."}
                             className="w-full bg-transparent border-none focus:outline-none py-4 px-5 text-sm sm:text-base resize-none min-h-[100px] font-serif text-[#2d2d2d]"
                             disabled={isStreaming}

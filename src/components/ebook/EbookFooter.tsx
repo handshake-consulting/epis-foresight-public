@@ -93,7 +93,7 @@ export function EbookFooter({
                                 } transition-colors duration-200`}
                         >
                             <ArrowLeft className="h-4 w-4 mr-1" />
-                            <span className="hidden sm:inline">Previous Document</span>
+                            <span className="hidden sm:inline">Previous Page</span>
                         </Button>
                         <Button
                             type="button"
@@ -106,7 +106,7 @@ export function EbookFooter({
                                 : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                                 } transition-colors duration-200`}
                         >
-                            <span className="hidden sm:inline">Next Document</span>
+                            <span className="hidden sm:inline">Next Page</span>
                             <ArrowRight className="h-4 w-4 ml-1" />
                         </Button>
                     </div>
@@ -139,7 +139,7 @@ export function EbookFooter({
                                     } transition-colors duration-200`}
                             >
                                 <BookPlus className="h-4 w-4 mr-1" />
-                                <span>New Document</span>
+                                <span>New Page</span>
                             </Button>
                         )}
                     </div>
@@ -158,7 +158,7 @@ export function EbookFooter({
                             >
                                 {isFirstGeneration
                                     ? "What would you like to write about?"
-                                    : "How would you like to revise this document?"}
+                                    : "How would you like to revise this page?"}
                             </label>
                             <div className={`relative ${theme === "dark"
                                 ? "bg-gray-700 border-gray-600 focus-within:border-gray-500 focus-within:ring-gray-500"
@@ -168,8 +168,8 @@ export function EbookFooter({
                                     id="edit-input"
                                     ref={inputRef}
                                     placeholder={isFirstGeneration
-                                        ? "Enter a topic or question for your new document..."
-                                        : "Provide instructions for revising this document..."}
+                                        ? "Enter a topic or question for your new page..."
+                                        : "Provide instructions for revising this page..."}
                                     className={`w-full bg-transparent border-none focus:outline-none py-3 px-4 text-sm sm:text-base resize-none min-h-[80px] ${theme === "dark" ? "text-gray-100" : "text-gray-800"
                                         } transition-colors duration-200`}
                                     disabled={isStreaming}

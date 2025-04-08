@@ -46,3 +46,4 @@ readest
 .env*.local
 backup.env
 todo.txt
+/Users/ratpartyserver/git/epis-foresight-public/supabase

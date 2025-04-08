@@ -47,3 +47,8 @@ readest
 backup.env
 todo.txt
 /Users/ratpartyserver/git/epis-foresight-public/supabase
+/Users/ratpartyserver/git/epis-foresight-public/supabase/*
+/Users/ratpartyserver/git/epis-foresight-public/backups
+/Users/ratpartyserver/git/epis-foresight-public/backups/*
+/supabase/
+/backups/

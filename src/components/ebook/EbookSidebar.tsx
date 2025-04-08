@@ -88,7 +88,7 @@ export function EbookSidebar({
                                     ? "hover:bg-gray-700"
                                     : "hover:bg-gray-200"
                                     } transition-colors`}
-                                aria-label="Search documents"
+                                aria-label="Search pages"
                             >
                                 <Search className={`h-5 w-5 ${theme === "dark" ? "text-gray-300" : "text-gray-600"
                                     }`} />
@@ -149,7 +149,7 @@ export function EbookSidebar({
                             } rounded-md text-sm transition-colors`}
                     >
                         <BookPlus className="h-4 w-4" />
-                        <span>Create New Document</span>
+                        <span>Create New Page</span>
                     </button>
                 </div>
 
@@ -181,7 +181,7 @@ export function EbookSidebar({
                                                 }`} />
                                             <input
                                                 type="text"
-                                                placeholder="Search documents..."
+                                                placeholder="Search pages..."
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                                 className={`w-full bg-transparent border-none focus:outline-none ${theme === "dark"

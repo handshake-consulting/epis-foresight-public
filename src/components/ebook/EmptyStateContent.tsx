@@ -42,7 +42,7 @@ export function EmptyStateContent({ theme }: EmptyStateContentProps) {
                                     ? "text-amber-900"
                                     : "text-gray-800"
                                 }`}>
-                                Create Your Document
+                                Create Your New Page
                             </h1>
 
                             <p className={`${theme === "dark"
@@ -51,8 +51,8 @@ export function EmptyStateContent({ theme }: EmptyStateContentProps) {
                                     ? "text-amber-800"
                                     : "text-gray-600"
                                 } max-w-md mx-auto`}>
-                                Enter a topic or question in the input field below to generate content.
-                                You can then refine and edit it with follow-up prompts.
+                                Enter a topic or question in the text box below to create a new page of the book.
+                                You can refine the page after with Revise Page.
                             </p>
 
                             <div className={`p-4 rounded-lg ${theme === "dark"
@@ -63,9 +63,9 @@ export function EmptyStateContent({ theme }: EmptyStateContentProps) {
                                 } text-sm italic`}>
                                 <p>Try prompts like:</p>
                                 <ul className="text-left list-disc pl-5 mt-2 space-y-1">
-                                    <li>{`"Write an article about climate change solutions"`}</li>
-                                    <li>{`"Explain quantum computing for beginners"`}</li>
-                                    <li>{`"Create a guide to effective time management"`}</li>
+                                    <li>{`"How will this impact CIOs?"`}</li>
+                                    <li>{`"What will be the affect of the leadership skills on jurisprudence?"`}</li>
+                                    <li>{`"In a world of ubiquitous AI agents, how can I organize my teams better?"`}</li>
                                 </ul>
                             </div>
 
@@ -75,7 +75,7 @@ export function EmptyStateContent({ theme }: EmptyStateContentProps) {
                                     ? "text-amber-700"
                                     : "text-gray-500"
                                 }`}>
-                                <p>Use the input field at the bottom of the page to get started</p>
+                                <p></p>
                                 <p className="mt-1">↓</p>
                             </div>
                         </div>

@@ -666,7 +666,13 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             console.log("Total Messages:", messages.length);
             console.log("Messages By Version:");
 
-            const messagesByVersion = {};
+            const messagesByVersion: Record<number, Array<{
+                role: string;
+                is_topic: boolean;
+                is_edit: boolean;
+                content_preview: string;
+                created_at: string;
+            }>> = {};
             messages.forEach(msg => {
                 if (!messagesByVersion[msg.version]) {
                     messagesByVersion[msg.version] = [];

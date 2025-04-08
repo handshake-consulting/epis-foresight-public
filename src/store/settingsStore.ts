@@ -67,7 +67,7 @@ export const useSettingsStore = create<SettingsState>()(
             settings: {
                 // Typography defaults
                 fontSize: 18,
-                fontFamily: 'serif',
+                fontFamily: 'sans-serif',
                 lineHeight: 1.5,
                 textAlign: 'left',
 
@@ -76,7 +76,7 @@ export const useSettingsStore = create<SettingsState>()(
                 paragraphSpacing: 1.2,
 
                 // Theme defaults
-                theme: 'light',
+                theme: 'sepia',
 
                 // Reading preferences defaults
                 showPageNumber: true,

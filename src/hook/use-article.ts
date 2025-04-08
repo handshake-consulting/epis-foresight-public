@@ -361,12 +361,17 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
     // Process the article stream
     const processArticleStream = useCallback(async (stream: ReadableStream, versionNumber: number) => {
+        console.log("========== PROCESSING STREAM RESPONSE ==========");
+        console.log("Processing stream for version:", versionNumber);
+
         const reader = stream.getReader();
         readerRef.current = reader;
         const decoder = new TextDecoder();
         let buffer = '';
         let accumulatedContent = '';
         let imageUrl = ''; // Track the image URL
+
+        console.log("Stream processing started");
 
         try {
             while (true) {
@@ -460,6 +465,14 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                             if (event.event_data?.text) {
                                 accumulatedContent += event.event_data.text;
 
+                                // Log the event type and a sample of the text for debugging
+                                if (event.event_type) {
+                                    console.log("Received event type:", event.event_type);
+                                    if (event.event_data.text) {
+                                        console.log("Text sample:", event.event_data.text.substring(0, 40) + "...");
+                                    }
+                                }
+
                                 // Update the current version content
                                 setArticle(prev => {
                                     if (!prev) return prev;
@@ -503,6 +516,11 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             setError(errorMessage);
             callbacks?.onError?.(new Error(errorMessage));
         } finally {
+            console.log("========== STREAM PROCESSING FINISHED ==========");
+            console.log("Total content length:", accumulatedContent.length, "characters");
+            console.log("Image URL generated:", imageUrl ? "Yes" : "No");
+            console.log("===============================================");
+
             reader.cancel();
             setIsStreaming(false);
         }
@@ -642,6 +660,35 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 throw new Error('Failed to load article messages');
             }
 
+            // Log previous messages to see what context might be available
+            console.log("========== PREVIOUS SESSION MESSAGES ==========");
+            console.log("SessionId:", sessionId);
+            console.log("Total Messages:", messages.length);
+            console.log("Messages By Version:");
+
+            const messagesByVersion: Record<number, Array<{
+                role: string;
+                is_topic: boolean;
+                is_edit: boolean;
+                content_preview: string;
+                created_at: string;
+            }>> = {};
+            messages.forEach(msg => {
+                if (!messagesByVersion[msg.version]) {
+                    messagesByVersion[msg.version] = [];
+                }
+                messagesByVersion[msg.version].push({
+                    role: msg.role,
+                    is_topic: msg.is_topic,
+                    is_edit: msg.is_edit,
+                    content_preview: msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''),
+                    created_at: msg.created_at
+                });
+            });
+
+            console.log(JSON.stringify(messagesByVersion, null, 2));
+            console.log("==============================================");
+
             // Process messages to build article versions
             const versions: ArticleVersion[] = [];
             let topic = '';
@@ -753,6 +800,84 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, []);
 
+    // New function to get only the content of the most recent article's latest version
+    const getPrecedingPageContent = async (userId: string, currentSessionId: string) => {
+        try {
+            console.log("========== FETCHING PRECEDING PAGE ==========");
+            console.log("User ID:", userId);
+            console.log("Current Session ID to exclude:", currentSessionId);
+
+            const supabase = createClient();
+
+            // Get the most recent article session EXCLUDING the current one being created
+            const { data: sessions } = await supabase
+                .from("chat_sessions")
+                .select("id, title, created_at")
+                .eq("user_id", userId)
+                .eq("type", "article")
+                .neq("id", currentSessionId) // Explicitly exclude the current session
+                .order("created_at", { ascending: false })
+                .limit(1); // Only need one result now
+
+            // No previous sessions found
+            if (!sessions || sessions.length === 0) {
+                console.log("No previous sessions found");
+                return null;
+            }
+
+            // The most recent session (excluding current one)
+            const precedingSessionId = sessions[0].id;
+            console.log("Found preceding session:", {
+                id: precedingSessionId,
+                title: sessions[0].title,
+                created_at: sessions[0].created_at
+            });
+
+            // Get the latest version number for this session
+            const { data: versionData } = await supabase
+                .from("chat_messages")
+                .select("version")
+                .eq("session_id", precedingSessionId)
+                .eq("role", "assistant")
+                .not("is_topic", "is", true)
+                .order("version", { ascending: false })
+                .limit(1);
+
+            if (!versionData || versionData.length === 0) {
+                console.log("No version data found for preceding session");
+                return null;
+            }
+
+            const latestVersion = versionData[0].version;
+            console.log("Latest version found:", latestVersion);
+
+            // Get the actual content of the latest version
+            const { data: contentData } = await supabase
+                .from("chat_messages")
+                .select("content")
+                .eq("session_id", precedingSessionId)
+                .eq("version", latestVersion)
+                .eq("role", "assistant")
+                .not("is_topic", "is", true)
+                .not("is_edit", "is", true)
+                .single();
+
+            if (contentData && contentData.content) {
+                console.log("Found content with length:", contentData.content.length);
+                console.log("Content preview:", contentData.content.substring(0, 100) + "...");
+            } else {
+                console.log("No content found");
+            }
+
+            console.log("=========================================");
+
+            return contentData?.content || null;
+        } catch (error) {
+            console.error("Error fetching preceding page content:", error);
+            return null;
+        }
+    };
+
     // Generate or update article
     const generateArticle = useCallback(async (
         prompt: string,
@@ -840,6 +965,42 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             // Get Firebase ID token for authentication
             const token = await getIdToken();
 
+            // Format the prompt differently for new articles
+            let formattedPrompt = prompt;
+
+            if (isNewArticle || !sessionId) {
+                // Get preceding content for new articles
+                const precedingContent = await getPrecedingPageContent(userId, actualSessionId);
+
+                // Format with preceding content if available
+                if (precedingContent) {
+                    formattedPrompt = `<preceding_page>\n${precedingContent}\n</preceding_page>\n\n<user_input>\n${prompt}\n</user_input>`;
+                } else {
+                    formattedPrompt = `<user_input>\n${prompt}\n</user_input>`;
+                }
+            }
+
+            // Add detailed logging for the API request
+            console.log("========== LORE API REQUEST ==========");
+            console.log("URL:", process.env.NEXT_PUBLIC_API_URL + 'chat_stream');
+            console.log("Headers:", {
+                'firebase-id-token': token ? '[TOKEN PRESENT]' : '[NO TOKEN]',
+                'client-id': process.env.NEXT_PUBLIC_CLIENT_ID,
+                'graph-id': process.env.NEXT_PUBLIC_GRAPH_ID,
+                'Content-Type': 'application/json',
+            });
+            console.log("Request Body:", {
+                query: formattedPrompt,
+                session: actualSessionId,
+                user: userId
+            });
+            console.log("Formatted Prompt:", formattedPrompt);
+            console.log("Original User Input:", prompt);
+            console.log("Is New Article:", isNewArticle || !sessionId);
+            console.log("Version Number:", nextVersionNumber);
+            console.log("Has Preceding Content:", formattedPrompt.includes("<preceding_page>"));
+            console.log("=====================================");
+
             // Call API to generate content
             const response = await fetch(process.env.NEXT_PUBLIC_API_URL + 'chat_stream', {
                 method: 'POST',
@@ -850,7 +1011,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    query: prompt,
+                    query: formattedPrompt,
                     session: actualSessionId,
                     user: userId
                 }),
@@ -867,7 +1028,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     userId,
                     actualSessionId,
                     "user",
-                    prompt,
+                    prompt, // Store original prompt, not formatted
                     nextVersionNumber,
                     true, // is_topic
                     false // is_edit
@@ -898,7 +1059,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             setIsStreaming(false);
             readerRef.current = null;
         }
-    }, [article, callbacks, createArticleSession, processArticleStream]);
+    }, [article, callbacks, createArticleSession, processArticleStream, getPrecedingPageContent]);
 
     // Stop generation
     const stopGeneration = useCallback(() => {
@@ -932,6 +1093,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         generateArticle,
         stopGeneration,
         resetArticle,
-        loadArticleSession
+        loadArticleSession,
+        getPrecedingPageContent
     };
 }

@@ -41,11 +41,9 @@ export function EbookSidebar({
     const [isSearchOpen, _] = useState(true);
 
     // Filter sessions based on search query
-    const filteredSessions = [...sessions]
-        .reverse() // Reverse to get newest first
-        .filter(session =>
-            session.title.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+    const filteredSessions = sessions.filter(session =>
+        session.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className={`fixed inset-0 z-60 ${isSidebarOpen ? "block" : "hidden"}`}>

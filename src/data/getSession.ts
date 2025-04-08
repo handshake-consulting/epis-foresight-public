@@ -20,7 +20,7 @@ export const getSessionsList = async ({ page = 1, pageSize = 10, fetchAll = fals
         .select('*', { count: 'exact' })
         .eq('user_id', uid)
         .eq('type', 'article')
-        .order('updated_at', { ascending: true });
+        .order('updated_at', { ascending: false });
 
     // Apply pagination only if not fetching all
     if (!fetchAll) {

@@ -459,6 +459,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                     });
 
                                     // Update both the versions and the currentVersion field
+                                    // Ensure currentVersion is explicitly set to this version number
                                     const updatedArticle = {
                                         ...prev,
                                         versions: updatedVersions,
@@ -513,6 +514,27 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         );
                     }
 
+                    // Final update of article state to ensure correct version info
+                    setArticle(prev => {
+                        if (!prev) return prev;
+
+                        const updatedArticle = {
+                            ...prev,
+                            // Explicitly set currentVersion to this version number
+                            currentVersion: versionNumber
+                        };
+
+                        // Update cache
+                        if (currentSessionIdRef.current) {
+                            articleCacheRef.current.set(currentSessionIdRef.current, {
+                                article: updatedArticle,
+                                timestamp: Date.now()
+                            });
+                        }
+
+                        return updatedArticle;
+                    });
+
                     callbacks?.onFinish?.();
                     break;
                 }
@@ -555,6 +577,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                     });
 
                                     // Update both the versions and the currentVersion field
+                                    // Ensure currentVersion is explicitly set to this version number
                                     const updatedArticle = {
                                         ...prev,
                                         versions: updatedVersions,

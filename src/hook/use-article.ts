@@ -50,14 +50,54 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     // Navigate to previous version
     const goToPreviousVersion = useCallback(() => {
         if (currentVersionNumber > 1) {
-            setCurrentVersionNumber(prev => prev - 1);
+            const newVersionNumber = currentVersionNumber - 1;
+            setCurrentVersionNumber(newVersionNumber);
+
+            // Synchronize article.currentVersion with the new currentVersionNumber
+            if (article && currentSessionIdRef.current) {
+                const updatedArticle = {
+                    ...article,
+                    currentVersion: newVersionNumber
+                };
+
+                // Update article state
+                setArticle(updatedArticle);
+
+                // Update cache with the synchronized article
+                articleCacheRef.current.set(currentSessionIdRef.current, {
+                    article: updatedArticle,
+                    timestamp: Date.now()
+                });
+
+                console.log(`[Version Navigation] Updated to previous version: ${newVersionNumber}, cached for session: ${currentSessionIdRef.current}`);
+            }
         }
-    }, [currentVersionNumber]);
+    }, [article, currentVersionNumber]);
 
     // Navigate to next version
     const goToNextVersion = useCallback(() => {
         if (article && currentVersionNumber < article.versions.length) {
-            setCurrentVersionNumber(prev => prev + 1);
+            const newVersionNumber = currentVersionNumber + 1;
+            setCurrentVersionNumber(newVersionNumber);
+
+            // Synchronize article.currentVersion with the new currentVersionNumber
+            if (currentSessionIdRef.current) {
+                const updatedArticle = {
+                    ...article,
+                    currentVersion: newVersionNumber
+                };
+
+                // Update article state
+                setArticle(updatedArticle);
+
+                // Update cache with the synchronized article
+                articleCacheRef.current.set(currentSessionIdRef.current, {
+                    article: updatedArticle,
+                    timestamp: Date.now()
+                });
+
+                console.log(`[Version Navigation] Updated to next version: ${newVersionNumber}, cached for session: ${currentSessionIdRef.current}`);
+            }
         }
     }, [article, currentVersionNumber]);
 
@@ -65,6 +105,25 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     const goToSpecificVersion = useCallback((versionNumber: number) => {
         if (article && versionNumber >= 1 && versionNumber <= article.versions.length) {
             setCurrentVersionNumber(versionNumber);
+
+            // Synchronize article.currentVersion with the new currentVersionNumber
+            if (currentSessionIdRef.current) {
+                const updatedArticle = {
+                    ...article,
+                    currentVersion: versionNumber
+                };
+
+                // Update article state
+                setArticle(updatedArticle);
+
+                // Update cache with the synchronized article
+                articleCacheRef.current.set(currentSessionIdRef.current, {
+                    article: updatedArticle,
+                    timestamp: Date.now()
+                });
+
+                console.log(`[Version Navigation] Updated to specific version: ${versionNumber}, cached for session: ${currentSessionIdRef.current}`);
+            }
         }
     }, [article]);
 
@@ -399,10 +458,22 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                         return v;
                                     });
 
-                                    return {
+                                    // Update both the versions and the currentVersion field
+                                    const updatedArticle = {
                                         ...prev,
-                                        versions: updatedVersions
+                                        versions: updatedVersions,
+                                        currentVersion: versionNumber // Ensure currentVersion is synchronized
                                     };
+
+                                    // Update the cache if we have a session ID
+                                    if (currentSessionIdRef.current) {
+                                        articleCacheRef.current.set(currentSessionIdRef.current, {
+                                            article: updatedArticle,
+                                            timestamp: Date.now()
+                                        });
+                                    }
+
+                                    return updatedArticle;
                                 });
 
                                 callbacks?.onData?.({ text: event.event_data.text });
@@ -422,10 +493,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                 }).catch(error => {
                                     console.error("Error in parallel processQueryNodeData:", error);
                                 });
-                                // const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
-                                // if (capturedUrl) {
-                                //     imageUrl = capturedUrl;
-                                // }
                             }
                         } catch (e) {
                             console.warn('Failed to parse final buffer:', buffer, e);
@@ -487,10 +554,22 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                         return v;
                                     });
 
-                                    return {
+                                    // Update both the versions and the currentVersion field
+                                    const updatedArticle = {
                                         ...prev,
-                                        versions: updatedVersions
+                                        versions: updatedVersions,
+                                        currentVersion: versionNumber // Ensure currentVersion is synchronized
                                     };
+
+                                    // Update the cache if we have a session ID
+                                    if (currentSessionIdRef.current) {
+                                        articleCacheRef.current.set(currentSessionIdRef.current, {
+                                            article: updatedArticle,
+                                            timestamp: Date.now()
+                                        });
+                                    }
+
+                                    return updatedArticle;
                                 });
 
                                 callbacks?.onData?.({ text: event.event_data.text });
@@ -519,6 +598,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             console.log("========== STREAM PROCESSING FINISHED ==========");
             console.log("Total content length:", accumulatedContent.length, "characters");
             console.log("Image URL generated:", imageUrl ? "Yes" : "No");
+            console.log("Current version set to:", versionNumber);
             console.log("===============================================");
 
             reader.cancel();
@@ -630,7 +710,15 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Use cached article data
                 if (!preloadOnly) {
                     setArticle(cachedEntry.article);
-                    setCurrentVersionNumber(cachedEntry.article.currentVersion || cachedEntry.article.versions.length);
+
+                    // Ensure we set the correct version number from the cached article
+                    const versionToSet = cachedEntry.article.currentVersion || cachedEntry.article.versions.length;
+                    setCurrentVersionNumber(versionToSet);
+
+                    // Store the session ID for future cache updates
+                    currentSessionIdRef.current = sessionId;
+
+                    console.log(`[Load Session] Using cached article for session ${sessionId}, setting version to ${versionToSet}`);
                 }
                 return sessionId;
             }
@@ -789,8 +877,13 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Set article state
                 setArticle(articleData);
 
-                // Set to latest version
-                setCurrentVersionNumber(versions.length);
+                // Set to latest version or stored current version
+                setCurrentVersionNumber(articleData.currentVersion);
+
+                // Store the session ID for future cache updates
+                currentSessionIdRef.current = sessionId;
+
+                console.log(`[Load Session] Loaded article for session ${sessionId}, setting version to ${articleData.currentVersion}`);
             }
 
             return session.id;
@@ -928,6 +1021,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     return {
                         ...prev,
                         topic: prompt,
+                        currentVersion: nextVersionNumber, // Ensure currentVersion is set correctly
                         versions: [initialVersion]
                     };
                 });
@@ -948,16 +1042,19 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         images: []
                     };
 
-                    return {
+                    const updatedArticle = {
                         ...prev,
-                        currentVersion: nextVersionNumber,
+                        currentVersion: nextVersionNumber, // Ensure currentVersion is set correctly
                         versions: [...prev.versions, newVersion]
                     };
+
+                    return updatedArticle;
                 });
             }
 
             // Update current session ID ref
             currentSessionIdRef.current = actualSessionId;
+            console.log(`[Generate Article] Set currentSessionIdRef to: ${actualSessionId}`);
 
             // Update current version number
             setCurrentVersionNumber(nextVersionNumber);

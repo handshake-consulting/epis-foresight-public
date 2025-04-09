@@ -562,8 +562,11 @@ export default function EbookArticlePage({
             if (sessionData.length > 0) {
                 // console.log('trigger me');
 
+                // Get the most recent article (last item in the array)
+                const mostRecentArticle = sessionData[sessionData.length - 1];
+
                 // If no initialSessionId, use switchSession directly instead of router.push
-                await switchSession(sessionData[0]);
+                await switchSession(mostRecentArticle);
                 setLoadingDefault(false)
                 // Update URL without full navigation
                 // router.push(`/article/${sessionData[0].id}`);

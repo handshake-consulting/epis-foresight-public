@@ -1,7 +1,8 @@
 import Dialog from '@/components/ui/Dialog';
 import { useSettingsStore } from '@/store/settingsStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import Image from 'next/image';
+import { useCallback, useMemo, useState } from 'react';
 
 interface WelcomeModalProps {
     isOpen: boolean;
@@ -12,33 +13,8 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const { settings } = useSettingsStore();
 
-    const slides = [
-        {
-            title: "Welcome to Leaders Make the Future: Infinite Edition",
-            content: "This is a collaborative, generative extension of the book Leaders Make the Future, Third Edition: 10 New Skills to Humanize Leadership with Generative AI, by Bob Johansen, Jeremy Kirshbaum, and Gabe Cervantes."
-        },
-        {
-            title: "Create New Content",
-            content: "By asking questions, you create and edit new pages of the book that never existed before, grounded in the original text. Any new page created is visible and sharable to everyone else."
-        }
-    ];
-
-    const goToNextSlide = () => {
-        if (currentSlide < slides.length - 1) {
-            setCurrentSlide(currentSlide + 1);
-        } else {
-            onClose();
-        }
-    };
-
-    const goToPrevSlide = () => {
-        if (currentSlide > 0) {
-            setCurrentSlide(currentSlide - 1);
-        }
-    };
-
     // Determine theme-based styles
-    const getThemeStyles = () => {
+    const styles = useMemo(() => {
         switch (settings.theme) {
             case 'dark':
                 return {
@@ -74,57 +50,115 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
                     }
                 };
         }
-    };
+    }, [settings.theme]);
 
-    const styles = getThemeStyles();
+    // Create slides after styles are defined
+    const slides = useMemo(() => [
+        {
+            title: "",
+            content: "",
+            customContent: (
+                <div className="flex flex-col items-center justify-center py-2">
+                    <div className="w-full max-w-[240px] mb-6">
+                        <Image
+                            src="/cover infinite edition.png"
+                            alt="Leaders Make the Future: Infinite Edition Cover"
+                            width={240}
+                            height={360}
+                            className="w-full"
+                            priority
+                        />
+                    </div>
+                    <button
+                        onClick={() => setCurrentSlide(1)}
+                        className={`${styles.button} px-4 py-2 rounded-md`}
+                    >
+                        Enter
+                    </button>
+                </div>
+            )
+        },
+        {
+            title: "Welcome to Leaders Make the Future: Infinite Edition",
+            content: "This is a collaborative, generative extension of the book <a href='https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/ref=asc_df_B0D66H9BF1' target='_blank' rel='noopener noreferrer' style='color: #3b82f6; text-decoration: underline;'>Leaders Make the Future, Third Edition: 10 New Skills to Humanize Leadership with Generative AI</a>, by Bob Johansen, Jeremy Kirshbaum, and Gabe Cervantes."
+        },
+        {
+            title: "Create New Content",
+            content: "By asking questions, you create and edit new pages of the book that never existed before, grounded in the original text. Any new page created is visible and sharable to everyone else."
+        }
+    ], [styles]);
+
+    const goToNextSlide = useCallback(() => {
+        if (currentSlide < slides.length - 1) {
+            setCurrentSlide(currentSlide + 1);
+        } else {
+            onClose();
+        }
+    }, [currentSlide, slides.length, onClose]);
+
+    const goToPrevSlide = useCallback(() => {
+        if (currentSlide > 0) {
+            setCurrentSlide(currentSlide - 1);
+        }
+    }, [currentSlide]);
+
+    const totalSlides = slides.length;
 
     return (
-        <Dialog isOpen={isOpen} title="Welcome" onClose={onClose}>
-            <div className="flex flex-col items-center">
-                <div className="text-center mb-8 mt-4">
-                    <h2 className="text-xl font-bold mb-4">{slides[currentSlide].title}</h2>
-                    <p className="text-base">{slides[currentSlide].content}</p>
-                </div>
+        <Dialog isOpen={isOpen} onClose={onClose} hideHeader={true}>
+            <div className="flex flex-col items-center justify-center h-full relative">
+                {slides[currentSlide].customContent ? (
+                    slides[currentSlide].customContent
+                ) : (
+                    <div className="text-center mb-8">
+                        <h2 className="text-xl font-bold mb-4">{slides[currentSlide].title}</h2>
+                        <p className="text-base" dangerouslySetInnerHTML={{ __html: slides[currentSlide].content }}></p>
+                    </div>
+                )}
 
                 {/* Navigation dots */}
-                <div className="flex space-x-2 mb-6">
-                    {slides.map((_, index) => (
+                <div className="flex space-x-2 mb-2 mt-2">
+                    {Array.from({ length: totalSlides }).map((_, index) => (
                         <div
                             key={index}
-                            className={`h-2 w-2 rounded-full ${index === currentSlide ? styles.indicator.active : styles.indicator.inactive
+                            className={`h-2 w-2 rounded-full ${index === currentSlide
+                                ? styles.indicator.active
+                                : styles.indicator.inactive
                                 }`}
                             onClick={() => setCurrentSlide(index)}
                         />
                     ))}
                 </div>
 
-                {/* Navigation buttons */}
-                <div className="flex justify-between w-full mb-4">
-                    <button
-                        onClick={goToPrevSlide}
-                        className={`p-2 rounded-full ${currentSlide === 0 ? 'invisible' : ''
-                            }`}
-                        aria-label="Previous slide"
-                    >
-                        <ChevronLeft className="h-5 w-5" />
-                    </button>
+                {/* Navigation buttons - Hide on first slide */}
+                {currentSlide !== 0 && (
+                    <div className="flex justify-between w-full mb-4">
+                        <button
+                            onClick={goToPrevSlide}
+                            className={`p-2 rounded-full ${currentSlide === 1 ? 'invisible' : ''
+                                }`}
+                            aria-label="Previous slide"
+                        >
+                            <ChevronLeft className="h-5 w-5" />
+                        </button>
 
-                    <button
-                        onClick={goToNextSlide}
-                        className={`${styles.button} px-4 py-2 rounded-md`}
-                    >
-                        {currentSlide < slides.length - 1 ? 'Next' : 'Get Started'}
-                    </button>
+                        <button
+                            onClick={goToNextSlide}
+                            className={`${styles.button} px-4 py-2 rounded-md`}
+                        >
+                            {currentSlide < slides.length - 1 ? 'Next' : 'Get Started'}
+                        </button>
 
-                    <button
-                        onClick={goToNextSlide}
-                        className={`p-2 rounded-full ${currentSlide === slides.length - 1 ? 'invisible' : ''
-                            }`}
-                        aria-label="Next slide"
-                    >
-                        <ChevronRight className="h-5 w-5" />
-                    </button>
-                </div>
+                        <button
+                            onClick={goToNextSlide}
+                            className={`p-2 rounded-full ${currentSlide === slides.length - 1 ? 'invisible' : ''
+                                }`}
+                            aria-label="Next slide"
+                        >
+                            <ChevronRight className="h-5 w-5" />
+                        </button>
+                    </div>
+                )}
             </div>
         </Dialog>
     );

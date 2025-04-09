@@ -5,11 +5,12 @@ import React from 'react';
 interface DialogProps {
   isOpen: boolean;
   title?: string;
+  hideHeader?: boolean;
   onClose: () => void;
   children: React.ReactNode;
 }
 
-const Dialog: React.FC<DialogProps> = ({ isOpen, title, onClose, children }) => {
+const Dialog: React.FC<DialogProps> = ({ isOpen, title, hideHeader = false, onClose, children }) => {
   const { settings } = useSettingsStore();
 
   // Determine theme-based styles
@@ -54,16 +55,18 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, title, onClose, children }) => 
       {/* Dialog box */}
       <div className={`${styles.bg} ${styles.text} relative z-10 w-full max-w-md rounded-lg overflow-hidden shadow-xl transition-colors duration-200`}>
         {/* Header */}
-        <div className={`${styles.border} border-b p-4 flex justify-between items-center`}>
-          <h3 className="font-bold">{title || 'Settings'}</h3>
-          <button
-            onClick={onClose}
-            className={`${styles.closeButton} rounded-full p-1 hover:bg-black/10`}
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+        {!hideHeader && (
+          <div className={`${styles.border} border-b p-4 flex justify-between items-center`}>
+            <h3 className="font-bold">{title || 'Settings'}</h3>
+            <button
+              onClick={onClose}
+              className={`${styles.closeButton} rounded-full p-1 hover:bg-black/10`}
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         <div className="p-4 max-h-[70vh] overflow-y-auto scrollbar-thin">

@@ -10,9 +10,36 @@ const BookLoadingAnimation = () => {
     const totalLines = 10;
 
     const loadingPhrases = [
-        "Loading strategic clarity modules...",
-        "Optimizing AI foresight APIs...",
-        "Installing generative research libraries..."
+        "30. Loading strategic clarity modules...",
+        "29. Optimizing AI foresight APIs...",
+        "28. Installing generative research libraries...",
+        "27. Calibrating neural pathways...",
+        "26. Initializing quantum prediction engines...",
+        "25. Synchronizing distributed knowledge bases...",
+        "24. Deploying adaptive learning protocols...",
+        "23. Activating contextual reasoning systems...",
+        "22. Connecting to insight acceleration network...",
+        "21. Establishing creative pattern recognition...",
+        "20. Bootstrapping cognitive enhancement modules...",
+        "19. Rendering decision matrix frameworks...",
+        "18. Allocating deep learning resources...",
+        "17. Expanding semantic analysis capabilities...",
+        "16. Harmonizing multilayered inference engines...",
+        "15. Preparing augmented intelligence protocols...",
+        "14. Integrating strategic foresight algorithms...",
+        "13. Mapping innovation potential pathways...",
+        "12. Assembling thought acceleration structures...",
+        "11. Calibrating breakthrough probability metrics...",
+        "10. Initializing disruptive ideation processes...",
+        "9. Constructing insight visualization networks...",
+        "8. Launching conceptual expansion routines...",
+        "7. Optimizing lateral thinking parameters...",
+        "6. Compiling wisdom extraction databases...",
+        "5. Enhancing predictive analytics capabilities...",
+        "4. Integrating advanced pattern recognition systems...",
+        "3. Deploying advanced decision-making frameworks...",
+        "2. Establishing advanced learning algorithms...",
+        "1. Optimizing advanced inference engines...",
     ];
 
     useEffect(() => {

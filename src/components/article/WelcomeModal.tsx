@@ -14,7 +14,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
 
     const slides = [
         {
-            title: "Welcome to Leaders Make the Future",
+            title: "Welcome to Leaders Make the Future: Infinite Edition",
             content: "This is a collaborative, generative extension of the book Leaders Make the Future, Third Edition: 10 New Skills to Humanize Leadership with Generative AI, by Bob Johansen, Jeremy Kirshbaum, and Gabe Cervantes."
         },
         {

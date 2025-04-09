@@ -239,7 +239,7 @@ export function EbookContent({
                             : "bg-gray-100 border-gray-200"
                             } p-4 rounded-lg border`}>
                             <div className={`text-sm font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-700"
-                                } mb-2`}>Generating document...</div>
+                                } mb-2`}>Writing a new page of Leaders Make the Future...</div>
                             <ProgressBar
                                 isLoading={true}
                                 className="mb-2"

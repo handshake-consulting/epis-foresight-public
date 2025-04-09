@@ -61,7 +61,7 @@ const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) =
 
     return (
         <span
-            className="relative inline-block float-right ml-6 mb-4 mt-1 w-1/3 max-w-[300px] md:block hidden"
+            className="relative inline-block float-right ml-6 mb-4 mt-1 w-1/2 max-w-[300px] md:block hidden"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
         >

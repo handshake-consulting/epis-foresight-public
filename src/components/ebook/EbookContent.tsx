@@ -1,7 +1,6 @@
 "use client"
 
 import { ArticleVersion } from "@/components/chat/types";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { BookmarkItem, useSettingsStore } from "@/store/settingsStore";
 import { BookOpen, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -233,20 +232,7 @@ export function EbookContent({
                     )} */}
 
                     {/* Progress bar for generation */}
-                    {isStreaming && (
-                        <div className={`mb-6 ${theme === "dark"
-                            ? "bg-gray-800 border-gray-700"
-                            : "bg-gray-100 border-gray-200"
-                            } p-4 rounded-lg border`}>
-                            <div className={`text-sm font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-700"
-                                } mb-2`}>Writing a new page of Leaders Make the Future...</div>
-                            <ProgressBar
-                                isLoading={true}
-                                className="mb-2"
-                                label="This may take 15-30 seconds"
-                            />
-                        </div>
-                    )}
+                    {/* Removed grey loading section with progress bar */}
 
                     {/* Book-like container */}
                     <div className={`${theme === "dark"

@@ -24,6 +24,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     const [currentVersionNumber, setCurrentVersionNumber] = useState<number>(1);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [preStreamLogs, setPreStreamLogs] = useState<string[]>([]);
 
     const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
     const currentUserIdRef = useRef<string | null>(null);
@@ -130,18 +131,19 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     // Handle UI changes with loading messages
     const handleUiChanges = async (content: string, versionNumber: number) => {
         try {
-            // Initial loading header
+            // Clear pre-stream logs as we're transitioning to loading text
+            setPreStreamLogs([]);
+
+            // Initial loading header - REPLACE content instead of appending
             setArticle(prev => {
                 if (!prev) return prev;
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        let updatedContent = v.content;
-                        updatedContent += `\n\n## Article Processing\n\n`;
-                        updatedContent += `Starting to analyze your article...\n\n`;
+                        // Replace entirely instead of appending
                         return {
                             ...v,
-                            content: updatedContent
+                            content: "## Writing a new page...\n\nStarting to analyze your topic...\n\n"
                         };
                     }
                     return v;
@@ -186,33 +188,16 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 const message = loadingMessages[i];
                 const progress = Math.round((i + 1) / loadingMessages.length * 100);
 
-                // Update article with loading message and progress
+                // Update article with loading message and progress - REPLACE content instead of appending
                 setArticle(prev => {
                     if (!prev) return prev;
 
                     const updatedVersions = prev.versions.map(v => {
                         if (v.versionNumber === versionNumber) {
-                            // Find the last occurrence of "## Article Processing" and everything after it
-                            const processingIndex = v.content.lastIndexOf("## Article Processing");
-
-                            // If found, replace everything after it with new content
-                            let updatedContent = v.content;
-                            if (processingIndex !== -1) {
-                                updatedContent = v.content.substring(0, processingIndex);
-                                updatedContent += "## Article Processing\n\n";
-
-                                // Only add current message with progress instead of all previous messages
-                                updatedContent += `${message}\n\n`;
-                                updatedContent += `Progress: ${progress}%\n\n`;
-                            } else {
-                                // Fallback if header not found
-                                updatedContent += `\n\n${message}\n\n`;
-                                updatedContent += `Progress: ${progress}%\n\n`;
-                            }
-
+                            // Always replace entire content with current message and progress
                             return {
                                 ...v,
-                                content: updatedContent
+                                content: `## Writing a new page...\n\n${message}\n\nProgress: ${progress}%\n\n`
                             };
                         }
                         return v;
@@ -238,11 +223,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        let updatedContent = v.content;
-                        updatedContent += `\n\nProcessing your article...\n\n`;
+                        // Replace entire content instead of appending
                         return {
                             ...v,
-                            content: updatedContent
+                            content: "## Writing a new page...\n\nProcessing your article...\n\n"
                         };
                     }
                     return v;
@@ -1089,6 +1073,30 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     };
 
+    // Add a helper function to update logs and article content
+    const addProcessLog = useCallback((message: string, versionNumber: number) => {
+        // Add log to preStreamLogs state
+        setPreStreamLogs(prev => [...prev, message]);
+
+        // Update article content to show the log
+        setArticle(prev => {
+            if (!prev) return prev;
+
+            const updatedVersions = prev.versions.map(v => {
+                if (v.versionNumber === versionNumber) {
+                    // Replace entire content with just this log message
+                    return {
+                        ...v,
+                        content: `## Writing a new page...\n\n${message}\n\n`
+                    };
+                }
+                return v;
+            });
+
+            return { ...prev, versions: updatedVersions };
+        });
+    }, []);
+
     // Generate or update article
     const generateArticle = useCallback(async (
         prompt: string,
@@ -1101,6 +1109,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             hasExistingSessionId: !!sessionId,
             promptLength: prompt.length
         });
+
+        // Reset preStreamLogs
+        setPreStreamLogs([]);
 
         if (!prompt.trim()) {
             console.error("[ARTICLE GENERATION ERROR] Empty prompt provided");
@@ -1115,6 +1126,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             currentUserIdRef.current = userId;
             console.log(`[ARTICLE GENERATION] Using user ID: ${userId}`);
 
+            // Add initial log for user feedback
+            addProcessLog("Establishing secure connection...", isNewArticle || !sessionId ? 1 : (article?.versions.length ? article.versions.length + 1 : 1));
+
             // Create new session or use existing one
             let actualSessionId: string;
             let nextVersionNumber: number;
@@ -1125,6 +1139,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 try {
                     actualSessionId = await createArticleSession(userId);
                     console.log(`[ARTICLE GENERATION] Successfully created new session ID: ${actualSessionId}`);
+                    addProcessLog("New article session created...", 1);
                 } catch (createSessionError) {
                     console.error(`[ARTICLE GENERATION ERROR] Failed to create session:`, createSessionError);
                     throw createSessionError;
@@ -1137,7 +1152,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     // Create a placeholder version
                     const initialVersion: ArticleVersion = {
                         versionNumber: nextVersionNumber,
-                        content: "Generating...this will take 30-60 seconds while we thoroughly research your topic.",
+                        content: "This will take 30-60 seconds while we thoroughly research your topic.",
                         timestamp: new Date(),
                         images: []
                     };
@@ -1166,6 +1181,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Use existing session
                 actualSessionId = sessionId;
                 console.log(`[ARTICLE GENERATION] Using existing session ID: ${actualSessionId}`);
+                addProcessLog("Updating existing article...", article?.versions.length ? article.versions.length + 1 : 1);
 
                 nextVersionNumber = article?.versions.length ? article.versions.length + 1 : 1;
                 console.log(`[ARTICLE GENERATION] Creating version #${nextVersionNumber} for existing article`);
@@ -1176,7 +1192,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                     const newVersion: ArticleVersion = {
                         versionNumber: nextVersionNumber,
-                        content: "Generating...this will take 30-60 seconds while we thoroughly research your topic.",
+                        content: "This will take 30-60 seconds while we thoroughly research your topic.",
                         editPrompt: prompt,
                         timestamp: new Date(),
                         images: []
@@ -1196,6 +1212,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             // Update current session ID ref
             currentSessionIdRef.current = actualSessionId;
             console.log(`[ARTICLE GENERATION] Set currentSessionIdRef to: ${actualSessionId}`);
+            addProcessLog("Article session configured...", nextVersionNumber);
 
             // Update current version number
             setCurrentVersionNumber(nextVersionNumber);
@@ -1203,10 +1220,13 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
             // Get Firebase ID token for authentication
             console.log(`[ARTICLE GENERATION] Requesting Firebase ID token`);
+            addProcessLog("Authenticating request...", nextVersionNumber);
+
             let token;
             try {
                 token = await getIdToken();
                 console.log(`[ARTICLE GENERATION] Successfully obtained Firebase token: ${token ? 'Token received' : 'No token received'}`);
+                addProcessLog("Authentication successful...", nextVersionNumber);
             } catch (tokenError) {
                 console.error(`[ARTICLE GENERATION ERROR] Failed to get Firebase token:`, tokenError);
                 throw new Error(`Authentication error: Failed to get Firebase token - ${tokenError instanceof Error ? tokenError.message : String(tokenError)}`);
@@ -1217,11 +1237,14 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
             if (isNewArticle || !sessionId) {
                 console.log(`[ARTICLE GENERATION] Fetching preceding content for new article`);
+                addProcessLog("Retrieving contextual information...", nextVersionNumber);
+
                 // Get preceding content for new articles
                 let precedingContent;
                 try {
                     precedingContent = await getPrecedingPageContent(userId, actualSessionId);
                     console.log(`[ARTICLE GENERATION] Preceding content ${precedingContent ? 'found' : 'not found'}`);
+                    addProcessLog(precedingContent ? "Retrieved contextual information..." : "No prior context found, starting fresh...", nextVersionNumber);
                 } catch (precedingError) {
                     console.error(`[ARTICLE GENERATION ERROR] Error fetching preceding content:`, precedingError);
                     // Continue without preceding content
@@ -1259,6 +1282,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
             // Call API to generate content
             console.log(`[ARTICLE GENERATION] Sending API request to chat_stream endpoint`);
+            addProcessLog("Submitting your topic for analysis...", nextVersionNumber);
+
             let response;
             try {
                 response = await fetch(process.env.NEXT_PUBLIC_API_URL + 'chat_stream', {
@@ -1277,6 +1302,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 });
 
                 console.log(`[ARTICLE GENERATION] API response received: status ${response.status}`);
+                addProcessLog("Connected to knowledge graph, beginning analysis...", nextVersionNumber);
 
                 if (!response.ok) {
                     let responseText = '';
@@ -1296,6 +1322,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
             // Now that we have a successful response, store the user prompt in Supabase
             console.log(`[ARTICLE GENERATION] Storing user prompt in Supabase`);
+            addProcessLog("Saving your request...", nextVersionNumber);
+
             try {
                 if (isNewArticle || !sessionId) {
                     // Store topic
@@ -1329,6 +1357,12 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
             if (response.body) {
                 console.log(`[ARTICLE GENERATION] Stream body received, starting stream processing`);
+                addProcessLog("Beginning article generation process...", nextVersionNumber);
+
+                // Process the content
+                await handleUiChanges(prompt, nextVersionNumber);
+
+                // Process the stream
                 await processArticleStream(response.body, nextVersionNumber);
             } else {
                 console.error(`[ARTICLE GENERATION ERROR] No response body received`);
@@ -1344,7 +1378,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             setIsStreaming(false);
             readerRef.current = null;
         }
-    }, [article, callbacks, createArticleSession, processArticleStream, getPrecedingPageContent]);
+    }, [article, callbacks, createArticleSession, processArticleStream, getPrecedingPageContent, addProcessLog]);
 
     // Stop generation
     const stopGeneration = useCallback(() => {
@@ -1379,6 +1413,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         stopGeneration,
         resetArticle,
         loadArticleSession,
-        getPrecedingPageContent
+        getPrecedingPageContent,
+        preStreamLogs
     };
 }

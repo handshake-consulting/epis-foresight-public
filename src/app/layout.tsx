@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ForesightCoach",
-  description: "Expand your foresight about the future of faith. Ask questions and pose ideas in dynamic conversation grounded in custom research by IFTF and McKinsey for EDOT, along with books by Bob Johansen on foresight and the future.",
+  title: "LMTF∞",
+  description: "This is a collaborative, generative extension of the book Leaders Make the Future, Third Edition: 10 New Skills to Humanize Leadership with Generative AI, by Bob Johansen, Jeremy Kirshbaum, and Gabe Cervantes.",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

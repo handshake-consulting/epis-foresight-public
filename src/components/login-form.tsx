@@ -146,9 +146,9 @@ export default function LoginForm() {
         <div className={`transition-all duration-500 ease-out transform ${animateIn ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
             <Card className="border-border/40 shadow-lg">
                 <CardHeader>
-                    <CardTitle className="text-xl text-center">ForesightCoach for EDOT Login</CardTitle>
+                    <CardTitle className="text-xl text-center">Leaders Make the Future: Infinite Edition Login</CardTitle>
                     <CardDescription className="text-center">
-                        Augemented strategic foresight for the future of faith
+                        This is a collaborative, generative extension of the book Leaders Make the Future, Third Edition: 10 New Skills to Humanize Leadership with Generative AI.
                     </CardDescription>
                 </CardHeader>
 

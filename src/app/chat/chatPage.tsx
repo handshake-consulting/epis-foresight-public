@@ -367,8 +367,8 @@ export default function ChatPage({ profile }: { profile: UserProfile }) {
                                         <circle cx="25" cy="15" r="1.66667" fill="#4F46E5" />
                                     </svg>
                                 </div>
-                                <h2 className="text-lg sm:text-xl font-semibold">{`Hi, I'm ForesightCoach.`}</h2>
-                                <p className="text-sm sm:text-base text-gray-600">{`Expand your foresight about the future of faith. Ask questions and pose ideas in dynamic conversation grounded in custom research by IFTF and McKinsey for EDOT, along with books by Bob Johansen on foresight and the future.`}</p>
+                                <h2 className="text-lg sm:text-xl font-semibold">{`Welcome to Leaders Make the Future: Infinite Edition`}</h2>
+                                <p className="text-sm sm:text-base text-gray-600">{`This is a collaborative, generative extension of the book Leaders Make the Future, Third Edition: 10 New Skills to Humanize Leadership with Generative AI, by Bob Johansen, Jeremy Kirshbaum, and Gabe Cervantes.`}</p>
                             </div>
 
                             {/* Input in the center when no messages */}

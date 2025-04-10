@@ -38,7 +38,7 @@ export function ChatInput({
                         <input
                             ref={inputRef as any}
                             type="text"
-                            placeholder="Message ForesightCoach"
+                            placeholder="Message Leaders Make the Future: Infinite Edition"
                             className="w-full bg-transparent border-none focus:outline-none py-2 px-1 text-sm sm:text-base"
                             disabled={isStreaming}
                         />

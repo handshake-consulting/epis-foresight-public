@@ -65,8 +65,11 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
                             alt="Leaders Make the Future: Infinite Edition Cover"
                             width={240}
                             height={360}
-                            className="w-full"
+                            className="w-full rounded-md"
                             priority
+                            placeholder="blur"
+                            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
+                            quality={75}
                         />
                     </div>
                     <button

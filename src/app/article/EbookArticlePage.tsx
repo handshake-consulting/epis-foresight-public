@@ -64,6 +64,9 @@ export default function EbookArticlePage({
     const [isLoading, setIsLoading] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
+    // Add a ref to track the latest session ID from articleGeneration
+    const generatedSessionIdRef = useRef<string | null>(null);
+
     // URL parameters
     const isNewArticle = searchParams.get("new") === "true";
     const versionParam = searchParams.get("version");
@@ -111,8 +114,32 @@ export default function EbookArticlePage({
                 }
             },
             onError: (error) => console.error("Hook error:", error),
-            onFinish: () => {
-                createQueryString('new', 'false');
+            onFinish: async () => {
+                // If we have a generated session ID (for new articles), update the URL
+                if (generatedSessionIdRef.current) {
+                    const sessionId = generatedSessionIdRef.current;
+                    const basePath = pathname.split('/').slice(0, -1).join('/') || '/article';
+
+                    // Update URL
+                    window.history.pushState(
+                        null,
+                        '',
+                        `${basePath}/${sessionId}`
+                    );
+                    console.log(`[onFinish] Updated URL with session ID: ${sessionId}`);
+
+                    // Clear the new=true parameter from searchParams since we now have an article ID
+                    if (isNewArticle) {
+                        const params = new URLSearchParams(searchParams.toString());
+                        params.delete('new');
+                        // We don't need to update the URL again, just update the searchParams object 
+                        // so future isNewArticle checks will return false
+                        console.log(`[onFinish] Cleared 'new' parameter from URL`);
+                    }
+
+                    // Clear the ref after use
+                    generatedSessionIdRef.current = null;
+                }
             },
             onTitleGenerated: async (generatedTitle, sessionid) => {
                 document.title = generatedTitle;
@@ -356,6 +383,10 @@ export default function EbookArticlePage({
         const prompt = inputRef.current?.value;
         if (!prompt) return;
 
+        // For new articles, we need to track the generated session ID
+        const originalSessionId = currentSession?.id;
+        const wasFirstGeneration = isFirstGeneration;
+
         // Generate article
         await generateArticle(
             prompt,
@@ -364,12 +395,44 @@ export default function EbookArticlePage({
             isFirstGeneration
         );
 
+        // If this was a new article generation, the article.id should now be available
+        // Store it in our ref so the onFinish callback can use it
+        if (wasFirstGeneration && (!originalSessionId || isNewArticle)) {
+            // Query for the most recent session to get its ID
+            const supabase = createClient();
+            const { data } = await supabase
+                .from('chat_sessions')
+                .select('*')  // Select all fields, not just id
+                .eq('user_id', userId)
+                .eq('type', 'article')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (data && data.length > 0) {
+                // Store the session ID for URL updating
+                generatedSessionIdRef.current = data[0].id;
+                console.log(`[handleSubmit] Captured new session ID: ${generatedSessionIdRef.current}`);
+
+                // Important: Update the currentSession state to ensure the app knows
+                // we now have an existing article that should be revised, not a new one
+                setCurrentSession(data[0] as ChatSession);
+
+                // Force load the article content to ensure isFirstGeneration gets updated
+                try {
+                    await loadArticleSession(data[0].id, userId);
+                    console.log(`[handleSubmit] Loaded article content for new session: ${data[0].id}`);
+                } catch (err) {
+                    console.error("Error loading new article session:", err);
+                }
+            }
+        }
+
         // Clear input
         inputRef.current!.value = "";
 
         // Refresh sessions list after generation
-        if (isFirstGeneration) {
-            refreshSessions();
+        if (wasFirstGeneration) {
+            await refreshSessions();
         }
     };
 
@@ -499,8 +562,11 @@ export default function EbookArticlePage({
             if (sessionData.length > 0) {
                 // console.log('trigger me');
 
+                // Get the most recent article (last item in the array)
+                const mostRecentArticle = sessionData[sessionData.length - 1];
+
                 // If no initialSessionId, use switchSession directly instead of router.push
-                await switchSession(sessionData[0]);
+                await switchSession(mostRecentArticle);
                 setLoadingDefault(false)
                 // Update URL without full navigation
                 // router.push(`/article/${sessionData[0].id}`);

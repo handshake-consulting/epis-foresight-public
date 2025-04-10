@@ -24,6 +24,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     const [currentVersionNumber, setCurrentVersionNumber] = useState<number>(1);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [preStreamLogs, setPreStreamLogs] = useState<string[]>([]);
 
     const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
     const currentUserIdRef = useRef<string | null>(null);
@@ -50,14 +51,54 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     // Navigate to previous version
     const goToPreviousVersion = useCallback(() => {
         if (currentVersionNumber > 1) {
-            setCurrentVersionNumber(prev => prev - 1);
+            const newVersionNumber = currentVersionNumber - 1;
+            setCurrentVersionNumber(newVersionNumber);
+
+            // Synchronize article.currentVersion with the new currentVersionNumber
+            if (article && currentSessionIdRef.current) {
+                const updatedArticle = {
+                    ...article,
+                    currentVersion: newVersionNumber
+                };
+
+                // Update article state
+                setArticle(updatedArticle);
+
+                // Update cache with the synchronized article
+                articleCacheRef.current.set(currentSessionIdRef.current, {
+                    article: updatedArticle,
+                    timestamp: Date.now()
+                });
+
+                console.log(`[Version Navigation] Updated to previous version: ${newVersionNumber}, cached for session: ${currentSessionIdRef.current}`);
+            }
         }
-    }, [currentVersionNumber]);
+    }, [article, currentVersionNumber]);
 
     // Navigate to next version
     const goToNextVersion = useCallback(() => {
         if (article && currentVersionNumber < article.versions.length) {
-            setCurrentVersionNumber(prev => prev + 1);
+            const newVersionNumber = currentVersionNumber + 1;
+            setCurrentVersionNumber(newVersionNumber);
+
+            // Synchronize article.currentVersion with the new currentVersionNumber
+            if (currentSessionIdRef.current) {
+                const updatedArticle = {
+                    ...article,
+                    currentVersion: newVersionNumber
+                };
+
+                // Update article state
+                setArticle(updatedArticle);
+
+                // Update cache with the synchronized article
+                articleCacheRef.current.set(currentSessionIdRef.current, {
+                    article: updatedArticle,
+                    timestamp: Date.now()
+                });
+
+                console.log(`[Version Navigation] Updated to next version: ${newVersionNumber}, cached for session: ${currentSessionIdRef.current}`);
+            }
         }
     }, [article, currentVersionNumber]);
 
@@ -65,24 +106,44 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     const goToSpecificVersion = useCallback((versionNumber: number) => {
         if (article && versionNumber >= 1 && versionNumber <= article.versions.length) {
             setCurrentVersionNumber(versionNumber);
+
+            // Synchronize article.currentVersion with the new currentVersionNumber
+            if (currentSessionIdRef.current) {
+                const updatedArticle = {
+                    ...article,
+                    currentVersion: versionNumber
+                };
+
+                // Update article state
+                setArticle(updatedArticle);
+
+                // Update cache with the synchronized article
+                articleCacheRef.current.set(currentSessionIdRef.current, {
+                    article: updatedArticle,
+                    timestamp: Date.now()
+                });
+
+                console.log(`[Version Navigation] Updated to specific version: ${versionNumber}, cached for session: ${currentSessionIdRef.current}`);
+            }
         }
     }, [article]);
 
     // Handle UI changes with loading messages
     const handleUiChanges = async (content: string, versionNumber: number) => {
         try {
-            // Initial loading header
+            // Clear pre-stream logs as we're transitioning to loading text
+            setPreStreamLogs([]);
+
+            // Initial loading header - REPLACE content instead of appending
             setArticle(prev => {
                 if (!prev) return prev;
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        let updatedContent = v.content;
-                        updatedContent += `\n\n## Article Processing\n\n`;
-                        updatedContent += `Starting to analyze your article...\n\n`;
+                        // Replace entirely instead of appending
                         return {
                             ...v,
-                            content: updatedContent
+                            content: "## Writing a new page...\n\nStarting to analyze your topic...\n\n"
                         };
                     }
                     return v;
@@ -127,37 +188,16 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 const message = loadingMessages[i];
                 const progress = Math.round((i + 1) / loadingMessages.length * 100);
 
-                // Update article with loading message and progress
+                // Update article with loading message and progress - REPLACE content instead of appending
                 setArticle(prev => {
                     if (!prev) return prev;
 
                     const updatedVersions = prev.versions.map(v => {
                         if (v.versionNumber === versionNumber) {
-                            // Find the last occurrence of "## Article Processing" and everything after it
-                            const processingIndex = v.content.lastIndexOf("## Article Processing");
-
-                            // If found, replace everything after it with new content
-                            let updatedContent = v.content;
-                            if (processingIndex !== -1) {
-                                updatedContent = v.content.substring(0, processingIndex);
-                                updatedContent += "## Article Processing\n\n";
-
-                                // Add all messages up to current index with progress
-                                for (let j = 0; j <= i; j++) {
-                                    updatedContent += `${loadingMessages[j]}\n\n`;
-                                    if (j === i) {
-                                        updatedContent += `Progress: ${progress}%\n\n`;
-                                    }
-                                }
-                            } else {
-                                // Fallback if header not found
-                                updatedContent += `\n\n${message}\n\n`;
-                                updatedContent += `Progress: ${progress}%\n\n`;
-                            }
-
+                            // Always replace entire content with current message and progress
                             return {
                                 ...v,
-                                content: updatedContent
+                                content: `## Writing a new page...\n\n${message}\n\nProgress: ${progress}%\n\n`
                             };
                         }
                         return v;
@@ -183,11 +223,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        let updatedContent = v.content;
-                        updatedContent += `\n\nProcessing your article...\n\n`;
+                        // Replace entire content instead of appending
                         return {
                             ...v,
-                            content: updatedContent
+                            content: "## Writing a new page...\n\nProcessing your article...\n\n"
                         };
                     }
                     return v;
@@ -205,18 +244,29 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
     // Process QueryNode data to extract image information and generate title
     const processQueryNodeData = useCallback(async (data: any, versionNumber: number) => {
+        console.log(`[IMAGE PROCESSING] Processing QueryNode data for node_type: ${data.node_type}, node_id: ${data.node_id}`);
         let capturedImageUrl = '';
 
         if (data.node_type === LoreNodeOutputTypes.PROMPT && data.node_id === "first-draft") {
             try {
                 // Extract content from the data
                 const content = data?.node_result?.llm_output || "";
+                console.log(`[IMAGE PROCESSING] Extracted content length: ${content.length} chars`);
 
                 // Get Firebase ID token for authentication
-                const token = await getIdToken();
+                console.log(`[IMAGE PROCESSING] Getting Firebase token for image generation`);
+                let token;
+                try {
+                    token = await getIdToken();
+                    console.log(`[IMAGE PROCESSING] Firebase token obtained: ${token ? 'Yes' : 'No'}`);
+                } catch (tokenError) {
+                    console.error(`[IMAGE PROCESSING ERROR] Failed to get Firebase token:`, tokenError);
+                    throw new Error(`Authentication error for image: ${tokenError instanceof Error ? tokenError.message : String(tokenError)}`);
+                }
 
                 // Run title generation and image prompt generation in parallel
                 try {
+                    console.log(`[IMAGE PROCESSING] Starting parallel API calls for title and image`);
                     // Create promises for both API calls
                     const titlePromise = fetch('/api/generate-title', {
                         method: 'POST',
@@ -239,62 +289,90 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     });
 
                     // Start handleUiChanges in parallel with other API calls
+                    console.log(`[IMAGE PROCESSING] Starting UI changes for loading state`);
                     const uiChangesPromise = handleUiChanges(content, versionNumber);
 
                     // Wait for all promises to resolve
+                    console.log(`[IMAGE PROCESSING] Awaiting parallel API responses`);
                     const [titleResponse, imagePromptResponse] = await Promise.all([
                         titlePromise,
                         imagePromptPromise
                     ]);
+                    console.log(`[IMAGE PROCESSING] Received API responses - Title: ${titleResponse.status}, Image Prompt: ${imagePromptResponse.status}`);
 
                     // Handle UI changes separately
                     await uiChangesPromise;
+                    console.log(`[IMAGE PROCESSING] UI changes for loading state completed`);
 
                     // Process title response
                     if (titleResponse.ok) {
-                        const titleData = await titleResponse.json();
-                        const title = titleData.title;
+                        try {
+                            const titleData = await titleResponse.json();
+                            const title = titleData.title;
+                            console.log(`[IMAGE PROCESSING] Title generated: "${title}"`);
 
-                        // Update the title
-                        if (title) {
-                            setArticle(prev => {
-                                if (!prev) return prev;
+                            // Update the title
+                            if (title) {
+                                setArticle(prev => {
+                                    if (!prev) return prev;
 
-                                return {
-                                    ...prev,
-                                    title: title
-                                };
-                            });
-                            if (callbacks?.onTitleGenerated && currentSessionIdRef.current) {
-                                callbacks.onTitleGenerated(title, currentSessionIdRef.current);
+                                    return {
+                                        ...prev,
+                                        title: title
+                                    };
+                                });
+                                if (callbacks?.onTitleGenerated && currentSessionIdRef.current) {
+                                    callbacks.onTitleGenerated(title, currentSessionIdRef.current);
+                                    console.log(`[IMAGE PROCESSING] Title callback triggered with: "${title}"`);
+                                }
                             }
+                        } catch (titleParseError) {
+                            console.error(`[IMAGE PROCESSING ERROR] Failed to parse title response:`, titleParseError);
                         }
                     } else {
-                        console.error(`Failed to generate title: ${titleResponse.status} ${titleResponse.statusText}`);
+                        console.error(`[IMAGE PROCESSING ERROR] Failed to generate title: ${titleResponse.status} ${titleResponse.statusText}`);
                         if (titleResponse.status === 307) {
-                            console.error("Received 307 redirect. This may indicate an authentication or session issue.");
+                            console.error("[IMAGE PROCESSING ERROR] Received 307 redirect. This may indicate an authentication or session issue.");
                         }
-                        console.error("Response text:", await titleResponse.text());
+                        try {
+                            const errorText = await titleResponse.text();
+                            console.error("[IMAGE PROCESSING ERROR] Response text:", errorText);
+                        } catch (textError) {
+                            console.error("[IMAGE PROCESSING ERROR] Couldn't read response text:", textError);
+                        }
                     }
 
                     // Process image prompt response
                     let imagePrompt = '';
                     if (imagePromptResponse.ok) {
-                        const imagePromptData = await imagePromptResponse.json();
-                        imagePrompt = imagePromptData.prompt;
-                    } else {
-                        console.error(`Failed to generate image prompt: ${imagePromptResponse.status} ${imagePromptResponse.statusText}`);
-                        if (imagePromptResponse.status === 307) {
-                            console.error("Received 307 redirect. This may indicate an authentication or session issue.");
+                        try {
+                            const imagePromptData = await imagePromptResponse.json();
+                            imagePrompt = imagePromptData.prompt;
+                            console.log(`[IMAGE PROCESSING] Image prompt generated: "${imagePrompt.substring(0, 100)}..."`);
+                        } catch (promptParseError) {
+                            console.error(`[IMAGE PROCESSING ERROR] Failed to parse image prompt response:`, promptParseError);
+                            // Continue with fallback
                         }
-                        console.error("Response text:", await imagePromptResponse.text());
+                    } else {
+                        console.error(`[IMAGE PROCESSING ERROR] Failed to generate image prompt: ${imagePromptResponse.status} ${imagePromptResponse.statusText}`);
+                        if (imagePromptResponse.status === 307) {
+                            console.error("[IMAGE PROCESSING ERROR] Received 307 redirect. This may indicate an authentication or session issue.");
+                        }
+                        try {
+                            const errorText = await imagePromptResponse.text();
+                            console.error("[IMAGE PROCESSING ERROR] Response text:", errorText);
+                        } catch (textError) {
+                            console.error("[IMAGE PROCESSING ERROR] Couldn't read response text:", textError);
+                        }
 
                         // Fallback image prompt
                         imagePrompt = `Create an illustrative image for an article about: ${content.slice(0, 1000)}`;
+                        console.log(`[IMAGE PROCESSING] Using fallback image prompt`);
                     }
 
                     // Generate and upload the image using the generated prompt
                     try {
+                        console.log(`[IMAGE PROCESSING] Calling image generation API with prompt length: ${imagePrompt.length}`);
                         // Call our API to generate and upload the image
                         const response = await fetch('/api/generate-image', {
                             method: 'POST',
@@ -307,13 +385,22 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         });
 
                         if (!response.ok) {
+                            console.error(`[IMAGE PROCESSING ERROR] Failed to generate image: ${response.status} ${response.statusText}`);
+                            try {
+                                const errorText = await response.text();
+                                console.error("[IMAGE PROCESSING ERROR] Response text:", errorText);
+                            } catch (textError) {
+                                console.error("[IMAGE PROCESSING ERROR] Couldn't read response text:", textError);
+                            }
                             throw new Error(`Failed to generate image: ${response.status} ${response.statusText}`);
                         }
 
                         const imageData = await response.json();
+                        console.log(`[IMAGE PROCESSING] Image generated successfully, UUID: ${imageData.uuid}`);
 
                         // Store the image URL for later use
                         capturedImageUrl = imageData.imageUrl || '';
+                        console.log(`[IMAGE PROCESSING] Image URL: ${capturedImageUrl.substring(0, 50)}...`);
 
                         // Create image message
                         const newImage: any = {
@@ -345,15 +432,18 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                 versions: updatedVersions
                             };
                         });
-                    } catch (error) {
-                        console.error("Error generating image:", error);
+                        console.log(`[IMAGE PROCESSING] Article state updated with new image`);
+                    } catch (imageGenError) {
+                        console.error("[IMAGE PROCESSING ERROR] Error generating image:", imageGenError);
                     }
                 } catch (apiError) {
-                    console.error("Error in API calls:", apiError);
+                    console.error("[IMAGE PROCESSING ERROR] Error in API calls:", apiError);
                 }
             } catch (error) {
-                console.error("Error processing PromptNode data:", error);
+                console.error("[IMAGE PROCESSING ERROR] Error processing PromptNode data:", error);
             }
+        } else {
+            console.log(`[IMAGE PROCESSING] Skipping node type: ${data.node_type}, node_id: ${data.node_id}`);
         }
 
         return capturedImageUrl;
@@ -361,149 +451,249 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
     // Process the article stream
     const processArticleStream = useCallback(async (stream: ReadableStream, versionNumber: number) => {
+        console.log("========== PROCESSING STREAM RESPONSE ==========");
+        console.log("Processing stream for version:", versionNumber);
+
         const reader = stream.getReader();
         readerRef.current = reader;
         const decoder = new TextDecoder();
         let buffer = '';
         let accumulatedContent = '';
         let imageUrl = ''; // Track the image URL
+        const streamStartTime = Date.now();
+
+        console.log("[STREAM PROCESSING] Stream processing started");
 
         try {
+            let chunkCount = 0;
+            let lastEventTime = Date.now();
+
             while (true) {
-                const { done, value } = await reader.read();
+                try {
+                    const { done, value } = await reader.read();
+                    const currentTime = Date.now();
+                    const timeSinceLastEvent = currentTime - lastEventTime;
+                    lastEventTime = currentTime;
 
-                if (done) {
-                    if (buffer.trim()) {
-                        try {
-                            const event = JSON.parse(buffer.trim()) as StreamEvent;
-                            //  console.log('event', event);
-                            if (event.event_type === EventType.TextStreamOutput) {
-                                accumulatedContent += event.event_data.text;
+                    chunkCount++;
 
-                                // Update the current version content
-                                setArticle(prev => {
-                                    if (!prev) return prev;
+                    if (done) {
+                        console.log(`[STREAM PROCESSING] Stream completed after ${chunkCount} chunks`);
+                        if (buffer.trim()) {
+                            console.log(`[STREAM PROCESSING] Processing final buffer content (${buffer.length} bytes)`);
+                            try {
+                                const event = JSON.parse(buffer.trim()) as StreamEvent;
+                                if (event.event_type === EventType.TextStreamOutput) {
+                                    console.log(`[STREAM PROCESSING] Final text chunk received (${event.event_data.text.length} chars)`);
+                                    accumulatedContent += event.event_data.text;
 
-                                    const updatedVersions = prev.versions.map(v => {
-                                        if (v.versionNumber === versionNumber) {
-                                            return {
-                                                ...v,
-                                                content: accumulatedContent
-                                            };
+                                    // Update the current version content
+                                    setArticle(prev => {
+                                        if (!prev) return prev;
+
+                                        const updatedVersions = prev.versions.map(v => {
+                                            if (v.versionNumber === versionNumber) {
+                                                return {
+                                                    ...v,
+                                                    content: accumulatedContent
+                                                };
+                                            }
+                                            return v;
+                                        });
+
+                                        // Update both the versions and the currentVersion field
+                                        // Ensure currentVersion is explicitly set to this version number
+                                        const updatedArticle = {
+                                            ...prev,
+                                            versions: updatedVersions,
+                                            currentVersion: versionNumber // Ensure currentVersion is synchronized
+                                        };
+
+                                        // Update the cache if we have a session ID
+                                        if (currentSessionIdRef.current) {
+                                            articleCacheRef.current.set(currentSessionIdRef.current, {
+                                                article: updatedArticle,
+                                                timestamp: Date.now()
+                                            });
                                         }
-                                        return v;
+
+                                        return updatedArticle;
                                     });
 
-                                    return {
-                                        ...prev,
-                                        versions: updatedVersions
-                                    };
-                                });
-
-                                callbacks?.onData?.({ text: event.event_data.text });
-                            }
-                            //  console.log("event", event);
-
-                            // Process batch data for images - ensure we fully await this operation
-                            if (event.event_type === EventType.TextBatchOutput && event.event_data) {
-                                // Start the processing but don't wait for it
-                                const processPromise = processQueryNodeData(event.event_data, versionNumber);
-
-                                // Optionally handle the result when it's ready
-                                processPromise.then(capturedUrl => {
-                                    if (capturedUrl) {
-                                        imageUrl = capturedUrl;
-                                    }
-                                }).catch(error => {
-                                    console.error("Error in parallel processQueryNodeData:", error);
-                                });
-                                // const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
-                                // if (capturedUrl) {
-                                //     imageUrl = capturedUrl;
-                                // }
-                            }
-                        } catch (e) {
-                            console.warn('Failed to parse final buffer:', buffer, e);
-                        }
-                    }
-
-                    // Store assistant message in Supabase when stream is complete
-                    if (accumulatedContent && currentUserIdRef.current && currentSessionIdRef.current) {
-                        await storeMessageInSupabase(
-                            currentUserIdRef.current,
-                            currentSessionIdRef.current,
-                            "assistant",
-                            accumulatedContent,
-                            versionNumber,
-                            false,
-                            false,
-                            imageUrl
-                        );
-                    }
-
-                    callbacks?.onFinish?.();
-                    break;
-                }
-
-                buffer += decoder.decode(value, { stream: true });
-
-                while (true) {
-                    const newlineIndex = buffer.indexOf('\n');
-                    if (newlineIndex === -1) break;
-
-                    const eventJson = buffer.slice(0, newlineIndex).trim();
-                    buffer = buffer.slice(newlineIndex + 1);
-
-                    if (eventJson) {
-                        try {
-                            const event = JSON.parse(eventJson) as StreamEvent;
-                            if (event.event_data?.text) {
-                                accumulatedContent += event.event_data.text;
-
-                                // Update the current version content
-                                setArticle(prev => {
-                                    if (!prev) return prev;
-
-                                    const updatedVersions = prev.versions.map(v => {
-                                        if (v.versionNumber === versionNumber) {
-                                            return {
-                                                ...v,
-                                                content: accumulatedContent
-                                            };
-                                        }
-                                        return v;
-                                    });
-
-                                    return {
-                                        ...prev,
-                                        versions: updatedVersions
-                                    };
-                                });
-
-                                callbacks?.onData?.({ text: event.event_data.text });
-                            }
-                            //   console.log("event", event);
-                            // Process batch data for images - ensure we fully await this operation
-                            if (event.event_type === EventType.TextBatchOutput && event.event_data) {
-                                const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
-                                if (capturedUrl) {
-                                    imageUrl = capturedUrl;
+                                    callbacks?.onData?.({ text: event.event_data.text });
                                 }
+
+                                // Process batch data for images - ensure we fully await this operation
+                                if (event.event_type === EventType.TextBatchOutput && event.event_data) {
+                                    console.log(`[STREAM PROCESSING] Processing batch data from final buffer`);
+                                    // Start the processing but don't wait for it
+                                    const processPromise = processQueryNodeData(event.event_data, versionNumber);
+
+                                    // Optionally handle the result when it's ready
+                                    processPromise.then(capturedUrl => {
+                                        if (capturedUrl) {
+                                            console.log(`[STREAM PROCESSING] Image URL captured from final batch: ${capturedUrl.substring(0, 50)}...`);
+                                            imageUrl = capturedUrl;
+                                        }
+                                    }).catch(error => {
+                                        console.error("[STREAM PROCESSING ERROR] Error in parallel processQueryNodeData:", error);
+                                    });
+                                }
+                            } catch (e) {
+                                console.error('[STREAM PROCESSING ERROR] Failed to parse final buffer:', buffer.substring(0, 100), e);
                             }
-                        } catch (e) {
-                            console.warn('Failed to parse event:', eventJson, e);
-                            continue;
+                        } else {
+                            console.log(`[STREAM PROCESSING] Final buffer was empty`);
+                        }
+
+                        // Store assistant message in Supabase when stream is complete
+                        if (accumulatedContent && currentUserIdRef.current && currentSessionIdRef.current) {
+                            console.log(`[STREAM PROCESSING] Storing completed article in Supabase (${accumulatedContent.length} chars)`);
+                            try {
+                                await storeMessageInSupabase(
+                                    currentUserIdRef.current,
+                                    currentSessionIdRef.current,
+                                    "assistant",
+                                    accumulatedContent,
+                                    versionNumber,
+                                    false,
+                                    false,
+                                    imageUrl
+                                );
+                                console.log(`[STREAM PROCESSING] Successfully stored article in Supabase`);
+                            } catch (dbError) {
+                                console.error('[STREAM PROCESSING ERROR] Failed to store article in Supabase:', dbError);
+                            }
+                        } else {
+                            console.warn(`[STREAM PROCESSING WARNING] Could not store completed article: content=${!!accumulatedContent}, userId=${!!currentUserIdRef.current}, sessionId=${!!currentSessionIdRef.current}`);
+                        }
+
+                        // Final update of article state to ensure correct version info
+                        setArticle(prev => {
+                            if (!prev) return prev;
+
+                            const updatedArticle = {
+                                ...prev,
+                                // Explicitly set currentVersion to this version number
+                                currentVersion: versionNumber
+                            };
+
+                            // Update cache
+                            if (currentSessionIdRef.current) {
+                                articleCacheRef.current.set(currentSessionIdRef.current, {
+                                    article: updatedArticle,
+                                    timestamp: Date.now()
+                                });
+                            }
+
+                            return updatedArticle;
+                        });
+
+                        callbacks?.onFinish?.();
+                        break;
+                    }
+
+                    console.log(`[STREAM PROCESSING] Chunk #${chunkCount} received (${value ? value.length : 0} bytes), ${timeSinceLastEvent}ms since last chunk`);
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    while (true) {
+                        const newlineIndex = buffer.indexOf('\n');
+                        if (newlineIndex === -1) break;
+
+                        const eventJson = buffer.slice(0, newlineIndex).trim();
+                        buffer = buffer.slice(newlineIndex + 1);
+
+                        if (eventJson) {
+                            try {
+                                const event = JSON.parse(eventJson) as StreamEvent;
+                                if (event.event_data?.text) {
+                                    accumulatedContent += event.event_data.text;
+
+                                    // Log the event type and a sample of the text for debugging
+                                    if (event.event_type) {
+                                        console.log(`[STREAM PROCESSING] Received event type: ${event.event_type}, text length: ${event.event_data.text.length}`);
+                                    }
+
+                                    // Update the current version content
+                                    setArticle(prev => {
+                                        if (!prev) return prev;
+
+                                        const updatedVersions = prev.versions.map(v => {
+                                            if (v.versionNumber === versionNumber) {
+                                                return {
+                                                    ...v,
+                                                    content: accumulatedContent
+                                                };
+                                            }
+                                            return v;
+                                        });
+
+                                        // Update both the versions and the currentVersion field
+                                        // Ensure currentVersion is explicitly set to this version number
+                                        const updatedArticle = {
+                                            ...prev,
+                                            versions: updatedVersions,
+                                            currentVersion: versionNumber // Ensure currentVersion is synchronized
+                                        };
+
+                                        // Update the cache if we have a session ID
+                                        if (currentSessionIdRef.current) {
+                                            articleCacheRef.current.set(currentSessionIdRef.current, {
+                                                article: updatedArticle,
+                                                timestamp: Date.now()
+                                            });
+                                        }
+
+                                        return updatedArticle;
+                                    });
+
+                                    callbacks?.onData?.({ text: event.event_data.text });
+                                }
+                                //   console.log("event", event);
+                                // Process batch data for images - ensure we fully await this operation
+                                if (event.event_type === EventType.TextBatchOutput && event.event_data) {
+                                    console.log(`[STREAM PROCESSING] Processing batch data for node type: ${event.event_data.node_type || 'unknown'}`);
+                                    try {
+                                        const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
+                                        if (capturedUrl) {
+                                            console.log(`[STREAM PROCESSING] Image URL captured: ${capturedUrl.substring(0, 50)}...`);
+                                            imageUrl = capturedUrl;
+                                        }
+                                    } catch (batchError) {
+                                        console.error('[STREAM PROCESSING ERROR] Error processing batch data:', batchError);
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('[STREAM PROCESSING WARNING] Failed to parse event:', eventJson.substring(0, 100), e);
+                                continue;
+                            }
                         }
                     }
+                } catch (readError) {
+                    console.error('[STREAM PROCESSING ERROR] Error reading from stream:', readError);
+                    throw new Error(`Stream read error: ${readError instanceof Error ? readError.message : String(readError)}`);
                 }
             }
         } catch (error) {
-            console.error('Stream processing error:', error);
+            console.error('[STREAM PROCESSING ERROR] Stream processing error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Stream processing error';
             setError(errorMessage);
             callbacks?.onError?.(new Error(errorMessage));
         } finally {
-            reader.cancel();
+            const processingTime = Date.now() - streamStartTime;
+            console.log("========== STREAM PROCESSING FINISHED ==========");
+            console.log("Total processing time:", processingTime, "ms");
+            console.log("Total content length:", accumulatedContent.length, "characters");
+            console.log("Image URL generated:", imageUrl ? "Yes" : "No");
+            console.log("Current version set to:", versionNumber);
+            console.log("===============================================");
+
+            try {
+                reader.cancel();
+            } catch (cancelError) {
+                console.error('[STREAM PROCESSING ERROR] Error canceling stream reader:', cancelError);
+            }
             setIsStreaming(false);
         }
     }, [callbacks, processQueryNodeData]);
@@ -519,6 +709,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         isEdit: boolean = false,
         imageUrl?: string
     ) => {
+        console.log(`[SUPABASE] Storing message: role=${role}, version=${version}, isTopic=${isTopic}, isEdit=${isEdit}, contentLength=${content.length}`);
         try {
             const supabase = createClient();
 
@@ -537,12 +728,15 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 });
 
             if (error) {
-                console.error('Error storing message in Supabase:', error);
+                console.error('[SUPABASE ERROR] Error storing message in Supabase:', error);
+            } else {
+                console.log(`[SUPABASE] Successfully stored message in chat_messages table`);
             }
 
             // If this is a topic message, update the session with the topic
             if (isTopic) {
-                await supabase
+                console.log(`[SUPABASE] Updating chat_sessions with topic: "${content.substring(0, 50)}..."`);
+                const { error: sessionError } = await supabase
                     .from('chat_sessions')
                     .update({
                         topic: content,
@@ -550,9 +744,15 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                         type: 'article'
                     })
                     .eq('id', sessionId);
+
+                if (sessionError) {
+                    console.error('[SUPABASE ERROR] Error updating session topic:', sessionError);
+                } else {
+                    console.log(`[SUPABASE] Successfully updated session topic`);
+                }
             }
         } catch (error) {
-            console.error('Error in storeMessageInSupabase:', error);
+            console.error('[SUPABASE ERROR] Error in storeMessageInSupabase:', error);
         }
     };
 
@@ -612,7 +812,15 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Use cached article data
                 if (!preloadOnly) {
                     setArticle(cachedEntry.article);
-                    setCurrentVersionNumber(cachedEntry.article.currentVersion || cachedEntry.article.versions.length);
+
+                    // Ensure we set the correct version number from the cached article
+                    const versionToSet = cachedEntry.article.currentVersion || cachedEntry.article.versions.length;
+                    setCurrentVersionNumber(versionToSet);
+
+                    // Store the session ID for future cache updates
+                    currentSessionIdRef.current = sessionId;
+
+                    console.log(`[Load Session] Using cached article for session ${sessionId}, setting version to ${versionToSet}`);
                 }
                 return sessionId;
             }
@@ -641,6 +849,35 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             if (messagesError) {
                 throw new Error('Failed to load article messages');
             }
+
+            // Log previous messages to see what context might be available
+            console.log("========== PREVIOUS SESSION MESSAGES ==========");
+            console.log("SessionId:", sessionId);
+            console.log("Total Messages:", messages.length);
+            console.log("Messages By Version:");
+
+            const messagesByVersion: Record<number, Array<{
+                role: string;
+                is_topic: boolean;
+                is_edit: boolean;
+                content_preview: string;
+                created_at: string;
+            }>> = {};
+            messages.forEach(msg => {
+                if (!messagesByVersion[msg.version]) {
+                    messagesByVersion[msg.version] = [];
+                }
+                messagesByVersion[msg.version].push({
+                    role: msg.role,
+                    is_topic: msg.is_topic,
+                    is_edit: msg.is_edit,
+                    content_preview: msg.content.substring(0, 100) + (msg.content.length > 100 ? '...' : ''),
+                    created_at: msg.created_at
+                });
+            });
+
+            console.log(JSON.stringify(messagesByVersion, null, 2));
+            console.log("==============================================");
 
             // Process messages to build article versions
             const versions: ArticleVersion[] = [];
@@ -742,8 +979,13 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 // Set article state
                 setArticle(articleData);
 
-                // Set to latest version
-                setCurrentVersionNumber(versions.length);
+                // Set to latest version or stored current version
+                setCurrentVersionNumber(articleData.currentVersion);
+
+                // Store the session ID for future cache updates
+                currentSessionIdRef.current = sessionId;
+
+                console.log(`[Load Session] Loaded article for session ${sessionId}, setting version to ${articleData.currentVersion}`);
             }
 
             return session.id;
@@ -753,6 +995,108 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, []);
 
+    // New function to get only the content of the most recent article's latest version
+    const getPrecedingPageContent = async (userId: string, currentSessionId: string) => {
+        try {
+            console.log("========== FETCHING PRECEDING PAGE ==========");
+            console.log("User ID:", userId);
+            console.log("Current Session ID to exclude:", currentSessionId);
+
+            const supabase = createClient();
+
+            // Get the most recent article session EXCLUDING the current one being created
+            const { data: sessions } = await supabase
+                .from("chat_sessions")
+                .select("id, title, created_at")
+                .eq("user_id", userId)
+                .eq("type", "article")
+                .neq("id", currentSessionId) // Explicitly exclude the current session
+                .order("created_at", { ascending: false })
+                .limit(1); // Only need one result now
+
+            // No previous sessions found
+            if (!sessions || sessions.length === 0) {
+                console.log("No previous sessions found");
+                return null;
+            }
+
+            // The most recent session (excluding current one)
+            const precedingSessionId = sessions[0].id;
+            console.log("Found preceding session:", {
+                id: precedingSessionId,
+                title: sessions[0].title,
+                created_at: sessions[0].created_at
+            });
+
+            // Get the latest version number for this session
+            const { data: versionData } = await supabase
+                .from("chat_messages")
+                .select("version")
+                .eq("session_id", precedingSessionId)
+                .eq("role", "assistant")
+                .not("is_topic", "is", true)
+                .order("version", { ascending: false })
+                .limit(1);
+
+            if (!versionData || versionData.length === 0) {
+                console.log("No version data found for preceding session");
+                return null;
+            }
+
+            const latestVersion = versionData[0].version;
+            console.log("Latest version found:", latestVersion);
+
+            // Get the actual content of the latest version
+            const { data: contentData } = await supabase
+                .from("chat_messages")
+                .select("content")
+                .eq("session_id", precedingSessionId)
+                .eq("version", latestVersion)
+                .eq("role", "assistant")
+                .not("is_topic", "is", true)
+                .not("is_edit", "is", true)
+                .single();
+
+            if (contentData && contentData.content) {
+                console.log("Found content with length:", contentData.content.length);
+                console.log("Content preview:", contentData.content.substring(0, 100) + "...");
+            } else {
+                console.log("No content found");
+            }
+
+            console.log("=========================================");
+
+            return contentData?.content || null;
+        } catch (error) {
+            console.error("Error fetching preceding page content:", error);
+            return null;
+        }
+    };
+
+    // Add a helper function to update logs and article content
+    const addProcessLog = useCallback((message: string, versionNumber: number) => {
+        // Add log to preStreamLogs state
+        setPreStreamLogs(prev => [...prev, message]);
+
+        // Update article content to show the log
+        setArticle(prev => {
+            if (!prev) return prev;
+
+            const updatedVersions = prev.versions.map(v => {
+                if (v.versionNumber === versionNumber) {
+                    // Replace entire content with just this log message
+                    return {
+                        ...v,
+                        content: `## Writing a new page...\n\n${message}\n\n`
+                    };
+                }
+                return v;
+            });
+
+            return { ...prev, versions: updatedVersions };
+        });
+    }, []);
+
     // Generate or update article
     const generateArticle = useCallback(async (
         prompt: string,
@@ -760,7 +1104,19 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         sessionId?: string,
         isNewArticle: boolean = false
     ) => {
-        if (!prompt.trim()) return;
+        console.log(`[ARTICLE GENERATION] Starting article generation process`, {
+            isNewArticle,
+            hasExistingSessionId: !!sessionId,
+            promptLength: prompt.length
+        });
+
+        // Reset preStreamLogs
+        setPreStreamLogs([]);
+
+        if (!prompt.trim()) {
+            console.error("[ARTICLE GENERATION ERROR] Empty prompt provided");
+            return;
+        }
 
         setError(null);
         setIsStreaming(true);
@@ -768,14 +1124,27 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         try {
             // Store current user and session IDs for later use
             currentUserIdRef.current = userId;
+            console.log(`[ARTICLE GENERATION] Using user ID: ${userId}`);
+
+            // Add initial log for user feedback
+            addProcessLog("Establishing secure connection...", isNewArticle || !sessionId ? 1 : (article?.versions.length ? article.versions.length + 1 : 1));
 
             // Create new session or use existing one
             let actualSessionId: string;
             let nextVersionNumber: number;
 
             if (isNewArticle || !sessionId) {
+                console.log(`[ARTICLE GENERATION] Creating new article session`);
                 // Create new article session
-                actualSessionId = await createArticleSession(userId);
+                try {
+                    actualSessionId = await createArticleSession(userId);
+                    console.log(`[ARTICLE GENERATION] Successfully created new session ID: ${actualSessionId}`);
+                    addProcessLog("New article session created...", 1);
+                } catch (createSessionError) {
+                    console.error(`[ARTICLE GENERATION ERROR] Failed to create session:`, createSessionError);
+                    throw createSessionError;
+                }
+
                 nextVersionNumber = 1;
 
                 // Update article state with topic and an initial version placeholder
@@ -783,7 +1152,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     // Create a placeholder version
                     const initialVersion: ArticleVersion = {
                         versionNumber: nextVersionNumber,
-                        content: "Generating...",
+                        content: "This will take 30-60 seconds while we thoroughly research your topic.",
                         timestamp: new Date(),
                         images: []
                     };
@@ -803,13 +1172,19 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     return {
                         ...prev,
                         topic: prompt,
+                        currentVersion: nextVersionNumber, // Ensure currentVersion is set correctly
                         versions: [initialVersion]
                     };
                 });
+                console.log(`[ARTICLE GENERATION] Initialized article state with placeholder for new article`);
             } else {
                 // Use existing session
                 actualSessionId = sessionId;
+                console.log(`[ARTICLE GENERATION] Using existing session ID: ${actualSessionId}`);
+                addProcessLog("Updating existing article...", article?.versions.length ? article.versions.length + 1 : 1);
+
                 nextVersionNumber = article?.versions.length ? article.versions.length + 1 : 1;
+                console.log(`[ARTICLE GENERATION] Creating version #${nextVersionNumber} for existing article`);
 
                 // Add new version placeholder
                 setArticle(prev => {
@@ -817,88 +1192,193 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                     const newVersion: ArticleVersion = {
                         versionNumber: nextVersionNumber,
-                        content: "Generating...",
+                        content: "This will take 30-60 seconds while we thoroughly research your topic.",
                         editPrompt: prompt,
                         timestamp: new Date(),
                         images: []
                     };
 
-                    return {
+                    const updatedArticle = {
                         ...prev,
-                        currentVersion: nextVersionNumber,
+                        currentVersion: nextVersionNumber, // Ensure currentVersion is set correctly
                         versions: [...prev.versions, newVersion]
                     };
+
+                    return updatedArticle;
                 });
+                console.log(`[ARTICLE GENERATION] Updated article state with new version placeholder`);
             }
 
             // Update current session ID ref
             currentSessionIdRef.current = actualSessionId;
+            console.log(`[ARTICLE GENERATION] Set currentSessionIdRef to: ${actualSessionId}`);
+            addProcessLog("Article session configured...", nextVersionNumber);
 
             // Update current version number
             setCurrentVersionNumber(nextVersionNumber);
+            console.log(`[ARTICLE GENERATION] Set currentVersionNumber to: ${nextVersionNumber}`);
 
             // Get Firebase ID token for authentication
-            const token = await getIdToken();
+            console.log(`[ARTICLE GENERATION] Requesting Firebase ID token`);
+            addProcessLog("Authenticating request...", nextVersionNumber);
+
+            let token;
+            try {
+                token = await getIdToken();
+                console.log(`[ARTICLE GENERATION] Successfully obtained Firebase token: ${token ? 'Token received' : 'No token received'}`);
+                addProcessLog("Authentication successful...", nextVersionNumber);
+            } catch (tokenError) {
+                console.error(`[ARTICLE GENERATION ERROR] Failed to get Firebase token:`, tokenError);
+                throw new Error(`Authentication error: Failed to get Firebase token - ${tokenError instanceof Error ? tokenError.message : String(tokenError)}`);
+            }
+
+            // Format the prompt differently for new articles
+            let formattedPrompt = prompt;
+
+            if (isNewArticle || !sessionId) {
+                console.log(`[ARTICLE GENERATION] Fetching preceding content for new article`);
+                addProcessLog("Retrieving contextual information...", nextVersionNumber);
+
+                // Get preceding content for new articles
+                let precedingContent;
+                try {
+                    precedingContent = await getPrecedingPageContent(userId, actualSessionId);
+                    console.log(`[ARTICLE GENERATION] Preceding content ${precedingContent ? 'found' : 'not found'}`);
+                    addProcessLog(precedingContent ? "Retrieved contextual information..." : "No prior context found, starting fresh...", nextVersionNumber);
+                } catch (precedingError) {
+                    console.error(`[ARTICLE GENERATION ERROR] Error fetching preceding content:`, precedingError);
+                    // Continue without preceding content
+                    precedingContent = null;
+                }
+
+                // Format with preceding content if available
+                if (precedingContent) {
+                    formattedPrompt = `<preceding_page>\n${precedingContent}\n</preceding_page>\n\n<user_input>\n${prompt}\n</user_input>`;
+                    console.log(`[ARTICLE GENERATION] Added preceding content to prompt (${precedingContent.length} chars)`);
+                } else {
+                    formattedPrompt = `<user_input>\n${prompt}\n</user_input>`;
+                    console.log(`[ARTICLE GENERATION] No preceding content available, using basic prompt format`);
+                }
+            }
+
+            // Add detailed logging for the API request
+            console.log("========== LORE API REQUEST ==========");
+            console.log("URL:", process.env.NEXT_PUBLIC_API_URL + 'chat_stream');
+            console.log("Headers:", {
+                'firebase-id-token': token ? '[TOKEN PRESENT]' : '[NO TOKEN]',
+                'client-id': process.env.NEXT_PUBLIC_CLIENT_ID ? '[CLIENT ID PRESENT]' : '[NO CLIENT ID]',
+                'graph-id': process.env.NEXT_PUBLIC_GRAPH_ID ? '[GRAPH ID PRESENT]' : '[NO GRAPH ID]',
+                'Content-Type': 'application/json',
+            });
+            console.log("Request Body:", {
+                query: formattedPrompt.substring(0, 100) + '...',  // Only log a portion for privacy
+                session: actualSessionId,
+                user: userId
+            });
+            console.log("Is New Article:", isNewArticle || !sessionId);
+            console.log("Version Number:", nextVersionNumber);
+            console.log("Has Preceding Content:", formattedPrompt.includes("<preceding_page>"));
+            console.log("=====================================");
 
             // Call API to generate content
-            const response = await fetch(process.env.NEXT_PUBLIC_API_URL + 'chat_stream', {
-                method: 'POST',
-                headers: {
-                    'firebase-id-token': token!,
-                    'client-id': process.env.NEXT_PUBLIC_CLIENT_ID!,
-                    'graph-id': process.env.NEXT_PUBLIC_GRAPH_ID!,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    query: prompt,
-                    session: actualSessionId,
-                    user: userId
-                }),
-            });
+            console.log(`[ARTICLE GENERATION] Sending API request to chat_stream endpoint`);
+            addProcessLog("Submitting your topic for analysis...", nextVersionNumber);
 
-            if (!response.ok) {
-                throw new Error(`API request failed with status ${response.status}`);
+            let response;
+            try {
+                response = await fetch(process.env.NEXT_PUBLIC_API_URL + 'chat_stream', {
+                    method: 'POST',
+                    headers: {
+                        'firebase-id-token': token!,
+                        'client-id': process.env.NEXT_PUBLIC_CLIENT_ID!,
+                        'graph-id': process.env.NEXT_PUBLIC_GRAPH_ID!,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: formattedPrompt,
+                        session: actualSessionId,
+                        user: userId
+                    }),
+                });
+
+                console.log(`[ARTICLE GENERATION] API response received: status ${response.status}`);
+                addProcessLog("Connected to knowledge graph, beginning analysis...", nextVersionNumber);
+
+                if (!response.ok) {
+                    let responseText = '';
+                    try {
+                        responseText = await response.text();
+                    } catch (textError) {
+                        console.error('[ARTICLE GENERATION ERROR] Failed to read error response text:', textError);
+                    }
+
+                    console.error(`[ARTICLE GENERATION ERROR] API request failed with status ${response.status}:`, responseText);
+                    throw new Error(`API request failed with status ${response.status}: ${responseText}`);
+                }
+            } catch (apiError) {
+                console.error(`[ARTICLE GENERATION ERROR] Error calling API:`, apiError);
+                throw new Error(`API call error: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
             }
 
             // Now that we have a successful response, store the user prompt in Supabase
-            if (isNewArticle || !sessionId) {
-                // Store topic
-                await storeMessageInSupabase(
-                    userId,
-                    actualSessionId,
-                    "user",
-                    prompt,
-                    nextVersionNumber,
-                    true, // is_topic
-                    false // is_edit
-                );
-            } else {
-                // Store edit prompt
-                await storeMessageInSupabase(
-                    userId,
-                    actualSessionId,
-                    "user",
-                    prompt,
-                    nextVersionNumber,
-                    false, // is_topic
-                    true // is_edit
-                );
+            console.log(`[ARTICLE GENERATION] Storing user prompt in Supabase`);
+            addProcessLog("Saving your request...", nextVersionNumber);
+
+            try {
+                if (isNewArticle || !sessionId) {
+                    // Store topic
+                    await storeMessageInSupabase(
+                        userId,
+                        actualSessionId,
+                        "user",
+                        prompt, // Store original prompt, not formatted
+                        nextVersionNumber,
+                        true, // is_topic
+                        false // is_edit
+                    );
+                    console.log(`[ARTICLE GENERATION] Successfully stored topic message in Supabase`);
+                } else {
+                    // Store edit prompt
+                    await storeMessageInSupabase(
+                        userId,
+                        actualSessionId,
+                        "user",
+                        prompt,
+                        nextVersionNumber,
+                        false, // is_topic
+                        true // is_edit
+                    );
+                    console.log(`[ARTICLE GENERATION] Successfully stored edit prompt in Supabase`);
+                }
+            } catch (dbError) {
+                console.error(`[ARTICLE GENERATION ERROR] Failed to store message in Supabase:`, dbError);
+                // Continue processing even if storage fails
             }
 
             if (response.body) {
+                console.log(`[ARTICLE GENERATION] Stream body received, starting stream processing`);
+                addProcessLog("Beginning article generation process...", nextVersionNumber);
+
+                // Process the content
+                await handleUiChanges(prompt, nextVersionNumber);
+
+                // Process the stream
                 await processArticleStream(response.body, nextVersionNumber);
             } else {
-                throw new Error("No response body received");
+                console.error(`[ARTICLE GENERATION ERROR] No response body received`);
+                throw new Error("No response body received from API");
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to generate article";
+            console.error(`[ARTICLE GENERATION ERROR] Error in generateArticle:`, error);
             setError(errorMessage);
             callbacks?.onError?.(new Error(errorMessage));
         } finally {
+            console.log(`[ARTICLE GENERATION] Generation process completed`);
             setIsStreaming(false);
             readerRef.current = null;
         }
-    }, [article, callbacks, createArticleSession, processArticleStream]);
+    }, [article, callbacks, createArticleSession, processArticleStream, getPrecedingPageContent, addProcessLog]);
 
     // Stop generation
     const stopGeneration = useCallback(() => {
@@ -932,6 +1412,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         generateArticle,
         stopGeneration,
         resetArticle,
-        loadArticleSession
+        loadArticleSession,
+        getPrecedingPageContent,
+        preStreamLogs
     };
 }

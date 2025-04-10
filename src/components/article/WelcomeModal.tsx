@@ -87,7 +87,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose }) => {
         },
         {
             title: "Create New Content",
-            content: "By asking questions, you create and edit new pages of the book that never existed before, grounded in the original text. Any new page created is visible and sharable to everyone else."
+            content: "Your questions create and edit new pages of the book—pages that never existed before but are grounded in the original text. All new pages you create are visible and shareable with everyone else."
         }
     ], [styles]);
 

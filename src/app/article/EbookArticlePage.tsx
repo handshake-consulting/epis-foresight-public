@@ -63,6 +63,7 @@ export default function EbookArticlePage({
     const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+    const welcomeModalInitialized = useRef(false);
 
     // Add a ref to track the latest session ID from articleGeneration
     const generatedSessionIdRef = useRef<string | null>(null);
@@ -158,17 +159,17 @@ export default function EbookArticlePage({
         setTheme(settings.theme === 'sepia' ? 'sepia' : settings.theme);
     }, [settings.theme]);
 
-    // Check if we should show the welcome modal
+    // Show welcome modal every time the page loads - using safe client-only effect pattern
     useEffect(() => {
-        if (!settings.hasSeenWelcomeModal) {
+        if (typeof window !== 'undefined' && !welcomeModalInitialized.current) {
             setShowWelcomeModal(true);
+            welcomeModalInitialized.current = true;
         }
-    }, [settings.hasSeenWelcomeModal]);
+    }, []);
 
     // Handle closing the welcome modal
     const handleCloseWelcomeModal = () => {
         setShowWelcomeModal(false);
-        markWelcomeModalAsSeen();
     };
 
     // Toggle theme

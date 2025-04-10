@@ -1,4 +1,5 @@
 import Provider from "@/store/Provider";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -25,6 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_TAG_ID as string} />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

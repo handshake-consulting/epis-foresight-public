@@ -1098,17 +1098,19 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         });
     }, []);
 
-    // Generate or update article
+    // Generate or update article with retry mechanism
     const generateArticle = useCallback(async (
         prompt: string,
         userId: string,
         sessionId?: string,
-        isNewArticle: boolean = false
+        isNewArticle: boolean = false,
+        retryCount: number = 0
     ) => {
-        console.log(`[ARTICLE GENERATION] Starting article generation process`, {
+        console.log(`[ARTICLE GENERATION] Starting article generation process (attempt ${retryCount + 1}/3)`, {
             isNewArticle,
             hasExistingSessionId: !!sessionId,
-            promptLength: prompt.length
+            promptLength: prompt.length,
+            retryAttempt: retryCount + 1
         });
 
         // Reset preStreamLogs
@@ -1125,6 +1127,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         // Declare variables outside try block so they're accessible in finally block
         let actualSessionId: string = '';
         let nextVersionNumber: number = 0;
+        let generationSuccessful = false;
 
         try {
             // Store current user and session IDs for later use
@@ -1441,8 +1444,22 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                                 // Update current version number
                                 setCurrentVersionNumber(Math.max(1, versionNum - 1));
                             }
+
+                            // Implement retry mechanism - retry up to 3 times
+                            if (retryCount < 2) { // We've already done attempt 1, so retry for attempts 2 and 3
+                                console.log(`[ARTICLE GENERATION] Retry attempt ${retryCount + 2}/3 for failed generation`);
+
+                                // Add a small delay before retrying
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                                // Retry generation with incremented retry count
+                                await generateArticle(prompt, userId, sessionId, isNewArticle, retryCount + 1);
+                            } else {
+                                console.log(`[ARTICLE GENERATION] All retry attempts exhausted (${retryCount + 1}/3)`);
+                            }
                         } else {
                             console.log(`[ARTICLE GENERATION] Version ${versionNum} was successfully stored in the database for session ${sessionId}`);
+                            generationSuccessful = true;
                         }
                     } catch (error) {
                         console.error(`[ARTICLE GENERATION] Error checking article storage:`, error);

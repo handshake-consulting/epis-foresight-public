@@ -697,17 +697,17 @@ export default function EbookArticlePage({
                 isNewArticle={isNewArticle}
             />
 
-            {/* Desktop Image slider - collect images from all versions */}
-            {article && article.versions && article.versions.length > 0 && (
-                <>
-                    {/* Desktop version with modal */}
-                    <div className="hidden md:block">
-                        <ImageSlider
-                            initialImages={(article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : [])}
-                        />
-                    </div>
-                </>
-            )}
+
+            {/* Desktop version with modal */}
+            {!isFirstGeneration ?
+                <div className="hidden md:block">
+                    <ImageSlider
+
+                    />
+                </div>
+                : null}
+
+
 
             {/* Error message */}
             {error && (

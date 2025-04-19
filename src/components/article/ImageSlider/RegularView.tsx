@@ -1,33 +1,17 @@
 "use client"
 
-import { ImageMessage } from "@/components/chat/types";
 import { HelpCircle, X } from "lucide-react";
 import Image from "next/image";
-import { RefObject, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface RegularViewProps {
-    images: ImageMessage[];
-    currentIndex: number;
-    isLoading: boolean;
-    imageLoading: boolean;
-    isTransitioning: boolean;
-    pagination: {
-        page: number;
-        totalPages: number;
-    };
+
     theme: any;
     isOpen: boolean;
     width: string;
-    thumbnailContainerRef: RefObject<HTMLDivElement | null>;
-    onThumbnailClick: (index: number) => void;
-    onScroll: (direction: 'left' | 'right') => void;
-    onPrevious: (e?: React.MouseEvent) => void;
-    onNext: (e?: React.MouseEvent) => void;
-    onDownload: () => void;
-    onFullscreen: () => void;
+
     onToggle: () => void;
-    onImageLoadStart: () => void;
-    onImageLoad: () => void;
+
     settings?: {
         fontFamily?: string;
         fontSize?: number;
@@ -37,26 +21,13 @@ interface RegularViewProps {
 }
 
 export function RegularView({
-    images,
-    currentIndex,
-    isLoading,
-    imageLoading,
-    isTransitioning,
-    pagination,
+
     theme,
     isOpen,
     width,
-    thumbnailContainerRef,
 
-    onThumbnailClick,
-    onScroll,
-    onPrevious,
-    onNext,
-    onDownload,
-    onFullscreen,
     onToggle,
-    onImageLoadStart,
-    onImageLoad,
+
     settings
 }: RegularViewProps) {
     // State to store the measured header height

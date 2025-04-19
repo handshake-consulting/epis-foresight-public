@@ -2,6 +2,7 @@
 
 import { Article, ArticleVersion, ImageMessage } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
+import { cleanupEmptyArticleSession, verifyArticleVersionExists } from "@/utils/cleanupArticleSessions";
 import { getIdToken } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
 import { useCallback, useRef, useState } from "react";
@@ -1097,17 +1098,19 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         });
     }, []);
 
-    // Generate or update article
+    // Generate or update article with retry mechanism
     const generateArticle = useCallback(async (
         prompt: string,
         userId: string,
         sessionId?: string,
-        isNewArticle: boolean = false
+        isNewArticle: boolean = false,
+        retryCount: number = 0
     ) => {
-        console.log(`[ARTICLE GENERATION] Starting article generation process`, {
+        console.log(`[ARTICLE GENERATION] Starting article generation process (attempt ${retryCount + 1}/3)`, {
             isNewArticle,
             hasExistingSessionId: !!sessionId,
-            promptLength: prompt.length
+            promptLength: prompt.length,
+            retryAttempt: retryCount + 1
         });
 
         // Reset preStreamLogs
@@ -1121,6 +1124,11 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         setError(null);
         setIsStreaming(true);
 
+        // Declare variables outside try block so they're accessible in finally block
+        let actualSessionId: string = '';
+        let nextVersionNumber: number = 0;
+        let generationSuccessful = false;
+
         try {
             // Store current user and session IDs for later use
             currentUserIdRef.current = userId;
@@ -1130,8 +1138,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             addProcessLog("Establishing secure connection...", isNewArticle || !sessionId ? 1 : (article?.versions.length ? article.versions.length + 1 : 1));
 
             // Create new session or use existing one
-            let actualSessionId: string;
-            let nextVersionNumber: number;
 
             if (isNewArticle || !sessionId) {
                 console.log(`[ARTICLE GENERATION] Creating new article session`);
@@ -1377,6 +1383,89 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             console.log(`[ARTICLE GENERATION] Generation process completed`);
             setIsStreaming(false);
             readerRef.current = null;
+
+            // Check if the article was successfully stored in the database
+            if (currentUserIdRef.current && currentSessionIdRef.current) {
+                const userId = currentUserIdRef.current;
+                const sessionId = currentSessionIdRef.current;
+                const versionNum = nextVersionNumber;
+
+                // Use setTimeout to allow a small delay for any pending database operations to complete
+                setTimeout(async () => {
+                    try {
+                        // Verify if the version exists in the database
+                        const versionExists = await verifyArticleVersionExists(sessionId, userId, versionNum);
+
+                        if (!versionExists) {
+                            console.log(`[ARTICLE GENERATION] Version ${versionNum} was not stored in the database for session ${sessionId}`);
+
+                            // Check if this is the first version (new article)
+                            if (versionNum === 1) {
+                                // If this is a new article and no version was stored, clean up the empty session
+                                const wasDeleted = await cleanupEmptyArticleSession(sessionId, userId);
+                                if (wasDeleted) {
+                                    console.log(`[ARTICLE GENERATION] Deleted empty session ${sessionId} as no article was generated`);
+                                }
+                            } else {
+                                // If this is not the first version, just remove the placeholder version from the UI
+                                console.log(`[ARTICLE GENERATION] Removing placeholder version ${versionNum} from UI as it was not stored in the database`);
+
+                                setArticle(prev => {
+                                    if (!prev) return prev;
+
+                                    // Filter out the placeholder version
+                                    const updatedVersions = prev.versions.filter(v => v.versionNumber !== versionNum);
+
+                                    // Update version numbers if needed
+                                    const reindexedVersions = updatedVersions.map((v, idx) => ({
+                                        ...v,
+                                        versionNumber: idx + 1
+                                    }));
+
+                                    // Set current version to the previous version
+                                    const newCurrentVersion = Math.max(1, versionNum - 1);
+
+                                    // Update the article state
+                                    const updatedArticle = {
+                                        ...prev,
+                                        versions: reindexedVersions,
+                                        currentVersion: newCurrentVersion
+                                    };
+
+                                    // Update cache
+                                    articleCacheRef.current.set(sessionId, {
+                                        article: updatedArticle,
+                                        timestamp: Date.now()
+                                    });
+
+                                    return updatedArticle;
+                                });
+
+                                // Update current version number
+                                setCurrentVersionNumber(Math.max(1, versionNum - 1));
+                            }
+
+                            // Implement retry mechanism - retry up to 3 times
+                            if (retryCount < 2) { // We've already done attempt 1, so retry for attempts 2 and 3
+                                console.log(`[ARTICLE GENERATION] Retry attempt ${retryCount + 2}/3 for failed generation`);
+
+                                // Add a small delay before retrying
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                                // Retry generation with incremented retry count
+                                await generateArticle(prompt, userId, sessionId, isNewArticle, retryCount + 1);
+                            } else {
+                                console.log(`[ARTICLE GENERATION] All retry attempts exhausted (${retryCount + 1}/3)`);
+                            }
+                        } else {
+                            console.log(`[ARTICLE GENERATION] Version ${versionNum} was successfully stored in the database for session ${sessionId}`);
+                            generationSuccessful = true;
+                        }
+                    } catch (error) {
+                        console.error(`[ARTICLE GENERATION] Error checking article storage:`, error);
+                    }
+                }, 2000); // 2-second delay to allow database operations to complete
+            }
         }
     }, [article, callbacks, createArticleSession, processArticleStream, getPrecedingPageContent, addProcessLog]);
 
@@ -1386,8 +1475,62 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             readerRef.current.cancel();
             readerRef.current = null;
             setIsStreaming(false);
+
+            // Check if we need to remove a placeholder version that was never generated
+            if (article && currentVersionNumber === article.versions.length) {
+                const currentVer = article.versions[currentVersionNumber - 1];
+
+                // Check if this is a placeholder version (contains default loading text)
+                const isPlaceholder = currentVer && (
+                    currentVer.content.includes("This will take 30-60 seconds") ||
+                    currentVer.content.includes("Writing a new page") ||
+                    currentVer.content.includes("Progress:") ||
+                    currentVer.content.includes("Analyzing your article content")
+                );
+
+                if (isPlaceholder) {
+                    console.log(`[ARTICLE GENERATION] Removing placeholder version ${currentVersionNumber} that was never generated`);
+
+                    // Remove the placeholder version
+                    setArticle(prev => {
+                        if (!prev) return prev;
+
+                        // Filter out the placeholder version
+                        const updatedVersions = prev.versions.filter(v => v.versionNumber !== currentVersionNumber);
+
+                        // Update version numbers if needed
+                        const reindexedVersions = updatedVersions.map((v, idx) => ({
+                            ...v,
+                            versionNumber: idx + 1
+                        }));
+
+                        // Set current version to the previous version
+                        const newCurrentVersion = Math.max(1, currentVersionNumber - 1);
+
+                        // Update the article state
+                        const updatedArticle = {
+                            ...prev,
+                            versions: reindexedVersions,
+                            currentVersion: newCurrentVersion
+                        };
+
+                        // Update cache if we have a session ID
+                        if (currentSessionIdRef.current) {
+                            articleCacheRef.current.set(currentSessionIdRef.current, {
+                                article: updatedArticle,
+                                timestamp: Date.now()
+                            });
+                        }
+
+                        return updatedArticle;
+                    });
+
+                    // Update current version number
+                    setCurrentVersionNumber(Math.max(1, currentVersionNumber - 1));
+                }
+            }
         }
-    }, []);
+    }, [article, currentVersionNumber]);
 
     // Reset article state
     const resetArticle = useCallback(() => {

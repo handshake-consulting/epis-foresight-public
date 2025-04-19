@@ -34,6 +34,7 @@ const useArticleSession = (sessionId: string | undefined, userId: string | null)
 
             if (error) {
                 console.error("Error loading specific session:", error);
+                location.href = "/article?new=true";
                 return null;
             }
 

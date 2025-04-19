@@ -2,11 +2,8 @@
 
 import { ImageMessage } from "@/components/chat/types";
 import { useSettingsStore } from "@/store/settingsStore";
-import { getIdToken } from "@/utils/firebase/client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { FullscreenView } from "./FullscreenView";
+import { useCallback, useState } from "react";
 import { RegularView } from "./RegularView";
-import { PaginationData } from "./types";
 
 interface ImageSliderProps {
     initialImages?: ImageMessage[];
@@ -21,216 +18,7 @@ export function ImageSlider({
     const { isImageSliderOpen, toggleImageSlider, settings } = useSettingsStore();
 
     const [images, setImages] = useState<ImageMessage[]>(initialImages);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [imageLoading, setImageLoading] = useState(true); // State for image loading
-    const [error, setError] = useState<string | null>(null);
-    const [pagination, setPagination] = useState<PaginationData>({
-        total: 0,
-        page: 1,
-        pageSize: 10,
-        totalPages: 0
-    });
 
-    // Refs for thumbnail scrolling
-    const thumbnailContainerRef = useRef<HTMLDivElement>(null);
-    const fullscreenThumbnailContainerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        setImages(initialImages);
-        setImageLoading(false); // Reset image loading state when initialImages change
-    }, [initialImages]);
-
-    // Scroll thumbnails to center the current image
-    useEffect(() => {
-        if (thumbnailContainerRef.current && images.length > 1) {
-            const container = thumbnailContainerRef.current;
-            const thumbnailWidth = 56; // 48px + gap
-            const scrollPosition = currentIndex * thumbnailWidth - (container.clientWidth / 2) + (thumbnailWidth / 2);
-            container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
-        }
-
-        if (fullscreenThumbnailContainerRef.current && images.length > 1 && isFullscreen) {
-            const container = fullscreenThumbnailContainerRef.current;
-            const thumbnailWidth = 62; // 56px + gap
-            const scrollPosition = currentIndex * thumbnailWidth - (container.clientWidth / 2) + (thumbnailWidth / 2);
-            container.scrollTo({ left: scrollPosition, behavior: 'smooth' });
-        }
-    }, [currentIndex, images.length, isFullscreen]);
-
-    // Fetch images from API
-    const fetchImages = useCallback(async (page: number = 1, append: boolean = false) => {
-        try {
-            setIsLoading(true);
-            setError(null);
-
-            // Get Firebase ID token for authentication
-            const token = await getIdToken();
-
-            // Call our API to fetch images
-            const response = await fetch(`/api/article-images?page=${page}&pageSize=${pagination.pageSize}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch images: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-
-            // Update state with fetched images and pagination data
-            if (append) {
-                // Append new images to existing ones for infinite scroll
-                setImages(prevImages => [...prevImages, ...data.images]);
-            } else {
-                // Replace images when not appending (initial load)
-                setImages(data.images);
-                // Reset current index when loading a new page
-                setCurrentIndex(0);
-            }
-
-            setPagination(data.pagination);
-        } catch (err) {
-            console.error("Error fetching images:", err);
-            setError(err instanceof Error ? err.message : "Failed to fetch images");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [pagination.pageSize]);
-
-    // Load images when component mounts or when isImageSliderOpen changes
-    // useEffect(() => {
-    //     // Only fetch images when the slider is open and has exactly one image
-    //     if (isImageSliderOpen && images.length === 1) {
-    //         fetchImages(1, false);
-    //     }
-    // }, [isImageSliderOpen, fetchImages, images.length]);
-
-    // Load more images when needed
-    const loadMoreImages = useCallback(() => {
-        if (!isLoading && pagination.page < pagination.totalPages) {
-            // Load next page and append images
-            fetchImages(pagination.page + 1, true);
-            return true;
-        }
-        return false;
-    }, [fetchImages, isLoading, pagination.page, pagination.totalPages]);
-
-    // Navigation functions
-    const goToPrevious = useCallback(() => {
-        if (isTransitioning) return;
-        setIsTransitioning(true);
-        setImageLoading(true); // Set loading state when navigating
-        setCurrentIndex((prevIndex) =>
-            prevIndex === 0 ? images.length - 1 : prevIndex - 1
-        );
-        setTimeout(() => setIsTransitioning(false), 300);
-    }, [isTransitioning, images.length]);
-
-    const goToNext = useCallback(() => {
-        if (isTransitioning) return;
-
-        // Check if we're at the last image and need to load more
-        if (currentIndex === images.length - 1) {
-            // Try to load more images
-            const moreImagesLoaded = loadMoreImages();
-
-            // If more images are being loaded, stay on current image until they load
-            if (moreImagesLoaded) {
-                return;
-            }
-        }
-
-        setIsTransitioning(true);
-        setImageLoading(true); // Set loading state when navigating
-        setCurrentIndex((prevIndex) =>
-            prevIndex === images.length - 1 ? 0 : prevIndex + 1
-        );
-        setTimeout(() => setIsTransitioning(false), 300);
-    }, [isTransitioning, currentIndex, images.length, loadMoreImages]);
-
-    const handleThumbnailClick = useCallback((index: number) => {
-        if (currentIndex === index || isTransitioning) return;
-        setIsTransitioning(true);
-        setImageLoading(true); // Set loading state when changing image
-        setCurrentIndex(index);
-        setTimeout(() => setIsTransitioning(false), 300);
-    }, [currentIndex, isTransitioning]);
-
-    const handleDownload = useCallback(async () => {
-        if (images.length === 0) return;
-
-        try {
-            setIsLoading(true);
-            const imageUrl = images[currentIndex].imageUrl || '';
-
-            // Fetch the image as a blob
-            const response = await fetch(imageUrl);
-            if (!response.ok) throw new Error('Failed to download image');
-
-            const blob = await response.blob();
-
-            // Create a blob URL and trigger download
-            const blobUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = `image-${currentIndex + 1}.jpg`;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-
-            // Clean up
-            setTimeout(() => {
-                document.body.removeChild(link);
-                URL.revokeObjectURL(blobUrl);
-            }, 100);
-        } catch (error) {
-            console.error('Error downloading image:', error);
-            setError('Failed to download image');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [images, currentIndex]);
-
-    const toggleFullscreen = useCallback(() => {
-        setIsFullscreen(!isFullscreen);
-    }, [isFullscreen]);
-
-    // Scroll thumbnail container
-    const scrollThumbnails = useCallback((direction: 'left' | 'right', isFullscreenView: boolean = false) => {
-        const container = isFullscreenView ? fullscreenThumbnailContainerRef.current : thumbnailContainerRef.current;
-        if (!container) return;
-
-        const scrollAmount = direction === 'left' ? -200 : 200;
-        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }, []);
-
-    // Handle keyboard navigation
-    useEffect(() => {
-        // Define the event handler
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Only process keyboard events if the slider is open
-            if (!isImageSliderOpen) return;
-
-            if (e.key === 'ArrowLeft') {
-                goToPrevious();
-            } else if (e.key === 'ArrowRight') {
-                goToNext();
-            } else if (e.key === 'Escape' && isFullscreen) {
-                setIsFullscreen(false);
-            }
-        };
-
-        // Add the event listener
-        window.addEventListener('keydown', handleKeyDown);
-
-        // Return cleanup function
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isImageSliderOpen, isFullscreen, goToPrevious, goToNext]);
 
     // Theme-based styling
     const getThemeStyles = useCallback(() => {
@@ -306,57 +94,17 @@ export function ImageSlider({
 
     const theme = getThemeStyles();
 
-    // No images to display and not loading - render nothing
-    if (images.length === 0) {
-        return null;
-    }
-
-    // Fullscreen overlay
-    if (isFullscreen) {
-        return (
-            <FullscreenView
-                images={images}
-                currentIndex={currentIndex}
-                isLoading={isLoading}
-                imageLoading={imageLoading}
-                isTransitioning={isTransitioning}
-                pagination={pagination}
-                theme={theme}
-                fullscreenThumbnailContainerRef={fullscreenThumbnailContainerRef}
-                onThumbnailClick={handleThumbnailClick}
-                onScroll={scrollThumbnails}
-                onPrevious={goToPrevious}
-                onNext={goToNext}
-                onDownload={handleDownload}
-                onExitFullscreen={toggleFullscreen}
-                onImageLoadStart={() => setImageLoading(true)}
-                onImageLoad={() => setImageLoading(false)}
-            />
-        );
-    }
 
     // Regular view
     return (
         <RegularView
-            images={images}
-            currentIndex={currentIndex}
-            isLoading={isLoading}
-            imageLoading={imageLoading}
-            isTransitioning={isTransitioning}
-            pagination={pagination}
+
             theme={theme}
             isOpen={isImageSliderOpen}
             width={isImageSliderOpen ? '650px' : '48px'}
-            thumbnailContainerRef={thumbnailContainerRef}
-            onThumbnailClick={handleThumbnailClick}
-            onScroll={(direction) => scrollThumbnails(direction)}
-            onPrevious={goToPrevious}
-            onNext={goToNext}
-            onDownload={handleDownload}
-            onFullscreen={toggleFullscreen}
+
             onToggle={toggleImageSlider}
-            onImageLoadStart={() => setImageLoading(true)}
-            onImageLoad={() => setImageLoading(false)}
+
             settings={settings}
         />
     );

@@ -17,9 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "LMTF∞",
   description: "This is a collaborative, generative extension of the book Leaders Make the Future, Third Edition: 10 New Skills to Humanize Leadership with Generative AI, by Bob Johansen, Jeremy Kirshbaum, and Gabe Cervantes.",
-  icons: {
-    icon: '/favicon.svg',
-  },
+
 };
 
 export default function RootLayout({

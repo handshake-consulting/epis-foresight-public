@@ -235,7 +235,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             // Display loading messages with progress indicators
             for (let i = 0; i < loadingMessages.length; i++) {
                 const message = loadingMessages[i];
-                const progress = Math.round((i + 1) / loadingMessages.length * 100);
+                const progress = Math.round((i + 1) / loadingMessages.length * 95);
 
                 // Cycle the ellipsis: 1 dot, 2 dots, 3 dots, then back to 1
                 const dotCount = (i % 3) + 1;

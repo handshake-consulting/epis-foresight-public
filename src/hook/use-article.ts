@@ -526,19 +526,17 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                                 // Process batch data for images - ensure we fully await this operation
                                 if (event.event_type === EventType.TextBatchOutput && event.event_data) {
-                                    console.log(`[STREAM PROCESSING] Processing batch data from final buffer`);
-                                    // Start the processing but don't wait for it
-                                    const processPromise = processQueryNodeData(event.event_data, versionNumber);
-
-                                    // Optionally handle the result when it's ready
-                                    processPromise.then(capturedUrl => {
+                                    console.log(`[STREAM PROCESSING] Processing batch data from final buffer (awaiting)`);
+                                    try {
+                                        // Await image generation so imageUrl is set before we write to Supabase
+                                        const capturedUrl = await processQueryNodeData(event.event_data, versionNumber);
                                         if (capturedUrl) {
                                             console.log(`[STREAM PROCESSING] Image URL captured from final batch: ${capturedUrl.substring(0, 50)}...`);
                                             imageUrl = capturedUrl;
                                         }
-                                    }).catch(error => {
-                                        console.error("[STREAM PROCESSING ERROR] Error in parallel processQueryNodeData:", error);
-                                    });
+                                    } catch (error) {
+                                        console.error("[STREAM PROCESSING ERROR] Error processing batch data from final buffer:", error);
+                                    }
                                 }
                             } catch (e) {
                                 console.error('[STREAM PROCESSING ERROR] Failed to parse final buffer:', buffer.substring(0, 100), e);

@@ -49,6 +49,54 @@ export function useArticle(options: ArticleStreamOptions = {}) {
     // Get the image slider toggle function from the store
     const { toggleImageSlider } = useSettingsStore();
 
+    // Ellipsis animation management
+    const ellipsisIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    /**
+     * Start continuously animating the ellipsis for the given version header.
+     */
+    const startEllipsisAnimation = useCallback((versionNumber: number) => {
+        // Prevent multiple intervals
+        if (ellipsisIntervalRef.current) return;
+
+        ellipsisIntervalRef.current = setInterval(() => {
+            setArticle(prev => {
+                if (!prev) return prev;
+
+                const updatedVersions = prev.versions.map(v => {
+                    if (v.versionNumber === versionNumber) {
+                        // Only update if header is still present
+                        if (v.content.startsWith("## Writing a new page")) {
+                            // Determine current dot count (1-3) based on existing header
+                            const currentDots = (v.content.match(/^## Writing a new page(\.{1,3})/) || ["", "..."])[1].length;
+                            const nextDots = currentDots % 3 + 1; // cycle 1 → 2 → 3 → 1
+
+                            // Replace the header dots while leaving the rest untouched
+                            const rest = v.content.replace(/^## Writing a new page\.{1,3}/, "");
+                            return {
+                                ...v,
+                                content: `## Writing a new page${'.'.repeat(nextDots)}${rest}`
+                            };
+                        }
+                    }
+                    return v;
+                });
+
+                return { ...prev, versions: updatedVersions };
+            });
+        }, 500); // update every 0.5s for smoothness
+    }, []);
+
+    /**
+     * Stop the ellipsis animation if it's running.
+     */
+    const stopEllipsisAnimation = useCallback(() => {
+        if (ellipsisIntervalRef.current) {
+            clearInterval(ellipsisIntervalRef.current);
+            ellipsisIntervalRef.current = null;
+        }
+    }, []);
+
     // Navigate to previous version
     const goToPreviousVersion = useCallback(() => {
         if (currentVersionNumber > 1) {
@@ -141,10 +189,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        // Replace entirely instead of appending
+                        const header = "## Writing a new page." + '.'.repeat(0); // will be animated
                         return {
                             ...v,
-                            content: "## Writing a new page...\n\nStarting to analyze your topic...\n\n"
+                            content: `${header}\n\nStarting to analyze your topic...\n\n`
                         };
                     }
                     return v;
@@ -189,6 +237,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 const message = loadingMessages[i];
                 const progress = Math.round((i + 1) / loadingMessages.length * 100);
 
+                // Cycle the ellipsis: 1 dot, 2 dots, 3 dots, then back to 1
+                const dotCount = (i % 3) + 1;
+
                 // Update article with loading message and progress - REPLACE content instead of appending
                 setArticle(prev => {
                     if (!prev) return prev;
@@ -198,7 +249,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                             // Always replace entire content with current message and progress
                             return {
                                 ...v,
-                                content: `## Writing a new page...\n\n${message}\n\nProgress: ${progress}%\n\n`
+                                content: `## Writing a new page${'.'.repeat(dotCount)}\n\n${message}\n\nProgress: ${progress}%\n\n`
                             };
                         }
                         return v;
@@ -214,6 +265,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 await new Promise(resolve => setTimeout(resolve, 800));
             }
 
+            // Kick off ellipsis animation
+            startEllipsisAnimation(versionNumber);
+
             return loadingMessages;
         } catch (error: any) {
             console.error("Error in handleUiChanges:", error);
@@ -224,10 +278,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        // Replace entire content instead of appending
+                        // Start fallback with three dots for consistency
                         return {
                             ...v,
-                            content: "## Writing a new page...\n\nProcessing your article...\n\n"
+                            content: `## Writing a new page${'.'.repeat(3)}\n\nProcessing your article...\n\n`
                         };
                     }
                     return v;
@@ -238,6 +292,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     versions: updatedVersions
                 };
             });
+
+            // Ensure animation stops when stream ends (successfully or not)
+            stopEllipsisAnimation();
 
             return ["Processing your article..."];
         }
@@ -609,6 +666,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                             try {
                                 const event = JSON.parse(eventJson) as StreamEvent;
                                 if (event.event_data?.text) {
+                                    // As soon as real content begins, stop ellipsis animation
+                                    stopEllipsisAnimation();
                                     accumulatedContent += event.event_data.text;
 
                                     // Log the event type and a sample of the text for debugging
@@ -695,9 +754,11 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             } catch (cancelError) {
                 console.error('[STREAM PROCESSING ERROR] Error canceling stream reader:', cancelError);
             }
+            // Ensure animation stops when stream ends (successfully or not)
+            stopEllipsisAnimation();
             setIsStreaming(false);
         }
-    }, [callbacks, processQueryNodeData]);
+    }, [callbacks, processQueryNodeData, stopEllipsisAnimation]);
 
     // Store text message in Supabase
     const storeMessageInSupabase = async (
@@ -1476,6 +1537,9 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             readerRef.current = null;
             setIsStreaming(false);
 
+            // Stop animation if the generation was cancelled
+            stopEllipsisAnimation();
+
             // Check if we need to remove a placeholder version that was never generated
             if (article && currentVersionNumber === article.versions.length) {
                 const currentVer = article.versions[currentVersionNumber - 1];
@@ -1534,6 +1598,8 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
     // Reset article state
     const resetArticle = useCallback(() => {
+        // Stop any running animation
+        stopEllipsisAnimation();
         setArticle(null);
         setCurrentVersionNumber(1);
         setError(null);

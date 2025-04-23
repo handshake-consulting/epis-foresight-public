@@ -87,11 +87,6 @@ export function ArticleContent({
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-b from-[#e8e1d1] to-transparent opacity-30"></div>
                     <div className="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-t from-[#e8e1d1] to-transparent opacity-30"></div>
 
-                    {/* Page number */}
-                    <div className="absolute bottom-2 right-4 text-[#8a7e66] font-serif text-sm italic">
-                        {version.versionNumber}
-                    </div>
-
                     {/* Article content with book-like styling */}
                     <div className="prose prose-lg max-w-none" style={contentStyle}>
                         <ArticleMarkdownRender text={prepareContent()} />

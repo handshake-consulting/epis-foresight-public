@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
+let globalPhraseIndex = 0;
+
 const BookLoadingAnimation = () => {
     const [visibleLines, setVisibleLines] = useState<number[]>([]);
     const [isFlipping, setIsFlipping] = useState(false);
-    const [currentPhrase, setCurrentPhrase] = useState(0);
+    const [currentPhrase, setCurrentPhrase] = useState(globalPhraseIndex);
     const [phraseOpacity, setPhraseOpacity] = useState(1); // Start fully visible
     const totalLines = 10;
 
@@ -71,7 +73,11 @@ const BookLoadingAnimation = () => {
                     if (newOpacity <= 0) {
                         isFadingOut = false;
                         // Change to next phrase immediately when fully faded out
-                        setCurrentPhrase(current => (current + 1) % loadingPhrases.length);
+                        setCurrentPhrase(current => {
+                            const next = (current + 1) % loadingPhrases.length;
+                            globalPhraseIndex = next; // persist
+                            return next;
+                        });
                         return 0;
                     }
                     return newOpacity;

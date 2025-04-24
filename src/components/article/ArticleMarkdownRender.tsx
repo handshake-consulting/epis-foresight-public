@@ -58,6 +58,8 @@ const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) =
 
     // Use a span instead of div to avoid invalid nesting
     if (!src) return null;
+    console.log('src', src);
+    // Check if the src is a valid URL
 
     return (
         <span

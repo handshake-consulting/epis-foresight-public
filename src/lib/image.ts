@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server';
+import { put as vercelPut } from "@vercel/blob";
 import Replicate from "replicate";
 
 export async function genReplicateImage(prompt: string): Promise<Blob | null> {
@@ -179,31 +179,49 @@ export async function genAndUploadImage(prompt: string) {
     return res;
 }
 
+// export async function put(path: string, blob: Blob) {
+//     // Use Supabase storage for production
+//     const supabase = await createClient();
+
+//     // Convert blob to File object
+//     const buffer = await blob.arrayBuffer();
+//     const file = new File([buffer], path.split('/').pop() || 'image.jpg', { type: blob.type });
+
+//     // Upload to Supabase storage
+//     const { data, error } = await supabase.storage
+//         .from('images')
+//         .upload(path, file, {
+//             cacheControl: '3600',
+//             upsert: true
+//         });
+
+//     if (error) {
+//         console.error('Error uploading to Supabase:', error);
+//         throw error;
+//     }
+
+//     // Get public URL
+//     const { data: { publicUrl } } = supabase.storage
+//         .from('images')
+//         .getPublicUrl(path);
+
+//     return publicUrl;
+// }
+
 export async function put(path: string, blob: Blob) {
-    // Use Supabase storage for production
-    const supabase = await createClient();
+    // if (process.env.NODE_ENV === "development") {
+    //     const fs = await import("fs-extra");
 
-    // Convert blob to File object
-    const buffer = await blob.arrayBuffer();
-    const file = new File([buffer], path.split('/').pop() || 'image.jpg', { type: blob.type });
+    //     const buffer = await blob.arrayBuffer();
+    //     const data = Buffer.from(buffer);
+    //     await fs.outputFile(`${process.cwd()}/public/blob/${path}`, data);
 
-    // Upload to Supabase storage
-    const { data, error } = await supabase.storage
-        .from('images')
-        .upload(path, file, {
-            cacheControl: '3600',
-            upsert: true
-        });
+    //     return `http://localhost:3000/blob/${path}`;
+    // }
 
-    if (error) {
-        console.error('Error uploading to Supabase:', error);
-        throw error;
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(path);
-
-    return publicUrl;
+    return (
+        await vercelPut(path, blob, {
+            access: "public",
+        })
+    ).url;
 }

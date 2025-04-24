@@ -287,12 +287,12 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                         </h4>
                     ),
                     p: ({ children }) => (
-                        <p
+                        <div
                             className=" font-serif leading-relaxed"
                             style={paragraphStyles}
                         >
                             {children}
-                        </p>
+                        </div>
                     ),
                     a: ({ children, href }) => (
                         <Link

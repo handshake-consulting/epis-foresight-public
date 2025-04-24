@@ -35,6 +35,12 @@ export default async function sitemap({
                 changeFrequency: 'weekly',
                 priority: 1,
             },
+            {
+                url: `${BASE_URL}/article`,
+                lastModified: new Date(),
+                changeFrequency: 'daily',
+                priority: 0.8,
+            },
         ]
     }
 
@@ -53,6 +59,12 @@ export default async function sitemap({
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 1,
+        },
+        {
+            url: `${BASE_URL}/article`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.8,
         },
         ...articleEntries,
     ]

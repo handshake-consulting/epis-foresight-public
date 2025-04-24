@@ -7,14 +7,14 @@ import type { MetadataRoute } from 'next'
 export async function generateSitemaps() {
     // For simplicity, we'll just create a single sitemap
     // You can adjust this if you have a large number of articles
-    return [{ id: 0 }]
+    return [{ id: 0 }, { id: 1 }]
 }
 
 export default async function sitemap({
-    id = 0,
+    id
 }: {
-    id?: number
-} = {}): Promise<MetadataRoute.Sitemap> {
+    id: number
+}): Promise<MetadataRoute.Sitemap> {
     // Create the Supabase client
     const supabase = await createClient()
 

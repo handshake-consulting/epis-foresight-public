@@ -1057,84 +1057,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         }
     }, []);
 
-    // New function to get only the content of the most recent article's latest version
-    const getPrecedingPageContent = async (userId: string, currentSessionId: string) => {
-        try {
-            console.log("========== FETCHING PRECEDING PAGE ==========");
-            console.log("User ID:", userId);
-            console.log("Current Session ID to exclude:", currentSessionId);
-
-            const supabase = createClient();
-
-            // Get the most recent article session EXCLUDING the current one being created
-            const { data: sessions } = await supabase
-                .from("chat_sessions")
-                .select("id, title, created_at")
-                .eq("user_id", userId)
-                .eq("type", "article")
-                .neq("id", currentSessionId) // Explicitly exclude the current session
-                .order("created_at", { ascending: false })
-                .limit(1); // Only need one result now
-
-            // No previous sessions found
-            if (!sessions || sessions.length === 0) {
-                console.log("No previous sessions found");
-                return null;
-            }
-
-            // The most recent session (excluding current one)
-            const precedingSessionId = sessions[0].id;
-            console.log("Found preceding session:", {
-                id: precedingSessionId,
-                title: sessions[0].title,
-                created_at: sessions[0].created_at
-            });
-
-            // Get the latest version number for this session
-            const { data: versionData } = await supabase
-                .from("chat_messages")
-                .select("version")
-                .eq("session_id", precedingSessionId)
-                .eq("role", "assistant")
-                .not("is_topic", "is", true)
-                .order("version", { ascending: false })
-                .limit(1);
-
-            if (!versionData || versionData.length === 0) {
-                console.log("No version data found for preceding session");
-                return null;
-            }
-
-            const latestVersion = versionData[0].version;
-            console.log("Latest version found:", latestVersion);
-
-            // Get the actual content of the latest version
-            const { data: contentData } = await supabase
-                .from("chat_messages")
-                .select("content")
-                .eq("session_id", precedingSessionId)
-                .eq("version", latestVersion)
-                .eq("role", "assistant")
-                .not("is_topic", "is", true)
-                .not("is_edit", "is", true)
-                .single();
-
-            if (contentData && contentData.content) {
-                console.log("Found content with length:", contentData.content.length);
-                console.log("Content preview:", contentData.content.substring(0, 100) + "...");
-            } else {
-                console.log("No content found");
-            }
-
-            console.log("=========================================");
-
-            return contentData?.content || null;
-        } catch (error) {
-            console.error("Error fetching preceding page content:", error);
-            return null;
-        }
-    };
-
     // Add a helper function to update logs and article content
     const addProcessLog = useCallback((message: string, versionNumber: number) => {
         // Add log to preStreamLogs state
@@ -1303,29 +1225,12 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             let formattedPrompt = prompt;
 
             if (isNewArticle || !sessionId) {
-                console.log(`[ARTICLE GENERATION] Fetching preceding content for new article`);
-                addProcessLog("Retrieving contextual information...", nextVersionNumber);
+                // Always format with just user input, no preceding content
+                formattedPrompt = `<user_input>\n${prompt}\n</user_input>`;
+                console.log(`[ARTICLE GENERATION] Using basic prompt format without preceding content`);
 
-                // Get preceding content for new articles
-                let precedingContent;
-                try {
-                    precedingContent = await getPrecedingPageContent(userId, actualSessionId);
-                    console.log(`[ARTICLE GENERATION] Preceding content ${precedingContent ? 'found' : 'not found'}`);
-                    addProcessLog(precedingContent ? "Retrieved contextual information..." : "No prior context found, starting fresh...", nextVersionNumber);
-                } catch (precedingError) {
-                    console.error(`[ARTICLE GENERATION ERROR] Error fetching preceding content:`, precedingError);
-                    // Continue without preceding content
-                    precedingContent = null;
-                }
-
-                // Format with preceding content if available
-                if (precedingContent) {
-                    formattedPrompt = `<preceding_page>\n${precedingContent}\n</preceding_page>\n\n<user_input>\n${prompt}\n</user_input>`;
-                    console.log(`[ARTICLE GENERATION] Added preceding content to prompt (${precedingContent.length} chars)`);
-                } else {
-                    formattedPrompt = `<user_input>\n${prompt}\n</user_input>`;
-                    console.log(`[ARTICLE GENERATION] No preceding content available, using basic prompt format`);
-                }
+                // Remove the "Retrieving contextual information" log to avoid confusion
+                addProcessLog("Preparing your request...", nextVersionNumber);
             }
 
             // Add detailed logging for the API request
@@ -1344,7 +1249,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             });
             console.log("Is New Article:", isNewArticle || !sessionId);
             console.log("Version Number:", nextVersionNumber);
-            console.log("Has Preceding Content:", formattedPrompt.includes("<preceding_page>"));
             console.log("=====================================");
 
             // Call API to generate content
@@ -1528,7 +1432,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 }, 2000); // 2-second delay to allow database operations to complete
             }
         }
-    }, [article, callbacks, createArticleSession, processArticleStream, getPrecedingPageContent, addProcessLog]);
+    }, [article, callbacks, createArticleSession, processArticleStream, addProcessLog]);
 
     // Stop generation
     const stopGeneration = useCallback(() => {
@@ -1622,7 +1526,6 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         stopGeneration,
         resetArticle,
         loadArticleSession,
-        getPrecedingPageContent,
         preStreamLogs
     };
 }

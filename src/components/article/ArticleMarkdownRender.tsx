@@ -58,6 +58,8 @@ const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) =
 
     // Use a span instead of div to avoid invalid nesting
     if (!src) return null;
+    // console.log('src', src);
+    // Check if the src is a valid URL
 
     return (
         <span
@@ -300,7 +302,7 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                             {children}
                         </td>
                     ),
-                    img: ({ src, alt }) => <ImageRenderer src={src} alt={alt || ''} />,
+                    img: ({ src, alt }) => <ImageRenderer src={typeof src === 'string' ? src : undefined} alt={alt || ''} />,
                     hr: () => (
                         <hr className="my-8 border-t border-[#e8e1d1]" />
                     ),

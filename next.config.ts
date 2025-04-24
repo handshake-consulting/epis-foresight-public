@@ -6,7 +6,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         hostname: "twneftabwsebtktuyyni.supabase.co",
-      }
+      },
+      {
+        hostname: "localhost",
+      },
+
+      new URL('https://hirkdktetwp0nphp.public.blob.vercel-storage.com/images/**')
+
     ]
   }
 };

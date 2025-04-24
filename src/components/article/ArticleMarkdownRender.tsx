@@ -1,8 +1,9 @@
 "use client"
 
+import { Download, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -11,10 +12,97 @@ interface ArticleMarkdownRenderProps {
     text: string;
 }
 
+// Lightbox component for fullscreen image viewing
+const ImageLightbox = ({
+    src,
+    alt,
+    isOpen,
+    onClose,
+    onDownload
+}: {
+    src: string;
+    alt: string;
+    isOpen: boolean;
+    onClose: () => void;
+    onDownload: () => void;
+}) => {
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Add keyboard event listener when lightbox is open
+        if (isOpen) {
+            const handleKeyDown = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') onClose();
+            };
+
+            // Prevent body scrolling when lightbox is open
+            document.body.classList.add('lightbox-open');
+
+            document.addEventListener('keydown', handleKeyDown);
+            return () => {
+                document.removeEventListener('keydown', handleKeyDown);
+                document.body.classList.remove('lightbox-open');
+            };
+        }
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center" onClick={onClose}>
+            <div className="absolute top-4 right-4 flex gap-2 z-10">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload();
+                    }}
+                    className="rounded-full p-2 bg-black/50 hover:bg-black/70 text-white transition-colors duration-200"
+                    aria-label="Download image"
+                >
+                    <Download className="h-5 w-5" />
+                </button>
+                <button
+                    onClick={onClose}
+                    className="rounded-full p-2 bg-black/50 hover:bg-black/70 text-white transition-colors duration-200"
+                    aria-label="Close fullscreen view"
+                >
+                    <X className="h-5 w-5" />
+                </button>
+            </div>
+
+            <div
+                className="relative w-full h-full max-w-7xl max-h-screen flex items-center justify-center p-8"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin text-white"></div>
+                    </div>
+                )}
+                <Image
+                    src={src}
+                    alt={alt || ''}
+                    width={1200}
+                    height={800}
+                    className="max-h-full max-w-full object-contain"
+                    style={{ objectFit: 'contain' }}
+                    quality={100}
+                    priority
+                    onLoadStart={() => setIsLoading(true)}
+                    onLoad={() => setIsLoading(false)}
+                />
+            </div>
+        </div>
+    );
+};
+
 // Create a proper React component for images
 const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) => {
     const [isHovering, setIsHovering] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const { openLightbox, closeLightbox, isLightboxOpen } = useSettingsStore();
+
+    // No useEffect for toggleFooter to avoid infinite loops
 
     const handleDownload = async () => {
         if (!src) return;
@@ -51,84 +139,97 @@ const ImageRenderer = ({ src, alt }: { src: string | undefined, alt: string }) =
 
     const handleFullscreen = () => {
         if (!src) return;
-
-        // Open the image in a new tab for fullscreen viewing
-        window.open(src, '_blank');
+        openLightbox(); // Open lightbox and hide footer
     };
 
     // Use a span instead of div to avoid invalid nesting
     if (!src) return null;
-    // console.log('src', src);
-    // Check if the src is a valid URL
 
     return (
-        <span
-            className="relative inline-block float-right ml-6 mb-4 mt-1 w-1/2 max-w-[300px] md:block hidden"
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-        >
-            <span className="relative inline-block w-full">
-                <Image
-                    src={src}
-                    alt={alt || ''}
-                    width={300}
-                    height={200}
-                    className="rounded-md shadow-md hover:shadow-lg w-full h-auto"
-                    style={{ objectFit: 'cover' }}
-                    quality={80}
-                    // sizes="(max-width: 768px) 0px, 300px"
-                    data-testid="article-image"
-                />
+        <>
+            <span
+                className="relative inline-block float-right ml-6 mb-4 mt-1 w-1/2 max-w-[300px] md:block hidden"
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+            >
+                <span
+                    className="relative inline-block w-full cursor-pointer"
+                    onClick={handleFullscreen}
+                >
+                    <Image
+                        src={src}
+                        alt={alt || ''}
+                        width={300}
+                        height={200}
+                        className="rounded-md shadow-md hover:shadow-lg w-full h-auto"
+                        style={{ objectFit: 'cover' }}
+                        quality={80}
+                        data-testid="article-image"
+                    />
 
-                {isDownloading && (
-                    <span className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md">
-                        <span className="text-white flex flex-col items-center">
-                            <svg className="animate-spin h-6 w-6 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span className="text-sm">Downloading...</span>
+                    {isDownloading && (
+                        <span className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-md">
+                            <span className="text-white flex flex-col items-center">
+                                <svg className="animate-spin h-6 w-6 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-sm">Downloading...</span>
+                            </span>
                         </span>
+                    )}
+                </span>
+
+                {isHovering && (
+                    <span className="absolute top-2 right-2 flex gap-1">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleDownload();
+                            }}
+                            className="bg-white/80 hover:bg-white p-1 rounded shadow text-gray-800 transition-colors"
+                            aria-label="Download image"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleFullscreen();
+                            }}
+                            className="bg-white/80 hover:bg-white p-1 rounded shadow text-gray-800 transition-colors"
+                            aria-label="View fullscreen"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <polyline points="9 21 3 21 3 15"></polyline>
+                                <line x1="21" y1="3" x2="14" y2="10"></line>
+                                <line x1="3" y1="21" x2="10" y2="14"></line>
+                            </svg>
+                        </button>
                     </span>
                 )}
             </span>
 
-            {isHovering && (
-                <span className="absolute top-2 right-2 flex gap-1">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleDownload();
-                        }}
-                        className="bg-white/80 hover:bg-white p-1 rounded shadow text-gray-800 transition-colors"
-                        aria-label="Download image"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleFullscreen();
-                        }}
-                        className="bg-white/80 hover:bg-white p-1 rounded shadow text-gray-800 transition-colors"
-                        aria-label="View fullscreen"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="15 3 21 3 21 9"></polyline>
-                            <polyline points="9 21 3 21 3 15"></polyline>
-                            <line x1="21" y1="3" x2="14" y2="10"></line>
-                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                        </svg>
-                    </button>
-                </span>
+            {/* Lightbox for fullscreen view */}
+            {src && (
+                <ImageLightbox
+                    src={src}
+                    alt={alt}
+                    isOpen={isLightboxOpen}
+                    onClose={() => {
+                        closeLightbox(); // Close lightbox
+                    }}
+                    onDownload={handleDownload}
+                />
             )}
-        </span>
+        </>
     );
 };
 
@@ -186,12 +287,12 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                         </h4>
                     ),
                     p: ({ children }) => (
-                        <p
+                        <div
                             className=" font-serif leading-relaxed"
                             style={paragraphStyles}
                         >
                             {children}
-                        </p>
+                        </div>
                     ),
                     a: ({ children, href }) => (
                         <Link
@@ -336,6 +437,11 @@ export const ArticleMarkdownRender = ({ text }: ArticleMarkdownRenderProps) => {
                     img[data-testid="article-image"]:hover {
                         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
                     }
+                }
+                
+                /* Prevent body scrolling when lightbox is open */
+                body.lightbox-open {
+                    overflow: hidden;
                 }
             `}</style>
         </div>

@@ -34,7 +34,7 @@ interface EbookSettings {
 }
 
 // Define UI open states type
-type UIElement = 'sidebar' | 'footer' | 'imageSlider' | null;
+type UIElement = 'sidebar' | 'footer' | 'imageSlider' | 'lightbox' | null;
 
 interface SettingsState {
     settings: EbookSettings;
@@ -44,6 +44,7 @@ interface SettingsState {
     isSidebarOpen: boolean;
     isFooterOpen: boolean;
     isImageSliderOpen: boolean;
+    isLightboxOpen: boolean;
     activeUIElement: UIElement;
     // Functions
     setSettings: (settings: Partial<EbookSettings>) => void;
@@ -56,6 +57,8 @@ interface SettingsState {
     toggleSidebar: () => void;
     toggleFooter: () => void;
     toggleImageSlider: () => void;
+    openLightbox: () => void;
+    closeLightbox: () => void;
     // Welcome modal functions
     markWelcomeModalAsSeen: () => void;
 }
@@ -91,6 +94,7 @@ export const useSettingsStore = create<SettingsState>()(
             isSidebarOpen: false,
             isFooterOpen: false,
             isImageSliderOpen: false,
+            isLightboxOpen: false,
             activeUIElement: null,
             // Functions
             setSettings: (newSettings) =>
@@ -144,6 +148,7 @@ export const useSettingsStore = create<SettingsState>()(
                         isSidebarOpen: element === 'sidebar',
                         isFooterOpen: element === 'footer',
                         isImageSliderOpen: element === 'imageSlider',
+                        isLightboxOpen: element === 'lightbox',
                         activeUIElement: element
                     };
                 }),
@@ -158,6 +163,20 @@ export const useSettingsStore = create<SettingsState>()(
             toggleImageSlider: () => {
                 const state = get();
                 state.setUIOpenState(state.isImageSliderOpen ? null : 'imageSlider');
+            },
+            // Lightbox functions
+            openLightbox: () => {
+                set((state) => ({
+                    isLightboxOpen: true,
+                    isFooterOpen: false, // Hide footer when lightbox opens
+                    activeUIElement: 'lightbox'
+                }));
+            },
+            closeLightbox: () => {
+                set((state) => ({
+                    isLightboxOpen: false,
+                    activeUIElement: state.activeUIElement === 'lightbox' ? null : state.activeUIElement
+                }));
             },
             // Welcome modal functions
             markWelcomeModalAsSeen: () => {

@@ -270,12 +270,6 @@ export function EbookContent({
                             <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-current" : ""}`} />
                         </button>
 
-                        {/* Page number */}
-                        <div className={`absolute bottom-2 right-4 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                            } text-sm italic`}>
-                            {version.versionNumber}
-                        </div>
-
                         {/* Article content with book-like styling */}
                         <div className="prose prose-lg max-w-none" style={contentStyle}>
                             <ArticleMarkdownRender text={prepareContent()} />

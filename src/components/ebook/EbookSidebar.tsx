@@ -166,82 +166,98 @@ export function EbookSidebar({
                     }}
                 >
                     {activeTab === "toc" ? (
-                        filteredSessions.length > 0 ? (
-                            <div className="space-y-2 max-h-full overflow-y-auto">
-                                {/* Search input */}
-                                {isSearchOpen && (
-                                    <div className="mb-4">
-                                        <div className={`flex items-center p-2 rounded-md ${theme === "dark"
-                                            ? "bg-gray-700"
-                                            : theme === "sepia"
-                                                ? "bg-amber-100"
-                                                : "bg-gray-100"
-                                            }`}>
-                                            <Search className={`h-4 w-4 mr-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                                                }`} />
-                                            <input
-                                                type="text"
-                                                placeholder="Search pages..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className={`w-full bg-transparent border-none focus:outline-none ${theme === "dark"
+                        <div className="space-y-2 max-h-full overflow-y-auto">
+                            {/* Search input – always visible so the user can clear or edit the query */}
+                            {isSearchOpen && (
+                                <div className="mb-4">
+                                    <div
+                                        className={`flex items-center p-2 rounded-md ${theme === "dark"
+                                                ? "bg-gray-700"
+                                                : theme === "sepia"
+                                                    ? "bg-amber-100"
+                                                    : "bg-gray-100"
+                                            }`}
+                                    >
+                                        <Search
+                                            className={`h-4 w-4 mr-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                                }`}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Search pages..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className={`w-full bg-transparent border-none focus:outline-none ${theme === "dark"
                                                     ? "text-white placeholder-gray-400"
                                                     : "text-gray-800 placeholder-gray-500"
-                                                    }`}
-                                                autoFocus
-                                            />
-                                            {searchQuery && (
-                                                <button
-                                                    onClick={() => setSearchQuery("")}
-                                                    className={`p-1 rounded-full ${theme === "dark"
+                                                }`}
+                                            autoFocus
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery("")}
+                                                className={`p-1 rounded-full ${theme === "dark"
                                                         ? "hover:bg-gray-600 text-gray-400"
                                                         : "hover:bg-gray-200 text-gray-500"
-                                                        }`}
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </button>
-                                            )}
-                                        </div>
+                                                    }`}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        )}
                                     </div>
-                                )}
-                                {filteredSessions.map((session, index) => (
+                                </div>
+                            )}
+
+                            {filteredSessions.length > 0 ? (
+                                // Render list of filtered sessions
+                                filteredSessions.map((session) => (
                                     <button
-                                        // href={`/article/${session.id}`}
                                         key={session.id}
-                                        // prefetch={false}
                                         onClick={() => onSessionSelect(session)}
                                         className="block"
                                     >
                                         <div
                                             className={`p-3 rounded-md cursor-pointer ${currentSession?.id === session.id
-                                                ? theme === "dark"
-                                                    ? "bg-gray-700 border border-gray-600"
-                                                    : "bg-gray-100 border border-gray-200"
-                                                : theme === "dark"
-                                                    ? "hover:bg-gray-700"
-                                                    : "hover:bg-gray-100"
+                                                    ? theme === "dark"
+                                                        ? "bg-gray-700 border border-gray-600"
+                                                        : "bg-gray-100 border border-gray-200"
+                                                    : theme === "dark"
+                                                        ? "hover:bg-gray-700"
+                                                        : "hover:bg-gray-100"
                                                 } transition-colors`}
                                         >
                                             <div className="flex items-center">
-                                                <span className={`font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-800"
-                                                    } flex-1 truncate`}>
+                                                <span
+                                                    className={`font-medium ${theme === "dark" ? "text-gray-200" : "text-gray-800"
+                                                        } flex-1 truncate`}
+                                                >
                                                     {session.title}
                                                 </span>
                                             </div>
                                         </div>
                                     </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className={`text-center p-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
-                                }`}>
-                                <div className="mb-2">
-                                    <FileText className="h-12 w-12 mx-auto opacity-30" />
+                                ))
+                            ) : (
+                                <div
+                                    className={`text-center p-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
+                                        }`}
+                                >
+                                    <div className="mb-2">
+                                        <FileText className="h-12 w-12 mx-auto opacity-30" />
+                                    </div>
+                                    <p>
+                                        {sessions.length === 0
+                                            ? "Your library is empty"
+                                            : "No pages found"}
+                                    </p>
+                                    <p className="text-sm mt-2">
+                                        {sessions.length === 0
+                                            ? "Create a new document to get started"
+                                            : "Try a different search term"}
+                                    </p>
                                 </div>
-                                <p>Your library is empty</p>
-                                <p className="text-sm mt-2">Create a new document to get started</p>
-                            </div>
-                        )
+                            )}
+                        </div>
                     ) : (
                         bookmarks.length > 0 ? (
                             <div className="space-y-2 max-h-full overflow-y-auto">

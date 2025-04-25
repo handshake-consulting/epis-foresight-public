@@ -626,7 +626,7 @@ export default function EbookArticlePage({
             </button> */}
             {/* Header */}
             <EbookHeader
-                title={currentSession?.title || article?.title || "New Document"}
+                title={currentSession?.title || article?.title || "New Page"}
                 theme={theme}
                 toggleTheme={toggleTheme}
                 toggleSidebar={toggleSidebar}

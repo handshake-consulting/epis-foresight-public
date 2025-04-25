@@ -172,10 +172,10 @@ export function EbookSidebar({
                                 <div className="mb-4">
                                     <div
                                         className={`flex items-center p-2 rounded-md ${theme === "dark"
-                                                ? "bg-gray-700"
-                                                : theme === "sepia"
-                                                    ? "bg-amber-100"
-                                                    : "bg-gray-100"
+                                            ? "bg-gray-700"
+                                            : theme === "sepia"
+                                                ? "bg-amber-100"
+                                                : "bg-gray-100"
                                             }`}
                                     >
                                         <Search
@@ -188,8 +188,8 @@ export function EbookSidebar({
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             className={`w-full bg-transparent border-none focus:outline-none ${theme === "dark"
-                                                    ? "text-white placeholder-gray-400"
-                                                    : "text-gray-800 placeholder-gray-500"
+                                                ? "text-white placeholder-gray-400"
+                                                : "text-gray-800 placeholder-gray-500"
                                                 }`}
                                             autoFocus
                                         />
@@ -197,8 +197,8 @@ export function EbookSidebar({
                                             <button
                                                 onClick={() => setSearchQuery("")}
                                                 className={`p-1 rounded-full ${theme === "dark"
-                                                        ? "hover:bg-gray-600 text-gray-400"
-                                                        : "hover:bg-gray-200 text-gray-500"
+                                                    ? "hover:bg-gray-600 text-gray-400"
+                                                    : "hover:bg-gray-200 text-gray-500"
                                                     }`}
                                             >
                                                 <X className="h-4 w-4" />
@@ -218,12 +218,12 @@ export function EbookSidebar({
                                     >
                                         <div
                                             className={`p-3 rounded-md cursor-pointer ${currentSession?.id === session.id
-                                                    ? theme === "dark"
-                                                        ? "bg-gray-700 border border-gray-600"
-                                                        : "bg-gray-100 border border-gray-200"
-                                                    : theme === "dark"
-                                                        ? "hover:bg-gray-700"
-                                                        : "hover:bg-gray-100"
+                                                ? theme === "dark"
+                                                    ? "bg-gray-700 border border-gray-600"
+                                                    : "bg-gray-100 border border-gray-200"
+                                                : theme === "dark"
+                                                    ? "hover:bg-gray-700"
+                                                    : "hover:bg-gray-100"
                                                 } transition-colors`}
                                         >
                                             <div className="flex items-center">
@@ -252,7 +252,7 @@ export function EbookSidebar({
                                     </p>
                                     <p className="text-sm mt-2">
                                         {sessions.length === 0
-                                            ? "Create a new document to get started"
+                                            ? "Create a new page to get started"
                                             : "Try a different search term"}
                                     </p>
                                 </div>

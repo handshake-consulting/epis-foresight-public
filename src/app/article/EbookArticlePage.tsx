@@ -655,19 +655,55 @@ export default function EbookArticlePage({
             {/* Main content */}
             {!isFirstGeneration ? (
                 currentVersion ? (
-                    <EbookContent
-                        version={currentVersion}
-                        isLatestVersion={isLatestVersion}
-                        isStreaming={isStreaming}
-                        theme={theme}
-                        onPreviousVersion={goToPreviousVersion}
-                        onNextVersion={goToNextVersion}
-                        currentVersionNumber={currentVersionNumber}
-                        totalVersions={article?.versions.length || 1}
-                        articleId={currentSession?.id}
-                        articleTitle={currentSession?.title}
-                        images={article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : []}
-                    />
+                    // Check if the current version has valid content
+                    currentVersion.content &&
+                        currentVersion.content.trim() !== "" &&
+                        !currentVersion.content.includes("Writing a new page") &&
+                        !currentVersion.content.includes("Progress:") ? (
+                        <EbookContent
+                            version={currentVersion}
+                            isLatestVersion={isLatestVersion}
+                            isStreaming={isStreaming}
+                            theme={theme}
+                            onPreviousVersion={goToPreviousVersion}
+                            onNextVersion={goToNextVersion}
+                            currentVersionNumber={currentVersionNumber}
+                            totalVersions={article?.versions.length || 1}
+                            articleId={currentSession?.id}
+                            articleTitle={currentSession?.title}
+                            images={article && article.versions ? article.versions.flatMap(v => v.images || []).filter(img => img.imageUrl) : []}
+                        />
+                    ) : (
+                        // Show regeneration UI if content is missing or incomplete
+                        <div className={`w-full max-w-4xl mx-auto px-4 py-8 ${theme === "dark" ? "text-gray-100" :
+                            theme === "sepia" ? "text-amber-900" :
+                                "text-gray-800"
+                            }`}>
+                            <div className="text-center mb-4">
+                                <h2 className="text-xl font-semibold mb-4">Article content is missing or incomplete</h2>
+                                <p className="mb-6">The article generation was interrupted when you navigated away or closed the tab. Would you like to regenerate it?</p>
+                                <button
+                                    onClick={() => {
+                                        if (userId && currentSession?.id) {
+                                            // Get the original prompt from the article data
+                                            const prompt = article?.title || "Generate a comprehensive article";
+                                            // Regenerate the article with the same prompt
+                                            generateArticle(prompt, userId, currentSession.id, false);
+                                        }
+                                    }}
+                                    disabled={isStreaming}
+                                    className={`px-4 py-2 rounded-md ${theme === "dark"
+                                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                        : theme === "sepia"
+                                            ? "bg-amber-600 hover:bg-amber-700 text-white"
+                                            : "bg-blue-500 hover:bg-blue-600 text-white"
+                                        } ${isStreaming ? "opacity-50 cursor-not-allowed" : ""}`}
+                                >
+                                    {isStreaming ? "Regenerating..." : "Regenerate Article"}
+                                </button>
+                            </div>
+                        </div>
+                    )
                 ) : (
                     <div className={`w-full max-w-4xl mx-auto px-4 py-8 ${theme === "dark" ? "text-gray-100" :
                         theme === "sepia" ? "text-amber-900" :

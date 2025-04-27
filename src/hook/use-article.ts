@@ -5,7 +5,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { cleanupEmptyArticleSession, verifyArticleVersionExists } from "@/utils/cleanupArticleSessions";
 import { getIdToken } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { EventType, LoreNodeOutputTypes, StreamEvent } from "./use-chat";
 
@@ -1341,9 +1341,20 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to generate article";
-            console.error(`[ARTICLE GENERATION ERROR] Error in generateArticle:`, error);
+            console.error(`[ARTICLE GENERATION ERROR] Error during article generation:`, error);
+            
+            // Clean up empty session if this was a new article
+            if (isNewArticle && actualSessionId && currentUserIdRef.current) {
+                try {
+                    await cleanupEmptyArticleSession(actualSessionId, currentUserIdRef.current);
+                } catch (cleanupError) {
+                    console.error('[ARTICLE GENERATION ERROR] Failed to cleanup empty session:', cleanupError);
+                }
+            }
+            
             setError(errorMessage);
             callbacks?.onError?.(new Error(errorMessage));
+            throw error;
         } finally {
             console.log(`[ARTICLE GENERATION] Generation process completed`);
             setIsStreaming(false);
@@ -1510,6 +1521,51 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         setIsStreaming(false);
         stopGeneration();
     }, [stopGeneration]);
+
+    // Add cleanup effect for page unload
+    useEffect(() => {
+        const handleBeforeUnload = async () => {
+            // If we're currently streaming and have session info
+            if (isStreaming && currentUserIdRef.current && currentSessionIdRef.current) {
+                try {
+                    // For new articles (version 1), cleanup the empty session
+                    if (currentVersionNumber === 1) {
+                        await cleanupEmptyArticleSession(currentSessionIdRef.current, currentUserIdRef.current);
+                    }
+                    // Cancel any ongoing stream
+                    if (readerRef.current) {
+                        readerRef.current.cancel();
+                    }
+                } catch (error) {
+                    console.error('[CLEANUP ERROR] Error during page unload cleanup:', error);
+                }
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isStreaming, currentVersionNumber]);
+
+    // Add cleanup effect for component unmount
+    useEffect(() => {
+        return () => {
+            // If we're streaming when component unmounts
+            if (isStreaming) {
+                // Cancel any ongoing stream
+                if (readerRef.current) {
+                    readerRef.current.cancel();
+                }
+                
+                // For new articles (version 1), attempt cleanup
+                if (currentVersionNumber === 1 && currentUserIdRef.current && currentSessionIdRef.current) {
+                    cleanupEmptyArticleSession(currentSessionIdRef.current, currentUserIdRef.current)
+                        .catch(error => console.error('[CLEANUP ERROR] Error during unmount cleanup:', error));
+                }
+            }
+        };
+    }, [isStreaming, currentVersionNumber]);
 
     return {
         article,

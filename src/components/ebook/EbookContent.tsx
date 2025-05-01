@@ -32,7 +32,7 @@ export function EbookContent({
     currentVersionNumber,
     totalVersions,
     articleId = "",
-    articleTitle = "Untitled Document",
+    articleTitle = "Untitled Page",
     images = []
 }: EbookContentProps) {
     const contentRef = useRef<HTMLDivElement>(null);

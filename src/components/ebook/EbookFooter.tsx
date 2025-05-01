@@ -100,7 +100,7 @@ export function EbookFooter({
                             variant="ghost"
                             size="sm"
                             onClick={onNextArticle}
-                            title={!nextArticle ? "Go to first document" : "Go to next document"}
+                            title={!nextArticle ? "Go to first page" : "Go to next page"}
                             className={`rounded-md ${theme === "dark"
                                 ? "text-gray-300 hover:bg-gray-700 hover:text-gray-100"
                                 : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"

@@ -79,7 +79,7 @@ export function EbookSidebar({
                     <div className="flex items-center justify-between mb-4">
                         <h2 className={`text-lg font-bold ${theme === "dark" ? "text-white" : "text-gray-800"
                             }`}>
-                            Document Library
+                            Table of Contents
                         </h2>
                         <div className="flex items-center">
                             {/* <button

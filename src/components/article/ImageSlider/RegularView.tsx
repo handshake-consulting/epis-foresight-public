@@ -141,8 +141,25 @@ export function RegularView({
                                         lineHeight: settings?.lineHeight,
                                     }}
                                 >
-                                    Buy it here
+                                    Buy it here.
                                 </a>
+                                <p
+                                    className="mt-4"
+                                    style={{
+                                        fontFamily: settings?.fontFamily,
+                                        fontSize: settings?.fontSize ? `${settings.fontSize}px` : undefined,
+                                        lineHeight: settings?.lineHeight,
+                                    }}
+                                >
+                                    This app was designed and built by <a
+                                        href="https://handshake.fyi"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline"
+                                    >
+                                        Handshake
+                                    </a> 🤝
+                                </p>
                             </p>
                         </div>
                     </div>

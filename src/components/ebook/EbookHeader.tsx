@@ -176,8 +176,28 @@ export function EbookHeader({
                                         lineHeight: (settings || globalSettings)?.lineHeight,
                                     }}
                                 >
-                                    Buy it here
+                                    Buy it here.
                                 </a>
+                                <p
+                                    className="mt-4"
+                                    style={{
+                                        fontFamily: (settings || globalSettings)?.fontFamily,
+                                        fontSize: (settings || globalSettings)?.fontSize ? `${(settings || globalSettings).fontSize}px` : undefined,
+                                        lineHeight: (settings || globalSettings)?.lineHeight,
+                                    }}
+                                >
+                                    This app was designed and built by <a
+                                        href="https://handshake.fyi"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`${headerTheme === 'dark'
+                                            ? 'text-blue-400 hover:text-blue-300'
+                                            : 'text-blue-600 hover:underline'
+                                            }`}
+                                    >
+                                        Handshake
+                                    </a> 🤝
+                                </p>
                             </p>
                         </div>
                     </div>

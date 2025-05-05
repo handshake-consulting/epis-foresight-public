@@ -29,43 +29,71 @@ export const userLogin = async (idToken: string) => {
     const token = cookie?.value || idToken;
 
     try {
-
-        const newuser = await fetch(process.env.API_LORE + '/user/is_new_user', {
+        // First check for new user
+        const newUserResponse = await fetch(process.env.API_LORE + '/user/is_new_user', {
             method: 'POST',
             headers: {
                 'client-id': `${process.env.CLIENT_ID}`,
                 'firebase-id-token': token!,
             },
-
         });
-        if (!newuser.ok) {
-            throw new Error("You don't have permission to access this website");
+
+        if (!newUserResponse.ok) {
+            const contentType = newUserResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await newUserResponse.json();
+                throw new Error(errorData.detail || `Error checking new user: ${newUserResponse.status}`);
+            } else {
+                throw new Error(`Error checking new user: ${newUserResponse.status}`);
+            }
         }
-        const isNewUser = await newuser.json();
-        //  console.log('isNewUser', isNewUser);
-        if (isNewUser)
+
+        // Parse response body safely (may be JSON or plain text)
+        const newUserBody = await newUserResponse.text();
+        let isNewUser: boolean = false;
+        try {
+            // Attempt to parse JSON first (response might be "true" or "false" as JSON booleans/strings)
+            const parsed = JSON.parse(newUserBody);
+            // If parsed is an object, assume API schema changed – treat as not new user
+            if (typeof parsed === 'boolean') {
+                isNewUser = parsed;
+            }
+        } catch {
+            // Fallback: treat plain text "true" / "false" (case-insensitive) as boolean
+            const trimmed = newUserBody.trim().toLowerCase();
+            if (trimmed === 'true') isNewUser = true;
+            else if (trimmed === 'false' || trimmed === '') isNewUser = false;
+        }
+
+        if (isNewUser) {
             return { status: true, message: null, isNewUser };
+        }
 
-
-        const response = await fetch(process.env.API_LORE + '/auth/user_authentication', {
+        // Authenticate existing user
+        const authResponse = await fetch(process.env.API_LORE + '/auth/user_authentication', {
             method: 'POST',
             headers: {
-
                 'firebase-id-token': token!,
             },
-
         });
 
-        const responseData: UserLoginResponse | any = await response.json();
-
-        //  console.log('Response ', responseData);
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-
-                throw new Error(responseData.detail || "Authentication failed");
+        if (!authResponse.ok) {
+            const contentType = authResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await authResponse.json();
+                throw new Error(errorData.detail || `Authentication failed: ${authResponse.status}`);
+            } else {
+                throw new Error(`Authentication failed: ${authResponse.status}`);
             }
-            throw new Error(`Backend authentication failed: ${response.status}`);
+        }
+
+        // Parse JSON only if response is OK and content-type is application/json
+        let responseData: UserLoginResponse;
+        try {
+            responseData = await authResponse.json();
+        } catch (parseError) {
+            console.error('Error parsing authentication response:', parseError);
+            throw new Error('Invalid response format from authentication server');
         }
 
         if (responseData.system_admin)
@@ -83,8 +111,7 @@ export const userLogin = async (idToken: string) => {
 
         return { status: true, message: null, isNewUser }
     } catch (e: any) {
-        //   console.log('Error ', e);
-
+        console.error('Authentication error:', e);
         return { status: false, message: e.message || "Authentication failed" };
     }
 }

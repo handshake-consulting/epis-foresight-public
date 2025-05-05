@@ -107,7 +107,7 @@ export function RegularView({
                                     lineHeight: settings?.lineHeight,
                                 }}
                             >
-                                This generative e-book prototype app is based on:
+                                This generative book is based on:
                             </p>
 
                             <div className="relative w-[230px] h-[307px] mb-4">
@@ -130,36 +130,36 @@ export function RegularView({
                                 }}
                             >
                                 If you find this app interesting, you&apos;ll love the original book.
-                                <a
-                                    href="https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/"
+                            </p>
+                            <a
+                                href="https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block mt-2 text-blue-600 hover:underline"
+                                style={{
+                                    fontFamily: settings?.fontFamily,
+                                    fontSize: settings?.fontSize ? `${settings.fontSize}px` : undefined,
+                                    lineHeight: settings?.lineHeight,
+                                }}
+                            >
+                                Buy it here.
+                            </a>
+                            <p
+                                className="mt-4"
+                                style={{
+                                    fontFamily: settings?.fontFamily,
+                                    fontSize: settings?.fontSize ? `${settings.fontSize}px` : undefined,
+                                    lineHeight: settings?.lineHeight,
+                                }}
+                            >
+                                This app was designed and built by <a
+                                    href="https://handshake.fyi"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="block mt-2 text-blue-600 hover:underline"
-                                    style={{
-                                        fontFamily: settings?.fontFamily,
-                                        fontSize: settings?.fontSize ? `${settings.fontSize}px` : undefined,
-                                        lineHeight: settings?.lineHeight,
-                                    }}
+                                    className="text-blue-600 hover:underline"
                                 >
-                                    Buy it here.
-                                </a>
-                                <p
-                                    className="mt-4"
-                                    style={{
-                                        fontFamily: settings?.fontFamily,
-                                        fontSize: settings?.fontSize ? `${settings.fontSize}px` : undefined,
-                                        lineHeight: settings?.lineHeight,
-                                    }}
-                                >
-                                    This app was designed and built by <a
-                                        href="https://handshake.fyi"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline"
-                                    >
-                                        Handshake
-                                    </a> 🤝
-                                </p>
+                                    Handshake
+                                </a> 🤝
                             </p>
                         </div>
                     </div>

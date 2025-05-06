@@ -140,7 +140,7 @@ export function EbookHeader({
                                     lineHeight: (settings || globalSettings)?.lineHeight,
                                 }}
                             >
-                                This generative e-book prototype app is based on:
+                                This generative book is based on:
                             </p>
 
                             <div className="relative w-[230px] h-[307px] mb-4">
@@ -162,22 +162,42 @@ export function EbookHeader({
                                 }}
                             >
                                 If you find this app interesting, you&apos;ll love the original book.
-                                <a
-                                    href="https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/"
+                            </p>
+                            <a
+                                href="https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`block mt-2 ${headerTheme === 'dark'
+                                    ? 'text-blue-400 hover:text-blue-300'
+                                    : 'text-blue-600 hover:underline'
+                                    }`}
+                                style={{
+                                    fontFamily: (settings || globalSettings)?.fontFamily,
+                                    fontSize: (settings || globalSettings)?.fontSize ? `${(settings || globalSettings).fontSize}px` : undefined,
+                                    lineHeight: (settings || globalSettings)?.lineHeight,
+                                }}
+                            >
+                                Buy it here.
+                            </a>
+                            <p
+                                className="mt-4"
+                                style={{
+                                    fontFamily: (settings || globalSettings)?.fontFamily,
+                                    fontSize: (settings || globalSettings)?.fontSize ? `${(settings || globalSettings).fontSize}px` : undefined,
+                                    lineHeight: (settings || globalSettings)?.lineHeight,
+                                }}
+                            >
+                                This app was designed and built by <a
+                                    href="https://handshake.fyi"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={`block mt-2 ${headerTheme === 'dark'
+                                    className={`${headerTheme === 'dark'
                                         ? 'text-blue-400 hover:text-blue-300'
                                         : 'text-blue-600 hover:underline'
                                         }`}
-                                    style={{
-                                        fontFamily: (settings || globalSettings)?.fontFamily,
-                                        fontSize: (settings || globalSettings)?.fontSize ? `${(settings || globalSettings).fontSize}px` : undefined,
-                                        lineHeight: (settings || globalSettings)?.lineHeight,
-                                    }}
                                 >
-                                    Buy it here
-                                </a>
+                                    Handshake
+                                </a> 🤝
                             </p>
                         </div>
                     </div>

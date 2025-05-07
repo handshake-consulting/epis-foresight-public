@@ -167,9 +167,11 @@ export function EbookHeader({
                                 href="https://www.amazon.com/Leaders-Make-Future-Third-Leadership/dp/B0D66H9BF1/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`block mt-2 ${headerTheme === 'dark'
-                                    ? 'text-blue-400 hover:text-blue-300'
-                                    : 'text-blue-600 hover:underline'
+                                className={`block mt-2 px-4 py-2 rounded-md text-center ${headerTheme === 'dark'
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                    : headerTheme === 'sepia'
+                                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                        : 'bg-blue-500 hover:bg-blue-600 text-white'
                                     }`}
                                 style={{
                                     fontFamily: (settings || globalSettings)?.fontFamily,
@@ -177,7 +179,7 @@ export function EbookHeader({
                                     lineHeight: (settings || globalSettings)?.lineHeight,
                                 }}
                             >
-                                Buy it here.
+                                Buy it here
                             </a>
                             <p
                                 className="mt-4"

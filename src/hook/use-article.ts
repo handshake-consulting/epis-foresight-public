@@ -5,7 +5,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { cleanupEmptyArticleSession, verifyArticleVersionExists } from "@/utils/cleanupArticleSessions";
 import { getIdToken } from "@/utils/firebase/client";
 import { createClient } from "@/utils/supabase/clients";
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { EventType, LoreNodeOutputTypes, StreamEvent } from "./use-chat";
 
@@ -183,16 +183,17 @@ export function useArticle(options: ArticleStreamOptions = {}) {
             // Clear pre-stream logs as we're transitioning to loading text
             setPreStreamLogs([]);
 
-            // Initial loading header - REPLACE content instead of appending
+            // Initial loading header - preserve existing animated dots if they exist
             setArticle(prev => {
                 if (!prev) return prev;
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        const header = "## Writing a new page." + '.'.repeat(0); // will be animated
+                        // Extract existing dots from current content, default to "..." if none found
+                        const currentDots = v.content.match(/^## Writing a new page(\.{1,3})/)?.[1] || '...';
                         return {
                             ...v,
-                            content: `${header}\n\nStarting to analyze your topic...\n\n`
+                            content: `## Writing a new page${currentDots}\n\nStarting to analyze your topic...\n\n`
                         };
                     }
                     return v;
@@ -232,24 +233,22 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 "Almost ready to display your complete article..."
             ];
 
-            // Display loading messages with progress indicators
+            // Display loading messages with progress indicators - preserve animated dots
             for (let i = 0; i < loadingMessages.length; i++) {
                 const message = loadingMessages[i];
                 const progress = Math.round((i + 1) / loadingMessages.length * 95);
 
-                // Cycle the ellipsis: 1 dot, 2 dots, 3 dots, then back to 1
-                const dotCount = (i % 3) + 1;
-
-                // Update article with loading message and progress - REPLACE content instead of appending
+                // Update article with loading message and progress - preserve existing animated dots
                 setArticle(prev => {
                     if (!prev) return prev;
 
                     const updatedVersions = prev.versions.map(v => {
                         if (v.versionNumber === versionNumber) {
-                            // Always replace entire content with current message and progress
+                            // Extract existing dots from current content, default to "..." if none found
+                            const currentDots = v.content.match(/^## Writing a new page(\.{1,3})/)?.[1] || '...';
                             return {
                                 ...v,
-                                content: `## Writing a new page${'.'.repeat(dotCount)}\n\n${message}\n\nProgress: ${progress}%\n\n`
+                                content: `## Writing a new page${currentDots}\n\n${message}\n\nProgress: ${progress}%\n\n`
                             };
                         }
                         return v;
@@ -265,23 +264,22 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 await new Promise(resolve => setTimeout(resolve, 800));
             }
 
-            // Kick off ellipsis animation
-            startEllipsisAnimation(versionNumber);
-
+            // Animation is already running from generateArticle, no need to start it again
             return loadingMessages;
         } catch (error: any) {
             console.error("Error in handleUiChanges:", error);
 
-            // Fallback to basic loading message if there's an error
+            // Fallback to basic loading message if there's an error - preserve dots
             setArticle(prev => {
                 if (!prev) return prev;
 
                 const updatedVersions = prev.versions.map(v => {
                     if (v.versionNumber === versionNumber) {
-                        // Start fallback with three dots for consistency
+                        // Extract existing dots from current content, default to "..." if none found
+                        const currentDots = v.content.match(/^## Writing a new page(\.{1,3})/)?.[1] || '...';
                         return {
                             ...v,
-                            content: `## Writing a new page${'.'.repeat(3)}\n\nProcessing your article...\n\n`
+                            content: `## Writing a new page${currentDots}\n\nProcessing your article...\n\n`
                         };
                     }
                     return v;
@@ -293,9 +291,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 };
             });
 
-            // Ensure animation stops when stream ends (successfully or not)
-            stopEllipsisAnimation();
-
+            // Don't stop animation here - let it continue until real content arrives
             return ["Processing your article..."];
         }
     };
@@ -1062,16 +1058,17 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         // Add log to preStreamLogs state
         setPreStreamLogs(prev => [...prev, message]);
 
-        // Update article content to show the log
+        // Update article content to show the log - preserve animated dots
         setArticle(prev => {
             if (!prev) return prev;
 
             const updatedVersions = prev.versions.map(v => {
                 if (v.versionNumber === versionNumber) {
-                    // Replace entire content with just this log message
+                    // Extract existing dots from current content, default to "..." if none found
+                    const currentDots = v.content.match(/^## Writing a new page(\.{1,3})/)?.[1] || '...';
                     return {
                         ...v,
-                        content: `## Writing a new page...\n\n${message}\n\n`
+                        content: `## Writing a new page${currentDots}\n\n${message}\n\n`
                     };
                 }
                 return v;
@@ -1138,10 +1135,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                 // Update article state with topic and an initial version placeholder
                 setArticle(prev => {
-                    // Create a placeholder version
+                    // Create a placeholder version with proper animated header format
                     const initialVersion: ArticleVersion = {
                         versionNumber: nextVersionNumber,
-                        content: "This will take 30-60 seconds while we thoroughly research your topic.",
+                        content: "## Writing a new page...\n\nThis will take 30-60 seconds while we thoroughly research your topic.\n\n",
                         timestamp: new Date(),
                         images: []
                     };
@@ -1166,6 +1163,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     };
                 });
                 console.log(`[ARTICLE GENERATION] Initialized article state with placeholder for new article`);
+
+                // Start ellipsis animation immediately after creating the placeholder
+                startEllipsisAnimation(nextVersionNumber);
+                console.log(`[ARTICLE GENERATION] Started ellipsis animation for version ${nextVersionNumber}`);
             } else {
                 // Use existing session
                 actualSessionId = sessionId;
@@ -1181,7 +1182,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
 
                     const newVersion: ArticleVersion = {
                         versionNumber: nextVersionNumber,
-                        content: "This will take 30-60 seconds while we thoroughly research your topic.",
+                        content: "## Writing a new page...\n\nThis will take 30-60 seconds while we thoroughly research your topic.\n\n",
                         editPrompt: prompt,
                         timestamp: new Date(),
                         images: []
@@ -1196,6 +1197,10 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     return updatedArticle;
                 });
                 console.log(`[ARTICLE GENERATION] Updated article state with new version placeholder`);
+
+                // Start ellipsis animation immediately after creating the placeholder
+                startEllipsisAnimation(nextVersionNumber);
+                console.log(`[ARTICLE GENERATION] Started ellipsis animation for version ${nextVersionNumber}`);
             }
 
             // Update current session ID ref
@@ -1342,7 +1347,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to generate article";
             console.error(`[ARTICLE GENERATION ERROR] Error during article generation:`, error);
-            
+
             // Clean up empty session if this was a new article
             if (isNewArticle && actualSessionId && currentUserIdRef.current) {
                 try {
@@ -1351,7 +1356,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                     console.error('[ARTICLE GENERATION ERROR] Failed to cleanup empty session:', cleanupError);
                 }
             }
-            
+
             setError(errorMessage);
             callbacks?.onError?.(new Error(errorMessage));
             throw error;
@@ -1557,7 +1562,7 @@ export function useArticle(options: ArticleStreamOptions = {}) {
                 if (readerRef.current) {
                     readerRef.current.cancel();
                 }
-                
+
                 // For new articles (version 1), attempt cleanup
                 if (currentVersionNumber === 1 && currentUserIdRef.current && currentSessionIdRef.current) {
                     cleanupEmptyArticleSession(currentSessionIdRef.current, currentUserIdRef.current)
